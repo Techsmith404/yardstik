@@ -77,4 +77,4 @@ echo "========================================================="
 echo ""
 echo "🔍 Checking Control Panel Logs..."
 sleep 1
-sudo docker logs ops-control-panel --tail 20
+sudo docker logs yardstik-control-panel --tail 20

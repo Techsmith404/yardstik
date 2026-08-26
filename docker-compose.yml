@@ -2,7 +2,7 @@ services:
   kiosk-app:
     image: kiosk-webserver:latest
     build: .
-    container_name: ops-kiosk-app
+    container_name: yardstik-app
     restart: always
     ports:
       - "8080:80"
@@ -19,7 +19,7 @@ services:
 
   control-panel:
     build: ./control-panel
-    container_name: ops-control-panel
+    container_name: yardstik-control-panel
     restart: always
     ports:
       - "1337:5000"

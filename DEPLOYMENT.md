@@ -7,7 +7,7 @@ This guide details how to configure a fully automated kiosk on **Ubuntu Server**
 ## 🏗️ Architecture Overview
 
 On system boot:
-1. **Docker Daemon** starts, launching the `ops-kiosk-app` container automatically (`restart: always`).
+1. **Docker Daemon** starts, launching the `yardstik-app` container automatically (`restart: always`).
 2. **Ubuntu Frame** snap launches as a Wayland compositor directly on the connected screen (running as a system daemon, no desktop environment required).
 3. A custom **Systemd Service** triggers after Ubuntu Frame is ready, launching **Chromium** in fullscreen kiosk mode on Wayland.
 

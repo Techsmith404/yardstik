@@ -6,7 +6,7 @@ import sys
 try:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect("/var/run/docker.sock")
-    sock.sendall(b"POST /containers/ops-kiosk-app/restart?t=5 HTTP/1.0\r\nHost: localhost\r\n\r\n")
+    sock.sendall(b"POST /containers/yardstik-app/restart?t=5 HTTP/1.0\r\nHost: localhost\r\n\r\n")
     response = sock.recv(4096)
     sock.close()
     if b"HTTP/1" in response:
