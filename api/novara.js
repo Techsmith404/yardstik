@@ -124,100 +124,45 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({ success: true, response: [] });
         }
 
-        // 3. Fetch Training Videos Report
-        const reportReq = await fetch('https://api.novaraflex.com/v1/reports.generate', {
+        // 3. Fetch Training Status ONLY for active employees (bypasses 1000 limit pagination)
+        const statusReq = await fetch('https://api.novaraflex.com/v1/training-employee-status.list', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                token: apiKey,
-                report: {
-                    type: 'training',
-                    filters: {
-                        userIds: activeIds
-                    }
-                }
-            })
+            body: JSON.stringify({ token: apiKey, m_user_ids: activeIds })
         });
         
-        let reportData = null;
+        let statusData = null;
         try {
-            reportData = await reportReq.json();
+            statusData = await statusReq.json();
         } catch (parseErr) {
-            return res.status(500).json({ success: false, error: 'Novara report endpoint returned non-JSON response', httpStatus: reportReq.status });
+            return res.status(500).json({ success: false, error: 'Novara training endpoint returned non-JSON response', httpStatus: statusReq.status });
         }
 
-        if (!reportData || !reportData.ok || !reportData.response) {
+        if (!statusData || !statusData.ok || !statusData.employees) {
             return res.status(200).json({
                 success: false,
-                error: reportData?.error || reportData?.message || 'Invalid Report API response format',
+                error: statusData?.error || 'Invalid Status API response format',
                 activeUserCount: activeIds.length,
-                rawNovaraResponse: reportData
+                rawNovaraResponse: statusData
             });
         }
 
-        if (req.query.inspect === 'report') {
-            return res.status(200).json({ success: true, rawReport: reportData.response });
-        }
-
-        // 4. Parse missing or expiring training videos per user
+        // 4. Calculate missing training videos per user
         const result = [];
-        const EXPIRING_THRESHOLD_DAYS = 30;
-
-        for (const [userId, trainings] of Object.entries(reportData.response)) {
-            if (!userMap[userId]) continue;
-
-            const incompleteTrainings = [];
-            if (Array.isArray(trainings)) {
-                trainings.forEach(t => {
-                    const statusStr = (t.status || '').trim().toLowerCase();
-                    const percentNum = typeof t.percent === 'number' ? t.percent : parseFloat(t.percent || 0);
-
-                    // Check if training is incomplete
-                    const isIncomplete = (
-                        statusStr === 'incomplete' ||
-                        statusStr === 'assigned' ||
-                        statusStr === 'in progress' ||
-                        statusStr === 'pending' ||
-                        statusStr === 'overdue' ||
-                        (percentNum >= 0 && percentNum < 100)
-                    );
-
-                    // Check if training is completed but expiring within threshold
-                    let isExpiringSoon = false;
-                    const expirationVal = t.expires_at || t.expirationDate || t.expiration_date || t.expiresAt || t.valid_until;
-                    if (expirationVal) {
-                        const expDate = new Date(expirationVal);
-                        if (!isNaN(expDate.getTime())) {
-                            const diffDays = Math.ceil((expDate.getTime() - now) / (1000 * 60 * 60 * 24));
-                            if (diffDays >= 0 && diffDays <= EXPIRING_THRESHOLD_DAYS) {
-                                isExpiringSoon = true;
-                            }
-                        }
-                    }
-
-                    if (isIncomplete || isExpiringSoon) {
-                        incompleteTrainings.push({
-                            title: t.title || t.name || 'Safety Module',
-                            status: t.status || 'Incomplete',
-                            percent: percentNum,
-                            expiringSoon: isExpiringSoon
-                        });
-                    }
-                });
+        statusData.employees.forEach(emp => {
+            if (emp.incomplete_training_ids && emp.incomplete_training_ids.length > 0) {
+                if (userMap[emp.m_user_id]) {
+                    result.push({
+                        userId: emp.m_user_id,
+                        name: userMap[emp.m_user_id].name,
+                        photoUrl: userMap[emp.m_user_id].photoUrl,
+                        missingCount: emp.incomplete_training_ids.length
+                    });
+                }
             }
+        });
 
-            if (incompleteTrainings.length > 0) {
-                result.push({
-                    userId: userId,
-                    name: userMap[userId].name,
-                    photoUrl: userMap[userId].photoUrl,
-                    missingCount: incompleteTrainings.length,
-                    trainings: incompleteTrainings
-                });
-            }
-        }
-
-        // Sort by total missing/expiring count descending (people with most due at the top)
+        // Sort by total missing count descending (people with most due at the top)
         result.sort((a, b) => b.missingCount - a.missingCount);
 
         // Helper to parse date without timezone shifting
