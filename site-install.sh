@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-GITHUB_REPO="${GITHUB_REPO:-https://github.com/TechSmith404/ops-kiosk.git}"
+GITHUB_REPO="${GITHUB_REPO:-https://github.com/Techsmith404/yardstik.git}"
 BRANCH="${1:-main}"
 INSTALL_DIR="$HOME/kiosk-app"
 DATA_DIR="/opt/kiosk-data"
