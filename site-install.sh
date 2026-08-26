@@ -44,24 +44,31 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
 export NEEDRESTART_MODE=a
-APT_FLAGS="-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+export UCF_FORCE_CONFFOLD=1
+APT_FLAGS="-y -qq -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+
+# Pre-seed debconf to suppress console-setup and keyboard prompts
+echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections 2>/dev/null || true
+echo 'keyboard-configuration keyboard-configuration/layout select English (US)' | sudo debconf-set-selections 2>/dev/null || true
+echo 'keyboard-configuration keyboard-configuration/layoutcode select us' | sudo debconf-set-selections 2>/dev/null || true
 
 section "Step 1 — System Update & Base Packages"
-sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade $APT_FLAGS
-sudo DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS \
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get update -y < /dev/null
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get upgrade $APT_FLAGS < /dev/null
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS \
     curl wget git unzip zip \
     ca-certificates gnupg lsb-release \
     python3 python3-pip \
     snapd \
-    avahi-daemon avahi-utils
+    avahi-daemon avahi-utils < /dev/null
 sudo systemctl enable --now avahi-daemon
 log "Base packages and mDNS (.local) discovery installed."
 
 section "Step 2 — Install Docker Engine & Compose"
 # Remove old docker installs if any
-sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
 
 # Add Docker's official GPG key and repo
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -71,8 +78,8 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get update -y < /dev/null
+sudo -E env DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin < /dev/null
 
 # Allow current user to run Docker without sudo
 sudo usermod -aG docker "$USER"
