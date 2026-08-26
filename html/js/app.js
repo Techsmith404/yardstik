@@ -86,9 +86,8 @@
                 // Dynamically generate QR code pointing to this site's mobile view
                 const qrImg = document.getElementById('mobile-qr-img');
                 if (qrImg) {
-                    const baseUrl = siteConfig.vercel_api_url || window.location.origin;
-                    const siteId = siteConfig.site_id || 'default-site';
-                    const targetUrl = `${baseUrl}/mobile.html?site=${siteId}`;
+                    const baseUrl = (siteConfig.vercel_api_url || window.location.origin).replace(/\/+$/, '');
+                    const targetUrl = `${baseUrl}/mobile.html`;
                     qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(targetUrl)}`;
                 }
 

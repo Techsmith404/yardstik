@@ -117,7 +117,7 @@ module.exports = async function handler(req, res) {
 
     // ── GET: Read Live Kiosk Data for Mobile / Remote Viewers ─────────────────
     if (req.method === 'GET') {
-        const site_id = req.query.site || 'default-site';
+        const site_id = req.query.site || process.env.DEFAULT_SITE_ID || 'default-site';
         const file = req.query.file;
 
         if (!file) {
