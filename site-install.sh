@@ -145,7 +145,7 @@ sudo chmod -R 777 "$DATA_DIR"
 
 # Seed default data templates if they don't exist
 TEMPLATE_DATA="$INSTALL_DIR/html/assets/data"
-for f in reminders.md metrics.json daily.json safety.json trackers.json \
+for f in reminders.md safety.json trackers.json seniority.json \
           anniversaries.json shifts.json equipment.json; do
     if [ ! -f "$DATA_DIR/data/$f" ] && [ -f "$TEMPLATE_DATA/$f" ]; then
         cp "$TEMPLATE_DATA/$f" "$DATA_DIR/data/$f"

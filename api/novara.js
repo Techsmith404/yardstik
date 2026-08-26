@@ -1,3 +1,23 @@
+let redisClient = null;
+function getRedisClient() {
+    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
+    if (!redisUrl) return null;
+    if (!redisClient) {
+        try {
+            const Redis = require('ioredis');
+            redisClient = new Redis(redisUrl, {
+                connectTimeout: 3000,
+                maxRetriesPerRequest: 1,
+                enableReadyCheck: false,
+                lazyConnect: true
+            });
+        } catch (e) {
+            return null;
+        }
+    }
+    return redisClient;
+}
+
 module.exports = async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -210,7 +230,7 @@ module.exports = async function handler(req, res) {
             };
         }
 
-        // 5. Automated Anniversary Engine with Configurable Hire Date Overrides
+        // 5. Automated Anniversary Engine with Configurable Seniority Overrides
         let legacyHireOverrides = {};
         if (process.env.NOVARA_HIRE_OVERRIDES) {
             try {
@@ -220,6 +240,51 @@ module.exports = async function handler(req, res) {
             } catch (e) {
                 console.warn('Failed to parse NOVARA_HIRE_OVERRIDES:', e.message);
             }
+        }
+
+        // Also check Redis for dynamically synced seniority.json from Control Panel
+        const rClient = getRedisClient();
+        if (rClient) {
+            try {
+                if (rClient.status === 'wait' || rClient.status === 'close') await rClient.connect();
+                const siteKey = req.query.site || 'burns-harbor';
+                const redisSeniority = await rClient.get(`kiosk:${siteKey}:seniority.json`);
+                if (redisSeniority) {
+                    const parsedSeniority = JSON.parse(redisSeniority);
+                    legacyHireOverrides = { ...legacyHireOverrides, ...parsedSeniority };
+                }
+            } catch (rErr) {
+                console.warn('Redis seniority lookup skipped:', rErr.message);
+            }
+        }
+
+        function normalizeTokens(str) {
+            if (!str) return [];
+            return str
+                .toLowerCase()
+                .replace(/[^a-z0-9 ]/g, ' ')
+                .split(/\s+/)
+                .filter(t => t.length > 1); // filters out 1-letter middle initials like "L" or "C"
+        }
+
+        function matchNormalizedOverride(firstName, lastName, overridesMap) {
+            if (!overridesMap || Object.keys(overridesMap).length === 0) return null;
+            
+            const reversed = `${lastName}, ${firstName}`;
+            const normal = `${firstName} ${lastName}`;
+            if (overridesMap[reversed]) return overridesMap[reversed];
+            if (overridesMap[normal]) return overridesMap[normal];
+
+            const targetTokens = new Set(normalizeTokens(`${firstName} ${lastName}`));
+            if (targetTokens.size === 0) return null;
+
+            for (const [key, dateVal] of Object.entries(overridesMap)) {
+                const keyTokens = normalizeTokens(key);
+                if (keyTokens.length === targetTokens.size && keyTokens.every(t => targetTokens.has(t))) {
+                    return dateVal;
+                }
+            }
+            return null;
         }
 
         const today = new Date();
@@ -232,15 +297,8 @@ module.exports = async function handler(req, res) {
             const isEmployed = !u.terminationDate || u.terminationDate > now;
             if (!isAtLocation || !isEmployed) return;
 
-            const fullNameReversed = `${u.lastname}, ${u.firstname}`;
-            const fullNameNormal = `${u.firstname} ${u.lastname}`;
-
-            let rawHire = null;
-            if (legacyHireOverrides[fullNameReversed]) {
-                rawHire = legacyHireOverrides[fullNameReversed];
-            } else if (legacyHireOverrides[fullNameNormal]) {
-                rawHire = legacyHireOverrides[fullNameNormal];
-            } else if (u.hireDate || u.hire_date || u.startDate || u.start_date) {
+            let rawHire = matchNormalizedOverride(u.firstname, u.lastname, legacyHireOverrides);
+            if (!rawHire && (u.hireDate || u.hire_date || u.startDate || u.start_date)) {
                 rawHire = u.hireDate || u.hire_date || u.startDate || u.start_date;
             }
 

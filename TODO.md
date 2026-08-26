@@ -1,4 +1,4 @@
-# Kiosk Project — Upcoming Roadmap & Feature Queue
+# 🚀 YardStik — Roadmap & Feature Queue
 
 ## 🛠️ High-Priority Features
 
@@ -17,14 +17,25 @@
 
 ---
 
-### 2. Multi-Site Whitelabeling & Configurable Production Tracker (In Progress)
-- [x] Decouple company branding and PII from codebase (Branch: `refactor/whitelabel-and-anonymize`).
+### 2. Configurable Production Tracker (Blend Recipe / Heat # / Daily Target)
+- [ ] Support facility-customizable tracker title (`production_tracker_label` in `trackers.json`, e.g. *Active Blend Recipe*, *Current Heat #*, *Active Production Grade*, *Daily Target*).
+- [ ] Support string and numerical values (`production_tracker_value`, e.g. `338`, `Grade-B`, `Batch 104`, `95%`).
+- [ ] Control Panel UI inputs for live updates from Trackers card.
+
+---
+
+### 3. Seniority & Milestone Overrides Sync ✅ (Completed)
+- [x] Decoupled employee names and hire dates from source code.
+- [x] Smart fuzzy token matching in `api/novara.js` (handles initials, middle names, and name variations automatically).
+- [x] Local `/opt/kiosk-data/data/seniority.json` management with Control Panel editor UI.
+- [x] Automatic cloud sync to Upstash Redis for multi-site deployments.
+
+---
+
+### 4. Multi-Site Whitelabeling & Clean Repository ✅ (Completed)
+- [x] Standalone **YardStik** repository under `TechSmith404/yardstik`.
+- [x] Decoupled 365-day safety slide graphics into host `/opt/kiosk-data/safety-slides`.
 - [x] Dynamic field office and site configuration via Control Panel.
-- [ ] **Configurable Production Tracker Widget:**
-  - Support facility-customizable tracker title (`production_tracker_label` in `trackers.json`, e.g. *Active Blend Recipe*, *Current Heat #*, *Active Production Grade*, *Daily Target*).
-  - Support string and numerical values (`production_tracker_value`, e.g. `338`, `Grade-B`, `Batch 104`, `95%`).
-  - Control Panel UI inputs for quick live edits.
-- [x] Clean repository migration for TechSmith404.
 
 ---
 

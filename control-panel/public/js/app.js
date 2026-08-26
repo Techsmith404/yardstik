@@ -729,6 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (officeInput) officeInput.value = cfg.novara_office_id || '';
                 document.getElementById('cfg-admin-username').value = cfg.admin_username || 'admin';
                 document.getElementById('cfg-admin-password').value = '';
+                loadSeniorityOverrides();
             })
             .catch(() => {
                 siteSettingsStatus.style.display = 'block';
@@ -736,7 +737,115 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // ── Seniority Overrides Editor Functions ──────────────────────────────────
+    let seniorityOverridesData = {};
+
+    function loadSeniorityOverrides() {
+        const container = document.getElementById('seniority-table-container');
+        if (!container) return;
+        fetch('/api/seniority')
+            .then(res => res.json())
+            .then(data => {
+                seniorityOverridesData = data && typeof data === 'object' ? data : {};
+                renderSeniorityTable();
+            })
+            .catch(() => {
+                seniorityOverridesData = {};
+                renderSeniorityTable();
+            });
+    }
+
+    function renderSeniorityTable() {
+        const container = document.getElementById('seniority-table-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const keys = Object.keys(seniorityOverridesData);
+        if (keys.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 15px; color: var(--text-secondary); background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 0.9rem;">
+                    No seniority overrides configured. Click <strong>Add Employee</strong> to create one.
+                </div>
+            `;
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontSize = '0.9rem';
+        table.innerHTML = `
+            <thead>
+                <tr style="text-align: left; color: var(--text-secondary); border-bottom: 1px solid var(--border);">
+                    <th style="padding: 8px;">Employee Name</th>
+                    <th style="padding: 8px;">Hire Date (YYYY-MM-DD)</th>
+                    <th style="padding: 8px; width: 40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="seniority-table-body"></tbody>
+        `;
+        container.appendChild(table);
+
+        const tbody = table.querySelector('#seniority-table-body');
+        keys.forEach(name => {
+            const dateVal = seniorityOverridesData[name] || '';
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            row.innerHTML = `
+                <td style="padding: 6px 8px;">
+                    <input type="text" class="form-control seniority-name-input" value="${name}" placeholder="e.g. Harold Hamilton" style="font-size: 0.85rem; padding: 6px 8px;">
+                </td>
+                <td style="padding: 6px 8px;">
+                    <input type="date" class="form-control seniority-date-input" value="${dateVal}" style="font-size: 0.85rem; padding: 6px 8px; font-family: monospace;">
+                </td>
+                <td style="padding: 6px 8px; text-align: center;">
+                    <button class="btn danger" style="padding: 4px 8px; font-size: 0.8rem;" title="Delete Record"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            `;
+
+            const nameInput = row.querySelector('.seniority-name-input');
+            const dateInput = row.querySelector('.seniority-date-input');
+            const deleteBtn = row.querySelector('button');
+
+            deleteBtn.addEventListener('click', () => {
+                delete seniorityOverridesData[name];
+                renderSeniorityTable();
+            });
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function collectSeniorityFromDOM() {
+        const result = {};
+        const rows = document.querySelectorAll('#seniority-table-body tr');
+        rows.forEach(r => {
+            const name = r.querySelector('.seniority-name-input')?.value.trim();
+            const dateVal = r.querySelector('.seniority-date-input')?.value.trim();
+            if (name && dateVal) {
+                result[name] = dateVal;
+            }
+        });
+        return result;
+    }
+
+    const addSeniorityBtn = document.getElementById('add-seniority-row-btn');
+    if (addSeniorityBtn) {
+        addSeniorityBtn.addEventListener('click', () => {
+            seniorityOverridesData = collectSeniorityFromDOM();
+            seniorityOverridesData[''] = '';
+            renderSeniorityTable();
+        });
+    }
+
     saveSiteSettingsBtn.addEventListener('click', () => {
+        const seniorityPayload = collectSeniorityFromDOM();
+        fetch('/api/seniority', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(seniorityPayload)
+        }).catch(err => console.warn('Failed to save seniority:', err));
+
         const payload = {
             site_name:        document.getElementById('cfg-site-name').value.trim(),
             site_id:          document.getElementById('cfg-site-id').value.trim(),

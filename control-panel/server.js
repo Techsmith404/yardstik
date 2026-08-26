@@ -41,7 +41,7 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json'];
+        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json'];
 
         syncFiles.forEach(f => {
             const p = path.join('/data', f);
@@ -298,6 +298,35 @@ app.post('/api/shifts', express.json(), (req, res) => {
         res.json({ success: true, message: 'Shift schedules saved successfully.' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to save shifts file' });
+    }
+});
+
+// Native Seniority Overrides API Endpoints
+const SENIORITY_PATH = '/data/seniority.json';
+
+app.get('/api/seniority', (req, res) => {
+    try {
+        if (fs.existsSync(SENIORITY_PATH)) {
+            const content = fs.readFileSync(SENIORITY_PATH, 'utf8');
+            res.json(JSON.parse(content));
+        } else {
+            res.json({});
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to read seniority file' });
+    }
+});
+
+app.post('/api/seniority', express.json(), (req, res) => {
+    try {
+        fs.writeFileSync(SENIORITY_PATH, JSON.stringify(req.body, null, 2), 'utf8');
+        try {
+            fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+        } catch (vErr) {}
+        syncToCloud();
+        res.json({ success: true, message: 'Seniority records saved and synced successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to save seniority file' });
     }
 });
 

@@ -350,6 +350,25 @@
                         </div>
                     </div>
 
+                    <!-- Seniority & Anniversary Overrides Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header" style="justify-content: space-between; display: flex; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-cake-candles"></i>
+                                <h4>Employee Seniority & Hire Date Overrides</h4>
+                            </div>
+                            <button class="btn secondary" id="add-seniority-row-btn" style="padding: 4px 10px; font-size: 0.85rem;">
+                                <i class="fa-solid fa-plus"></i> Add Employee
+                            </button>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                            Override hire dates for veteran employees missing historical records. Automatically matches employee names regardless of middle initials or formatting.
+                        </p>
+                        <div id="seniority-table-container">
+                            <!-- Populated dynamically via app.js -->
+                        </div>
+                    </div>
+
                     <!-- Authentication & Security Section -->
                     <div class="settings-section">
                         <div class="settings-section-header">
