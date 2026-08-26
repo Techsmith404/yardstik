@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Dashboard - Mobile</title>
+    <!-- Include marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --brand-blue: #3b82f6;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .widget {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-val {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--brand-blue);
+        }
+        .stat-lbl {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .safety-person {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .safety-person img {
+            width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 10px;">
+        <h1 id="mobile-header-title" style="margin: 0; font-size: 1.5rem; background: linear-gradient(90deg, var(--brand-blue), var(--accent)); -webkit-background-clip: text; color: transparent;">Operations Dashboard Mobile</h1>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin: 5px 0 0 0;">Scroll at your own pace!</p>
+    </div>
+
+    <!-- Special Announcements -->
+    <div class="widget" id="special-feed" style="display: none; background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
+        <h2 style="color: #ef4444; border-bottom-color: rgba(239,68,68,0.3);">Special Announcement</h2>
+        <div id="special-content"></div>
+    </div>
+
+    <!-- Weather Alerts -->
+    <div class="widget" id="weather-feed" style="display: none; background: rgba(245, 158, 11, 0.1); border-color: #f59e0b;">
+        <h2 style="color: #f59e0b; border-bottom-color: rgba(245,158,11,0.3);">Weather Alert</h2>
+        <div id="weather-content"></div>
+    </div>
+
+    <div class="widget" id="reminders-feed">
+        <h2>Announcements</h2>
+        <div id="reminders-content">Loading...</div>
+    </div>
+    
+    <div class="widget" id="safety-feed">
+        <h2 style="color: #ef4444; border-bottom-color: rgba(239,68,68,0.3);">Action Required: Safety Videos</h2>
+        <div id="safety-content">Loading...</div>
+    </div>
+    
+    <div class="widget" id="equipment-feed">
+        <h2>Equipment Status</h2>
+        <div id="equipment-content">Loading...</div>
+    </div>
+
+    <script>
+        let siteConfig = {
+            site_name: "Operations Dashboard",
+            site_id: "default-site",
+            latitude: 41.600,
+            longitude: -87.100,
+            vercel_api_url: ""
+        };
+
+        function getDataUrl(filename) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const siteId = urlParams.get('site') || siteConfig.site_id || 'default-site';
+            
+            // If viewing on Vercel cloud, fetch live ephemeral data via serverless sync endpoint
+            if (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:') {
+                return `/api/sync?site=${siteId}&file=${filename}&t=${Date.now()}`;
+            }
+            // If viewing locally on the kiosk network, fetch direct asset
+            return `assets/data/${filename}?t=${Date.now()}`;
+        }
+
+        async function fetchSiteConfig() {
+            try {
+                const res = await fetch(getDataUrl('config.json'));
+                if (res.ok) {
+                    const data = await res.json();
+                    siteConfig = { ...siteConfig, ...data };
+                    if (siteConfig.site_name) {
+                        document.title = siteConfig.site_name;
+                        const mTitle = document.getElementById('mobile-header-title');
+                        if (mTitle) mTitle.innerText = siteConfig.site_name;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function loadReminders() {
+            try {
+                const res = await fetch(getDataUrl('reminders.md'));
+                const rawText = await res.text();
+                const sections = rawText.split(/^# /m).filter(s => s.trim().length > 0);
+                
+                let html = '';
+                for (let section of sections) {
+                    const lines = section.split('\n');
+                    let title = lines[0].trim();
+                    let body = lines.slice(1).join('\n');
+                    
+                    let priority = 'normal';
+                    if (body.match(/!HIGH/i)) priority = 'high';
+                    if (body.match(/!CRITICAL/i)) priority = 'critical';
+                    
+                    // Parse Expire
+                    const expireMatch = body.match(/!EXPIRE\s+([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2})/i);
+                    if (expireMatch) {
+                        const parts = expireMatch[1].split('-');
+                        const expDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]), 0, 0, 0);
+                        if (Date.now() > expDate.getTime()) continue;
+                        body = body.replace(expireMatch[0], '');
+                    }
+                    
+                    // Strip other flags
+                    body = body.replace(/!(HIGH|CRITICAL|SPLIT|LARGE|CENTER|LONG|ONLY|COUNTDOWN [0-9\-]+|QR https?:\/\/[^\s]+)/ig, '');
+                    
+                    html += `
+                        <div class="reminder-card ${priority}">
+                            <h3>${title}</h3>
+                            <div class="markdown-body" style="font-size: 0.9rem; line-height: 1.5; color: #cbd5e1;">${marked.parse(body)}</div>
+                        </div>
+                    `;
+                }
+                document.getElementById('reminders-content').innerHTML = html || 'No active announcements.';
+            } catch (e) {
+                document.getElementById('reminders-content').innerText = "Error loading announcements.";
+            }
+        }
+
+        async function loadSafety() {
+            try {
+                const vercelBase = siteConfig.vercel_api_url ? siteConfig.vercel_api_url.replace(/\/+$/, '') : '';
+                const res = await fetch(`${vercelBase}/api/novara`);
+                const data = await res.json();
+                
+                if (!data.success || !data.response || data.response.length === 0) {
+                    document.getElementById('safety-content').innerHTML = '<div style="color: #10b981; font-style: italic; text-align: center;">All employees are 100% up to date! 🎉</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.response.forEach(emp => {
+                    html += `
+                        <div class="safety-person">
+                            <img src="${emp.photoUrl}">
+                            <div style="display: flex; flex-direction: column;">
+                                <strong style="color: white; font-size: 0.95rem;">${emp.name}</strong>
+                                <span style="color: #ef4444; font-size: 0.8rem; font-weight: 600;">${emp.missingCount} Videos Missing</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('safety-content').innerHTML = html;
+            } catch (e) {
+                document.getElementById('safety-content').innerText = "Error loading safety data.";
+            }
+        }
+
+        function isAuditResetCurrent(lastAuditResetEpoch) {
+            const d = new Date();
+            const day = d.getDay();
+            const hours = d.getHours();
+            let daysToSubtract = day;
+            if (day === 0 && hours < 23) daysToSubtract = 7;
+            const sunday11pm = new Date(d);
+            sunday11pm.setDate(d.getDate() - daysToSubtract);
+            sunday11pm.setHours(23, 0, 0, 0);
+            return !!(lastAuditResetEpoch && lastAuditResetEpoch >= sunday11pm.getTime());
+        }
+
+        async function loadEquipment() {
+            try {
+                const res = await fetch(getDataUrl('equipment.json'));
+                const data = await res.json();
+                const auditIsCurrent = isAuditResetCurrent(data.last_audit_reset);
+                
+                let html = '';
+                data.categories.forEach(cat => {
+                    const isMobileCranes = (cat.name || '').trim().toLowerCase() === 'mobile cranes';
+                    html += `<h4 style="margin: 15px 0 10px 0; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">${cat.name.toUpperCase()}</h4>`;
+                    html += `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+                    cat.items.forEach(item => {
+                        let bg = 'rgba(255,255,255,0.03)';
+                        let badgeBg = '#6b7280';
+                        let badgeText = item.status;
+                        let borderLeft = 'transparent';
+                        
+                        if (item.status === 'OK') {
+                            badgeBg = 'var(--success)'; borderLeft = 'var(--success)';
+                        } else if (item.status === 'OS') {
+                            badgeBg = 'var(--danger)'; borderLeft = 'var(--danger)'; bg = 'rgba(239, 68, 68, 0.1)';
+                            badgeText = item.reason ? `OS: ${item.reason.toUpperCase()}` : 'OUT OF SERVICE';
+                        } else if (item.status === 'PM') {
+                            badgeBg = 'var(--warning)'; borderLeft = 'var(--warning)';
+                            badgeText = item.reason ? `ISSUE: ${item.reason.toUpperCase()}` : 'ISSUE';
+                        }
+
+                        let extraBadges = '';
+                        if (isMobileCranes && item.scale && item.scale !== 'NO' && item.scale !== 'NONE') {
+                            if (item.scale === 'OK') {
+                                const isAudited = auditIsCurrent && !!item.blend_audit;
+                                extraBadges += `<span style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">SCALE OK</span>`;
+                                extraBadges += `<span style="background: ${isAudited ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; border: 1px solid ${isAudited ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}; color: ${isAudited ? '#6ee7b7' : '#fcd34d'}; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">Audit: ${isAudited ? '✅' : '❌'}</span>`;
+                            } else if (item.scale === 'OS') {
+                                extraBadges += `<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">SCALE OS</span>`;
+                            }
+                        }
+                        
+                        html += `
+                            <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: ${bg}; border-left: 4px solid ${borderLeft}; border-radius: 6px; align-items: center; gap: 8px;">
+                                <span style="font-weight: 500;">${item.name}</span>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                                    ${extraBadges}
+                                    <span style="background: ${badgeBg}; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${badgeText}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                });
+                document.getElementById('equipment-content').innerHTML = html;
+            } catch (e) {
+                document.getElementById('equipment-content').innerText = "Error loading equipment.";
+            }
+        }
+
+        async function loadTrackers() {
+            try {
+                const res = await fetch(getDataUrl('trackers.json'));
+                const data = await res.json();
+                
+                let extraHtml = '';
+                
+                // Blend Recipe
+                if (data.blend_recipe) {
+                    extraHtml += `
+                        <div class="reminder-card" style="border-left-color: var(--success); text-align: center; margin-bottom: 20px;">
+                            <h3 style="margin-bottom: 5px;">Active Blend Recipe</h3>
+                            <div style="font-size: 2rem; font-weight: 900; color: var(--success);">#${data.blend_recipe}</div>
+                        </div>
+                    `;
+                }
+
+                // Toolbox Talk Logic
+                const actualNow = new Date();
+                const now = new Date(actualNow.getTime() + (60 * 60 * 1000)); // shift 1hr for 11pm rollover
+                const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                
+                if (data.toolbox_override_date === todayStr && data.toolbox_override_file) {
+                    // Show ONLY the override
+                    extraHtml += `
+                        <div class="reminder-card" style="border-left-color: #ef4444; text-align: center; margin-bottom: 20px; background: rgba(239, 68, 68, 0.1);">
+                            <h3 style="margin-bottom: 5px; color: #ef4444;">Safety Stand-down</h3>
+                            <a href="assets/data/${data.toolbox_override_file}" target="_blank" style="display: inline-block; padding: 8px 16px; background: #ef4444; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px;">View Document</a>
+                        </div>
+                    `;
+                } else {
+                    // Show normal daily slide
+                    const start = new Date(Date.UTC(now.getFullYear(), 0, 0));
+                    const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+                    const dayOfYear = Math.round((todayUTC - start) / (1000 * 60 * 60 * 24));
+                    const year = now.getFullYear();
+                    const isLeap = ((year % 4 === 0) && (year % 100 !== 0)) || (year % 400 === 0);
+                    
+                    let slideNum = dayOfYear;
+                    if (isLeap) {
+                        if (dayOfYear === 60) slideNum = 20;
+                        else if (dayOfYear > 60) slideNum = dayOfYear - 1;
+                    }
+                    const paddedNum = slideNum.toString().padStart(3, '0');
+
+                    extraHtml += `
+                        <div class="reminder-card" style="border-left-color: var(--accent); text-align: center; margin-bottom: 20px;">
+                            <h3 style="margin-bottom: 5px;">Daily Toolbox Talk</h3>
+                            <a href="assets/safety-slides/${paddedNum}.png" target="_blank" style="display: inline-block; padding: 8px 16px; background: var(--accent); color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px;">View Slide #${paddedNum}</a>
+                        </div>
+                    `;
+                }
+
+                // Prepend to Announcements feed
+                if (extraHtml) {
+                    const content = document.getElementById('reminders-content');
+                    if (content.innerHTML === 'Loading...' || content.innerHTML === 'No active announcements.') content.innerHTML = '';
+                    content.innerHTML = extraHtml + content.innerHTML;
+                }
+            } catch (e) {
+                console.log("No trackers data");
+            }
+        }
+
+        async function loadSpecial() {
+            try {
+                const res = await fetch(getDataUrl('special.json'));
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (data.endTime) {
+                    if (new Date().getTime() > new Date(data.endTime).getTime()) return;
+                }
+                
+                const feed = document.getElementById('special-feed');
+                const content = document.getElementById('special-content');
+                
+                let html = `<h3 style="margin-top: 0;">${data.title}</h3>`;
+                html += `<p style="font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px;">${data.description.replace(/\\n/g, '<br>').replace(/\n/g, '<br>')}</p>`;
+                if (data.image) {
+                    html += `<img src="${data.image}?t=${new Date().getTime()}" style="max-width: 100%; border-radius: 8px; border: 2px solid rgba(255,255,255,0.1);">`;
+                }
+                
+                content.innerHTML = html;
+                feed.style.display = 'block';
+            } catch (e) {
+                console.log("No special event active");
+            }
+        }
+
+        async function loadWeatherAlerts() {
+            try {
+                let alertHtml = '';
+                
+                // Fetch NWS Alerts
+                const nwsRes = await fetch(`https://api.weather.gov/alerts/active?point=${siteConfig.latitude},${siteConfig.longitude}`, { cache: 'no-store' });
+                const nwsData = await nwsRes.json();
+                
+                if (nwsData.features && nwsData.features.length > 0) {
+                    nwsData.features.forEach(alert => {
+                        let color = '#f59e0b';
+                        if (alert.properties.severity === 'Severe' || alert.properties.severity === 'Extreme') color = '#ef4444';
+                        alertHtml += `
+                            <div class="reminder-card" style="border: 1px solid ${color}; border-left: 6px solid ${color}; background: ${color}22; cursor: pointer; text-align: center;" onclick="window.open('https://zoom.earth/maps/radar/#view=${siteConfig.latitude},${siteConfig.longitude},8z', '_blank')">
+                                <h3 style="color: ${color}; margin-bottom: 5px; text-transform: uppercase;">${alert.properties.event}</h3>
+                                <p style="font-size: 0.85rem; margin-bottom: 0;">${alert.properties.headline}</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Fetch basic precipitation forecast
+                const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${siteConfig.latitude}&longitude=${siteConfig.longitude}&current_weather=true&hourly=precipitation_probability,precipitation,snowfall&daily=precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`, { cache: 'no-store' });
+                const wxData = await wxRes.json();
+                let code = wxData.current_weather.weathercode;
+                
+                // Support ?mock= url parameters for testing
+                const mock = new URLSearchParams(window.location.search).get('mock');
+                if (mock === 'storm' || mock === 'lightning') code = 95;
+                if (mock === 'rain') code = 65;
+                if (mock === 'snow') code = 75;
+                if (mock === 'tornado') {
+                    code = 99;
+                    alertHtml += `
+                        <div class="reminder-card" style="border: 1px solid #ef4444; border-left: 6px solid #ef4444; background: rgba(239, 68, 68, 0.1); cursor: pointer; text-align: center;" onclick="window.open('https://zoom.earth/maps/radar/#view=${siteConfig.latitude},${siteConfig.longitude},8z', '_blank')">
+                            <h3 style="color: #ef4444; margin-bottom: 5px; text-transform: uppercase;">TORNADO WARNING</h3>
+                            <p style="font-size: 0.85rem; margin-bottom: 0;">TAKE COVER IMMEDIATELY! This is a mock tornado warning.</p>
+                        </div>
+                    `;
+                }
+                
+                if ([95, 96, 99].includes(code)) {
+                    alertHtml += `
+                        <div class="reminder-card" style="border: 1px solid #ef4444; border-left: 6px solid #ef4444; background: rgba(239, 68, 68, 0.1); cursor: pointer; text-align: center;" onclick="window.open('https://zoom.earth/maps/radar/#view=${siteConfig.latitude},${siteConfig.longitude},8z', '_blank')">
+                            <h3 style="color: #ef4444; margin-bottom: 5px; text-transform: uppercase;">Lightning / Thunderstorm</h3>
+                            <p style="font-size: 0.85rem; margin-bottom: 0;">Active thunderstorm or lightning detected in the immediate area. Follow standard outdoor safety protocols.</p>
+                        </div>
+                    `;
+                }
+                
+                // Precipitation calculations
+                let precipStartIdx = -1;
+                let precipEndIdx = -1;
+                let isSnow = false;
+                let next12hPrecip = 0;
+                
+                const currentHourIdx = new Date().getHours();
+                const precipProb = wxData.hourly.precipitation_probability.slice(currentHourIdx, currentHourIdx + 12);
+                const precipAmount = wxData.hourly.precipitation.slice(currentHourIdx, currentHourIdx + 12);
+                const snowAmount = wxData.hourly.snowfall.slice(currentHourIdx, currentHourIdx + 12);
+                
+                for (let i = 0; i < 12; i++) {
+                    if (precipProb[i] > 20 && (precipAmount[i] > 0.001 || snowAmount[i] > 0)) {
+                        if (precipStartIdx === -1) precipStartIdx = i;
+                        if (snowAmount[i] > 0) isSnow = true;
+                        next12hPrecip += isSnow ? snowAmount[i] : precipAmount[i];
+                        precipEndIdx = i;
+                    }
+                }
+                
+                // Mock overrides
+                if (mock === 'rain' || mock === 'snow') {
+                    precipStartIdx = 1; precipEndIdx = 2; next12hPrecip = 0.2; isSnow = (mock === 'snow');
+                    if (!wxData.daily.precipitation_sum) wxData.daily.precipitation_sum = [0.6];
+                    if (!wxData.daily.snowfall_sum) wxData.daily.snowfall_sum = [0.6];
+                }
+                
+                // Lightning Distance Tracking (via Secure Vercel Serverless Function)
+                // Only poll lightning if there's actually a thunderstorm to save proxy requests, or if mocking
+                if ([95, 96, 99].includes(code) || mock === 'lightning') {
+                    try {
+                        let dist = null;
+                        let strikeTime = null;
+                        
+                        if (mock === 'lightning') {
+                            dist = 4.2;
+                            strikeTime = new Date(Date.now() - (5 * 60000)); // 5 mins ago
+                        } else {
+                            const vercelBase = siteConfig.vercel_api_url || '';
+                            const lat = siteConfig.latitude || 41.6045;
+                            const lon = siteConfig.longitude || -87.1311;
+                            const lightningRes = await fetch(`${vercelBase}/api/lightning?lat=${lat}&lon=${lon}`);
+                            if (lightningRes.ok) {
+                                const lightningData = await lightningRes.json();
+                                if (lightningData && lightningData.success && lightningData.response && lightningData.response.length > 0) {
+                                    dist = lightningData.response[0].relativeTo.distanceMI;
+                                    strikeTime = new Date(lightningData.response[0].ob.dateTimeISO);
+                                }
+                            }
+                        }
+                        
+                        if (dist !== null && strikeTime !== null) {
+                            alertHtml += `
+                                <div class="reminder-card" style="border: 1px solid #f59e0b; border-left: 6px solid #f59e0b; background: rgba(245, 158, 11, 0.1); cursor: pointer; animation: pulse 2s infinite;" onclick="window.open('https://www.lightningmaps.org/?lang=en#y=${siteConfig.latitude};x=${siteConfig.longitude};z=10;', '_blank')">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                                        <div style="display: flex; flex-direction: column; text-align: left;">
+                                            <h3 style="color: #f59e0b; margin-bottom: 5px; font-size: clamp(1rem, 4vw, 1.4rem);">⚡ LIGHTNING DETECTED</h3>
+                                            <p style="font-size: clamp(0.8rem, 3.5vw, 1rem); margin-bottom: 0; color: var(--text-primary); font-weight: bold;">Lightning strike ${dist.toFixed(1)} miles away!</p>
+                                        </div>
+                                        <div style="display: flex; flex-direction: column; align-items: flex-end; min-width: 70px;">
+                                            <span style="color: rgba(255,255,255,0.7); font-size: 0.75rem; text-transform: uppercase; white-space: nowrap;">All-Clear</span>
+                                            <span id="mobile-lightning-timer" style="color: #ffffff; font-weight: 800; font-size: clamp(1.4rem, 5vw, 1.8rem); text-shadow: 0 0 10px rgba(255,255,255,0.4); font-variant-numeric: tabular-nums;">--:--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            if (window.lightningInterval) clearInterval(window.lightningInterval);
+                            window.lightningInterval = setInterval(() => {
+                                const el = document.getElementById('mobile-lightning-timer');
+                                if (!el) return;
+                                
+                                const msSinceStrike = new Date() - strikeTime;
+                                const msCooldown = 30 * 60 * 1000;
+                                
+                                if (msSinceStrike >= msCooldown) {
+                                    el.innerText = "CLEAR";
+                                    clearInterval(window.lightningInterval);
+                                } else {
+                                    const msRemaining = msCooldown - msSinceStrike;
+                                    const minLeft = Math.floor(msRemaining / 60000);
+                                    const secLeft = Math.floor((msRemaining % 60000) / 1000);
+                                    el.innerText = `${minLeft.toString().padStart(2, '0')}:${secLeft.toString().padStart(2, '0')}`;
+                                }
+                            }, 1000);
+                        }
+                    } catch (err) {
+                        console.log("Failed to load lightning from proxy");
+                    }
+                }
+                
+                if (precipStartIdx !== -1) {
+                    const formatTime = (offset) => {
+                        const d = new Date(); d.setHours(d.getHours() + offset);
+                        return d.toLocaleString('en-US', { hour: 'numeric', hour12: true }).replace(':00', '');
+                    };
+                    const startStr = formatTime(precipStartIdx);
+                    const endStr = formatTime(precipEndIdx + 1);
+                    
+                    let dailyTotal = isSnow ? (wxData.daily.snowfall_sum ? wxData.daily.snowfall_sum[0] : 0) : (wxData.daily.precipitation_sum ? wxData.daily.precipitation_sum[0] : 0);
+                    if (mock === 'rain') dailyTotal = 0.6;
+                    if (mock === 'snow') dailyTotal = 0.6;
+                    
+                    const formatAmt = (amt) => amt < 0.1 ? "< 0.1\"" : amt.toFixed(1) + "\"";
+                    
+                    let title = isSnow ? "SNOW FORECAST" : "RAIN FORECAST";
+                    let color = isSnow ? "#ffffff" : "#4da6ff";
+                    let bg = isSnow ? "rgba(255,255,255,0.05)" : "rgba(77,166,255,0.1)";
+                    
+                    let timeSubtext = `Starts: ${startStr} | Ends: ${endStr}`;
+                    if (precipStartIdx === 0) timeSubtext = `Ends: ${endStr}`;
+                    
+                    alertHtml += `
+                        <div class="reminder-card" style="border: 1px solid ${color}; border-left: 6px solid ${color}; background: ${bg}; cursor: pointer; text-align: center;" onclick="window.open('https://zoom.earth/maps/radar/#view=${siteConfig.latitude},${siteConfig.longitude},8z', '_blank')">
+                            <h3 style="color: ${color}; margin-bottom: 5px; font-size: 1.3rem; letter-spacing: 0.05em; text-transform: uppercase;">${title}</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin: 15px 0;">
+                                <span style="font-size: 2.2rem; font-weight: bold; color: ${color};">${formatAmt(dailyTotal)}<span style="font-size: 1rem; color: var(--text-secondary); display: block; margin-top: 2px;">TODAY</span></span>
+                                <span style="color: rgba(255,255,255,0.2);">|</span>
+                                <span style="font-size: 2.2rem; font-weight: bold; color: ${color};">${formatAmt(next12hPrecip)}<span style="font-size: 1rem; color: var(--text-secondary); display: block; margin-top: 2px;">NEXT 12H</span></span>
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 1rem; font-weight: bold;">${timeSubtext}</div>
+                        </div>
+                    `;
+                }
+
+                if (alertHtml) {
+                    const feed = document.getElementById('weather-feed');
+                    document.getElementById('weather-content').innerHTML = alertHtml;
+                    feed.style.display = 'block';
+                }
+            } catch (e) {
+                console.log("Weather failed to load");
+            }
+        }
+
+        // Initialize All
+        async function initializeAll() {
+            await fetchSiteConfig();
+            await Promise.all([
+                loadReminders(),
+                loadSafety(),
+                loadEquipment(),
+                loadSpecial()
+            ]);
+            // Trackers depends on Reminders being loaded to prepend
+            await loadTrackers();
+            await loadWeatherAlerts();
+        }
+        initializeAll();
+
+        // Make all images clickable to view fullscreen (excluding safety avatars)
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.tagName === 'IMG' && !e.target.closest('.safety-person')) {
+                window.open(e.target.src, '_blank');
+            }
+        });
+    </script>
+</body>
+</html>

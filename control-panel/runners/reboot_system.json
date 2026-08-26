@@ -1,0 +1,5 @@
+{
+  "name": "10. Reboot Entire System",
+  "script_path": "/app/scripts/reboot_system.sh",
+  "description": "Reboots the host operating system."
+}

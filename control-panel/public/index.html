@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiosk Control Panel</title>
+    <link rel="stylesheet" href="css/style.css?v=3.0.3">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div id="brand-logo" class="brand" style="cursor: pointer;">
+                <i class="fa-solid fa-industry"></i>
+                <h1>Kiosk Control Panel</h1>
+            </div>
+            <nav id="script-nav" class="nav-menu">
+                <button id="nav-editor" class="nav-item nav-special" data-script="editor"><i class="fa-solid fa-pen-to-square"></i> Reminder Editor</button>
+                <button id="nav-equipment" class="nav-item nav-special" data-script="equipment" style="margin-top: 8px;"><i class="fa-solid fa-clipboard-list"></i> Equipment Editor</button>
+                <button id="nav-shifts" class="nav-item nav-special" data-script="shifts" style="margin-top: 8px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</button>
+                <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
+                <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
+                <div class="nav-divider"></div>
+                <div id="dynamic-scripts" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Dynamically populated script links -->
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 id="current-script-title">Dashboard</h2>
+                <div class="user-status">
+                    <span class="pulse"></span> System Online
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- Dashboard Welcome -->
+                <div id="welcome-view" class="view active">
+                    <div class="welcome-card" style="margin-bottom: 20px;">
+                        <i class="fa-solid fa-bolt welcome-icon"></i>
+                        <h3>Welcome to the Control Panel</h3>
+                        <p>Select a script from the left sidebar to execute automated commands, upload data, and manage the kiosk dashboard.</p>
+                    </div>
+
+                    <div class="info-section">
+                        <h4><i class="fa-solid fa-book"></i> Available Actions</h4>
+                        <div class="card-grid">
+                            <div class="info-card" data-script="editor">
+                                <h5><i class="fa-solid fa-pen-to-square"></i> Reminder Editor</h5>
+                                <p>Open the live markdown editor to quickly create, edit, or delete slides from the Reminders rotation. Changes are saved instantly.</p>
+                            </div>
+                            <div class="info-card" data-script="equipment">
+                                <h5><i class="fa-solid fa-clipboard-list"></i> Equipment Editor</h5>
+                                <p>Manage equipment status directly from the web. Add categories, update statuses (OK, OS, PM), and instantly push updates to the Kiosk's Masonry grid.</p>
+                            </div>
+                            <div class="info-card" data-script="shifts">
+                                <h5><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</h5>
+                                <p>Manage facility work shifts, working days, and hours. Powers the live TV shift countdown progress bar.</p>
+                            </div>
+                            <div class="info-card" data-script="special">
+                                <h5><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</h5>
+                                <p>Set up a high-priority third view that joins the rotation. Perfect for road closures, plant maintenance, or safety drills. Automatically expires.</p>
+                            </div>
+                            <div class="info-card" data-script="site-settings">
+                                <h5><i class="fa-solid fa-sliders"></i> Site Settings</h5>
+                                <p>Configure location-specific details (Site Name, Coordinates, Timezone, Vercel API URL) and manage admin security credentials.</p>
+                            </div>
+                            <div class="info-card" data-script="update_blend">
+                                <h5>Update Blend Recipe</h5>
+                                <p>Change the actively displayed blend recipe number shown on the dashboard.</p>
+                            </div>
+                            <div class="info-card" data-script="update_osha">
+                                <h5>Update OSHA Safe Date</h5>
+                                <p>Modify the "Date of Last Recordable Incident". The system will automatically calculate the "Days Safe" counter for you.</p>
+                            </div>
+                            <div class="info-card" data-script="override_slide">
+                                <h5>Override Daily Toolbox</h5>
+                                <p>Upload an image to completely replace today's Toolbox Talk slide. It automatically expires at midnight.</p>
+                            </div>
+
+                            <div class="info-card" data-script="upload_employees">
+                                <h5><i class="fa-solid fa-file-excel"></i> Upload Employee List</h5>
+                                <p>Upload an updated <code>employee_list.xlsx</code> file and instantly sync the backend anniversary tracking database. This is used by the Anniversary widget.</p>
+                            </div>
+                            <div class="info-card" data-script="trigger_scan">
+                                <h5>Trigger Manual Asset Scan</h5>
+                                <p>Force the system to immediately rescan all assets (including employee spreadsheets and tracked JSON metrics).</p>
+                            </div>
+                            <div class="info-card" data-script="restart_kiosk">
+                                <h5>Restart Kiosk Web App</h5>
+                                <p>Restart the Docker container hosting the Kiosk application, instantly refreshing the TV displays.</p>
+                            </div>
+                            <div class="info-card" data-script="reboot_system">
+                                <h5>Reboot Entire System</h5>
+                                <p>Perform a hard reboot of the entire Kiosk operating system. Use this if the system becomes entirely unresponsive.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Markdown Editor View -->
+                <div id="editor-view" class="view">
+                    <div class="card" style="display: flex; flex-direction: column; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <p class="script-desc" style="margin: 0;">Use the editor below to seamlessly edit your Reminders deck in real-time. Use the 🪄 Magic Words list to supercharge your slides!</p>
+                            <button id="save-editor-btn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save to Kiosk</button>
+                        </div>
+                        <div style="flex: 1;">
+                            <textarea id="markdown-editor"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h4><i class="fa-solid fa-circle-info"></i> How to Edit Reminders</h4>
+                        <div class="card" style="margin-bottom: 20px;">
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                The Reminders widget automatically cycles through your slides. <strong>Every slide must start with an <code>H1 Header</code></strong> (using a single hashtag <code># </code>). 
+                                Everything written below an H1 Header belongs to that slide until the next H1 Header begins.
+                            </p>
+                        </div>
+
+                        <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Magic Words Reference</h4>
+                        <div class="card" style="margin-bottom: 20px;">
+                            <p style="color: var(--text-secondary); line-height: 1.6;">
+                                Drop these magic words anywhere <strong>below</strong> the H1 header of a slide. You can combine multiple magic words on a single slide! The system will automatically detect them, apply the styling, and seamlessly hide the magic word from the final display.
+                            </p>
+                        </div>
+                        <div class="card-grid">
+                            <div class="info-card magic-card">
+                                <h5><code>!HIGH</code></h5>
+                                <p>Applies a pulsing Neon Orange glow to the widget border. Perfect for warnings.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!CRITICAL</code></h5>
+                                <p>Applies an aggressive, rapid-pulsing Red glow. Used for immediate safety halts.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!LONG</code></h5>
+                                <p>Pauses the Kiosk rotation loop and holds this slide on the screen for 2 full minutes.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!ONLY</code></h5>
+                                <p>Hides all other slides in the file and exclusively loops any slides containing this magic word.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!SPLIT</code></h5>
+                                <p>Breaks any bulleted or numbered list on the slide into perfectly spaced side-by-side columns.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!LARGE</code></h5>
+                                <p>Boosts the font size of the entire slide by 75%. Great for punchy, one-line announcements.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!CENTER</code></h5>
+                                <p>Centers the text perfectly in the middle of the widget, both vertically and horizontally.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!COUNTDOWN MM-DD-HH-mm</code></h5>
+                                <p>Injects a live countdown timer for a specific date/time (e.g. <code>!COUNTDOWN 12-25-14-30</code>). It assumes the next available matching date.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!QR url</code></h5>
+                                <p>Automatically generates a scannable QR Code for the given link (e.g. <code>!QR https://google.com</code>).</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!LIMIT DD-HH</code></h5>
+                                <p>Sets a time limit on the slide (e.g. <code>!LIMIT 07-00</code> for 7 days). It will automatically convert to an absolute !EXPIRE tag upon saving.</p>
+                            </div>
+                            <div class="info-card magic-card">
+                                <h5><code>!EXPIRE YYYY-MM-DD-HH</code></h5>
+                                <p>Silently drops the slide from the rotation once the specific date and hour has passed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Script Execution View -->
+                <div id="script-view" class="view">
+                    <div id="script-info-placeholder" style="margin-bottom: 20px;"></div>
+                    
+                    <div class="card script-card">
+                        <form id="script-form" class="dynamic-form">
+                            <!-- Dynamically generated inputs -->
+                            <div id="form-inputs" class="input-grid"></div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" id="execute-btn" class="btn primary">
+                                    <i class="fa-solid fa-play"></i> Execute Script
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Terminal Output -->
+                    <div class="terminal-container">
+                        <div class="terminal-header">
+                            <i class="fa-solid fa-terminal"></i> Console Output
+                            <div class="terminal-controls">
+                                <button id="clear-console"><i class="fa-solid fa-eraser"></i> Clear</button>
+                            </div>
+                        </div>
+                        <pre id="console-output" class="terminal-body"></pre>
+                    </div>
+                </div>
+
+                <!-- Equipment Editor View -->
+                <div id="equipment-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3><i class="fa-solid fa-clipboard-list"></i> Equipment Status Editor</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="add-category-btn" class="btn secondary"><i class="fa-solid fa-folder-plus"></i> Add Category</button>
+                                <button id="save-equipment-btn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save Equipment</button>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary);">Manage your mill's equipment status here. Add or remove pieces of equipment, group them into categories, and quickly flip their status (OK/OS/PM).</p>
+                    </div>
+                    <div id="equipment-editor-container">
+                        <!-- Dynamic Equipment Categories -->
+                    </div>
+                </div>
+                <!-- Special Event Editor View -->
+                <div id="special-event-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="clear-special-btn" class="btn secondary" style="background: var(--bg-card); color: #ef4444; border: 1px solid #ef4444;"><i class="fa-solid fa-trash"></i> Delete Event</button>
+                                <button id="save-special-btn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Publish Event</button>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary);">Set up a high-priority third view that joins the rotation. Perfect for road closures, plant maintenance, or safety drills.</p>
+                    </div>
+                    <div class="card">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <label>Event Title (Required)
+                                <input type="text" id="special-input-title" placeholder="e.g. PLANT WIDE FIRE DRILL" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </label>
+                            <label>Event Description (Optional)
+                                <input type="text" id="special-input-desc" placeholder="e.g. Please evacuate to the designated safe zones immediately." style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </label>
+                            <label>Slide Duration (Seconds)
+                                <input type="number" id="special-input-duration" value="20" min="5" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">Defaults to 20 seconds.</span>
+                            </label>
+                            <label>Expiration Date/Time (Optional)
+                                <input type="datetime-local" id="special-input-end" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">The event will automatically expire and hide at this time.</span>
+                            </label>
+                            <label>Attach Image (Optional)
+                                <input type="file" id="special-input-img" accept="image/*" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </label>
+                            <div id="special-img-preview-container" style="display: none; margin-top: 10px;">
+                                <p style="color: var(--text-secondary); margin-bottom: 5px;">Current Image:</p>
+                                <img id="special-img-preview" src="" style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid var(--border-color);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shift Schedules View -->
+                <div id="shift-editor-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin-bottom: 6px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</h3>
+                                <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Configure facility work shifts, active working days, and hours to power the live TV progress bar.</p>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="add-shift-btn" class="btn secondary"><i class="fa-solid fa-plus"></i> Add Shift</button>
+                                <button id="save-shifts-btn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save Schedules</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="shifts-container" style="display: flex; flex-direction: column; gap: 16px;"></div>
+                    <div id="shifts-status" style="margin-top: 15px; display: none;"></div>
+                </div>
+
+                <!-- Site Settings View -->
+                <div id="site-settings-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin-bottom: 6px;"><i class="fa-solid fa-sliders"></i> Site Configuration</h3>
+                                <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Configure location-specific settings, weather coordinates, and admin access for this kiosk.</p>
+                            </div>
+                            <button id="save-site-settings-btn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+                        </div>
+                    </div>
+
+                    <!-- Location & Identity Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <h4>Facility Identity & Geolocation</h4>
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group form-grid-full">
+                                <label for="cfg-site-name">Site Name</label>
+                                <input type="text" id="cfg-site-name" class="form-control" placeholder="e.g. Midwest Operations — Plant #1">
+                                <span class="form-help">Displayed in the browser title and Control Panel header.</span>
+                            </div>
+                            <div class="form-group form-grid-full">
+                                <label for="cfg-site-id">Site Identifier (ID)</label>
+                                <input type="text" id="cfg-site-id" class="form-control" placeholder="e.g. plant-01" style="font-family: 'JetBrains Mono', monospace;">
+                                <span class="form-help">Unique lowercase slug with no spaces. Used internally for logging and cloud synchronization.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-latitude">Latitude</label>
+                                <input type="number" id="cfg-latitude" class="form-control" step="0.0001" placeholder="41.8781">
+                                <span class="form-help">Decimal latitude for local weather, radar, and lightning tracking.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-longitude">Longitude</label>
+                                <input type="number" id="cfg-longitude" class="form-control" step="0.0001" placeholder="-87.6298">
+                                <span class="form-help">Decimal longitude for local weather, radar, and lightning tracking.</span>
+                            </div>
+                            <div class="form-group form-grid-full">
+                                <label for="cfg-timezone">System Timezone</label>
+                                <input type="text" id="cfg-timezone" class="form-control" placeholder="America/Chicago" style="font-family: 'JetBrains Mono', monospace;">
+                                <span class="form-help">Standard IANA timezone name (e.g. <code>America/Chicago</code>, <code>America/New_York</code>).</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cloud & Integrations Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-cloud"></i>
+                            <h4>Cloud API Integrations</h4>
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group form-grid-full">
+                                <label for="cfg-vercel-url">Cloud Serverless API URL</label>
+                                <input type="url" id="cfg-vercel-url" class="form-control" placeholder="https://your-kiosk.vercel.app" style="font-family: 'JetBrains Mono', monospace;">
+                                <span class="form-help">Root endpoint for serverless proxy functions (weather, training data, lightning tracking, and multi-site sync).</span>
+                            </div>
+                            <div class="form-group form-grid-full">
+                                <label for="cfg-novara-office-id">Field Office / Location ID</label>
+                                <input type="text" id="cfg-novara-office-id" class="form-control" placeholder="e.g. 645d0bbbe777001e69637041" style="font-family: 'JetBrains Mono', monospace;">
+                                <span class="form-help">Unique facility identifier used to filter employee safety training and anniversary records.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication & Security Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <h4>Control Panel Security</h4>
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label for="cfg-admin-username">Admin Username</label>
+                                <input type="text" id="cfg-admin-username" class="form-control" placeholder="admin">
+                                <span class="form-help">Username for HTTP Basic Authentication.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="cfg-admin-password">New Admin Password</label>
+                                <input type="password" id="cfg-admin-password" class="form-control" placeholder="Leave blank to keep current password">
+                                <span class="form-help">Only fill this in if you want to update the password.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="site-settings-status" style="margin-top: 15px; display: none;"></div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="overlay hidden">
+        <div class="spinner"></div>
+        <p>Executing Script...</p>
+    </div>
+
+    <script src="js/app.js?v=3.0.4"></script>
+</body>
+</html>

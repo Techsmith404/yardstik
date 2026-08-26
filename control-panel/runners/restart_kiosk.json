@@ -1,0 +1,5 @@
+{
+  "name": "09. Restart Kiosk Web App",
+  "script_path": "/app/scripts/restart_kiosk.sh",
+  "description": "Restarts the nginx kiosk container."
+}

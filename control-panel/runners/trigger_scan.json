@@ -1,0 +1,5 @@
+{
+  "name": "08. Trigger Manual Asset Scan",
+  "script_path": "/app/scripts/trigger_scan.sh",
+  "description": "Force the system to immediately rescan all assets (including employee spreadsheets and tracked JSON metrics)."
+}

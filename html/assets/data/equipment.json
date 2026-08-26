@@ -1,0 +1,161 @@
+{
+  "last_audit_reset": 1787544000000,
+  "categories": [
+    {
+      "name": "Switchers & Locomotives",
+      "items": [
+        {
+          "name": "LOC-101",
+          "status": "OK",
+          "remote": "OK"
+        },
+        {
+          "name": "LOC-102",
+          "status": "PM",
+          "remote": "NO",
+          "reason": "Brake Check"
+        },
+        {
+          "name": "LOC-103",
+          "status": "OK",
+          "remote": "OK"
+        },
+        {
+          "name": "LOC-104",
+          "status": "OS",
+          "remote": "OS",
+          "reason": "Generator"
+        }
+      ]
+    },
+    {
+      "name": "Haul Trucks",
+      "items": [
+        {
+          "name": "HT-01",
+          "status": "OK"
+        },
+        {
+          "name": "HT-02",
+          "status": "OK"
+        },
+        {
+          "name": "HT-03",
+          "status": "OS",
+          "reason": "Hydraulic Line"
+        },
+        {
+          "name": "HT-04",
+          "status": "OK"
+        }
+      ]
+    },
+    {
+      "name": "Overhead Cranes",
+      "items": [
+        {
+          "name": "CR-01",
+          "status": "OK"
+        },
+        {
+          "name": "CR-02",
+          "status": "OS",
+          "reason": "Hoist Cable"
+        }
+      ]
+    },
+    {
+      "name": "Mobile Cranes",
+      "items": [
+        {
+          "name": "MH-01",
+          "status": "OK",
+          "scale": "OK",
+          "blend_audit": false
+        },
+        {
+          "name": "MH-02",
+          "status": "OK",
+          "scale": "OK",
+          "blend_audit": false
+        },
+        {
+          "name": "MH-03",
+          "status": "OS",
+          "scale": "NO",
+          "reason": "Magnet Controller"
+        },
+        {
+          "name": "MH-04",
+          "status": "OK",
+          "scale": "OS",
+          "reason": "Scale Recalibration"
+        },
+        {
+          "name": "MH-05",
+          "status": "OK",
+          "scale": "OK",
+          "blend_audit": false
+        },
+        {
+          "name": "MH-06",
+          "status": "OK",
+          "scale": "OK",
+          "blend_audit": false
+        }
+      ]
+    },
+    {
+      "name": "Mobile Equipment",
+      "items": [
+        {
+          "name": "STACKER-1",
+          "status": "OK"
+        },
+        {
+          "name": "LOADER-1",
+          "status": "OK"
+        },
+        {
+          "name": "LOADER-2",
+          "status": "OK"
+        },
+        {
+          "name": "FORKLIFT-1",
+          "status": "OK"
+        },
+        {
+          "name": "SERVICE-TRK",
+          "status": "OK"
+        },
+        {
+          "name": "UTILITY-01",
+          "status": "OS",
+          "reason": "Tire Service"
+        }
+      ]
+    },
+    {
+      "name": "Processing & Facilities",
+      "items": [
+        {
+          "name": "BALER-01",
+          "status": "OK"
+        },
+        {
+          "name": "SHEAR-01",
+          "status": "OK"
+        },
+        {
+          "name": "CONVEYOR-A",
+          "status": "OK"
+        },
+        {
+          "name": "CUTTER-01",
+          "status": "OS",
+          "reason": "Blade Replacement"
+        }
+      ]
+    }
+  ]
+}

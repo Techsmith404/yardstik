@@ -1,0 +1,11 @@
+{
+  "site_name": "My Company — Location Name",
+  "site_id": "my-company-location",
+  "latitude": 32.7767,
+  "longitude": -96.7970,
+  "timezone": "America/Chicago",
+  "vercel_api_url": "https://your-project.vercel.app",
+  "novara_office_id": "645d0bbbe777001e69637041",
+  "admin_username": "admin",
+  "admin_password": "MasterPassword123"
+}

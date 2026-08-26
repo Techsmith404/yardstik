@@ -1,0 +1,13 @@
+{
+  "name": "01. Update Blend Recipe",
+  "script_path": "/app/scripts/update_blend.sh",
+  "description": "Change the active Blend Recipe displayed on the dashboard.",
+  "parameters": [
+    {
+      "name": "Recipe Number",
+      "param": "-r",
+      "type": "int",
+      "required": true
+    }
+  ]
+}

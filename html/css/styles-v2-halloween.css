@@ -1,0 +1,586 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    /* Spooky Halloween Aesthetic */
+    --bg-gradient: linear-gradient(135deg, #1f1122 0%, #0d0812 50%, #050305 100%);
+    --card-bg: linear-gradient(145deg, rgba(45, 25, 45, 0.7) 0%, rgba(25, 15, 25, 0.85) 100%);
+    --card-border: rgba(249, 115, 22, 0.2);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #fed7aa;
+    --text-muted: #f97316;
+    
+    /* Branding Map */
+    --brand-green: #f97316; /* Pumpkin Orange */
+    --brand-blue: #a855f7;  /* Witch Purple */
+    
+    /* Neon variables mapped to Brand/Standard Warning colors for dynamic HTML consistency */
+    --neon-cyan: #f97316;
+    --neon-purple: #a855f7;
+    --neon-green: #84cc16;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+}
+
+@keyframes pixel-shift {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(3px, 1px); }
+    50% { transform: translate(1px, 3px); }
+    75% { transform: translate(-2px, 2px); }
+    100% { transform: translate(0, 0); }
+}
+
+body {
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+    animation: pixel-shift 300s infinite linear;
+}
+
+blockquote {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 4px solid var(--quote-border-color, rgba(128, 138, 148, 0.6));
+    margin: 1.5em 0;
+    width: fit-content;
+    padding: 15px 22px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+blockquote p {
+    margin: 0;
+}
+
+/* Spooky Spider Web Pattern Overlay */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,0 L100,100 M0,50 L100,50 M50,0 L50,100 M0,100 L100,0' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cpath d='M20,50 Q35,35 50,20 Q65,35 80,50 Q65,65 50,80 Q35,65 20,50Z' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3Cpath d='M10,50 Q30,30 50,10 Q70,30 90,50 Q70,70 50,90 Q30,70 10,50Z' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 250px 250px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Drifting Brand-Color Ambient Auras */
+body::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+        radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(249, 115, 22, 0.15) 0%, transparent 45%);
+    z-index: -2;
+    pointer-events: none;
+    animation: industrial-glow-drift 40s ease-in-out infinite alternate;
+}
+
+@keyframes industrial-glow-drift {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.1) translate(2%, 2%); }
+}
+
+/* Main Kiosk View Container */
+.kiosk-view {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    padding: 35px; /* Increased padding for more breathing room */
+    box-sizing: border-box;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: scale(0.98); /* Subtle scale-in animation */
+    z-index: 10;
+}
+
+.kiosk-view.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+/* Industrial Machined Panel Widgets */
+.widget {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.25); /* Light-catching bevel edge */
+    border-radius: 24px; /* Sleeker, softer corners */
+    padding: 30px;
+    box-sizing: border-box;
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -10px 30px rgba(0, 0, 0, 0.2); /* Deep inner shadow */
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Image containment */
+img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Typography styles */
+h2, h3 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* VIEW 1: PRODUCTION & METRICS GRID */
+#view-production {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 120px minmax(0, 1fr);
+    gap: 30px;
+    height: 100%;
+}
+
+/* Header widget layout */
+.header-widget {
+    grid-column: span 4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 6px solid var(--brand-blue); /* Thicker accent line */
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.05) 0%, transparent 50%); /* Subtle glow pulling from left border */
+}
+
+.header-widget h2 {
+    font-size: 2.4rem; /* Slightly larger */
+    color: var(--text-primary);
+    background: linear-gradient(135deg, #ffffff 30%, #fed7aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Lift the text off the background */
+}
+
+/* Digital clock design */
+#clock {
+    justify-self: end;
+    font-family: 'Outfit', sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Weather display layout */
+#weather-display {
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.35rem;
+    color: var(--text-secondary);
+}
+
+.main-slide {
+    grid-column: span 3;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-slide h3 {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.main-slide img {
+    flex: 1;
+    min-height: 0;
+}
+
+.side-stats {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 25px);
+}
+
+/* Side Stats Widgets Styling */
+.side-stats .widget {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#osha-widget-container {
+    border-left: 5px solid var(--brand-green); /* Sage green left bar */
+}
+
+#blend-widget-container {
+    border-left: 5px solid var(--brand-blue); /* Blue left bar to match font */
+}
+
+.side-stats h3 {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.osha-number {
+    font-family: 'Outfit', sans-serif;
+    font-size: 6.5rem;
+    font-weight: 800;
+    color: var(--brand-green);
+    text-shadow: 0 0 25px rgba(249, 115, 22, 0.35);
+    line-height: 1;
+    margin-top: 5px;
+}
+
+/* VIEW 2: ANNOUNCEMENTS & WORK MILESTONES GRID */
+#view-announcements {
+    display: grid;
+    grid-template-columns: 2.1fr 1.4fr;
+    grid-template-rows: calc(100vh - 60px);
+    gap: 25px;
+}
+
+.announcement-slide {
+    display: flex;
+    flex-direction: column;
+    border-left: 5px solid var(--brand-blue); /* Deep Blue left bar */
+}
+
+.announcement-slide h3 {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.announcement-slide img {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Anniversary panel design */
+.anniversary-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 25px 20px;
+    border-left: 5px solid var(--brand-green); /* Sage green left bar */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Cobweb Corner Overlay */
+.anniversary-panel::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,0 L100,100 M0,50 L100,50 M50,0 L50,100 M0,100 L100,0' stroke='rgba(255,255,255,0.08)' stroke-width='1.5'/%3E%3Cpath d='M20,50 Q35,35 50,20 Q65,35 80,50 Q65,65 50,80 Q35,65 20,50Z' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1.5'/%3E%3Cpath d='M10,50 Q30,30 50,10 Q70,30 90,50 Q70,70 50,90 Q30,70 10,50Z' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-size: cover;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+#anniversary-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: var(--text-primary);
+}
+
+#reminders-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centers the lists horizontally */
+    width: 100%;
+}
+
+#reminders-content hr {
+    width: 100%;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 10px 0; /* Reduced margin */
+}
+
+#reminders-content ul,
+#reminders-content ol {
+    margin: 0;
+    padding: 0;
+    display: block;
+    text-align: left;
+    width: 100%;
+}
+
+#reminders-content.split-list ul,
+#reminders-content.split-list ol {
+    column-count: 2;
+    column-gap: 25px;
+}
+
+#reminders-content ul {
+    list-style: none;
+}
+
+#reminders-content ol {
+    padding-left: 20px; /* Gives space for the numbers */
+}
+
+#reminders-content li {
+    position: relative;
+    line-height: 1.3; /* Slightly tighter line height */
+    color: var(--text-secondary);
+    margin-bottom: 8px; /* Tighter gap between items */
+    break-inside: avoid; /* Prevents an item from splitting across columns */
+}
+
+#reminders-content ul li {
+    padding-left: 18px;
+}
+
+#reminders-content ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--brand-blue);
+    box-shadow: 0 0 8px var(--brand-blue);
+}
+
+#reminders-content strong {
+    color: #ffffff;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3); /* Subtle glow to make it pop */
+}
+
+#anniversaries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Normal spacing for single column */
+    font-size: 1.1rem; /* More compact font */
+    line-height: 1.5;
+    color: var(--text-secondary);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#anniversaries-list li {
+    padding: 10px 16px; /* Slightly tighter padding */
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#anniversaries-list li strong {
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+}
+
+#anniversaries-list li span.years-badge {
+    font-weight: 600;
+    color: var(--brand-green);
+    background: rgba(249, 115, 22, 0.12);
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.05);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+/* Extreme Weather Vignette Animations - Hardware Accelerated */
+@keyframes pulse-emergency {
+    0% { opacity: 0.2; }
+    100% { opacity: 1.0; }
+}
+
+@keyframes pulse-lightning {
+    0%, 85% { opacity: 0.0; }
+    87% { opacity: 0.4; }
+    89% { opacity: 0.0; }
+    92% { opacity: 0.7; }
+    100% { opacity: 0.0; }
+}
+
+@keyframes fog-drift {
+    0% { transform: scale(1.5) translate3d(-8%, 5%, 0); }
+    100% { transform: scale(1.5) translate3d(8%, -5%, 0); }
+}
+
+@keyframes fog-drift-alt {
+    0% { transform: scale(1.5) translate3d(10%, -6%, 0); }
+    100% { transform: scale(1.5) translate3d(-10%, 6%, 0); }
+}
+
+@keyframes pulse-border-glow {
+    0% { opacity: 0.7; transform: scale(0.99); }
+    100% { opacity: 1.0; transform: scale(1.01); }
+}
+
+/* Magic Word Formatting */
+#reminders-content.large-text {
+    font-size: 1.75em !important;
+    line-height: 1.4;
+    padding-top: 15px;
+}
+
+#reminders-content.center-text {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+#reminders-content.center-text ul,
+#reminders-content.center-text ol {
+    text-align: left;
+    display: inline-block;
+}
+
+.countdown-timer {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    text-align: center;
+    margin-top: 15px;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 15px rgba(0, 243, 255, 0.6);
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+/* =========================================================
+   HALLOWEEN EXTRAS (Spiders, Bats, Jack-O-Lanterns)
+   ========================================================= */
+
+/* Glowing Jack-O-Lantern next to the Clock */
+#clock {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#clock::after {
+    content: '';
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    margin-left: 15px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,90 Q80,95 90,70 Q100,45 85,25 Q70,5 50,20 Q30,5 15,25 Q0,45 10,70 Q20,95 50,90' fill='%23f97316'/%3E%3Cpath d='M50,20 Q65,45 50,90 M50,20 Q35,45 50,90 M50,20 Q80,50 50,90 M50,20 Q20,50 50,90' fill='none' stroke='%23c2410c' stroke-width='2'/%3E%3Cpath d='M48,20 Q45,10 55,5 Q50,15 52,20' fill='%23166534' stroke='%2314532d' stroke-width='2'/%3E%3Cpolygon points='30,40 40,55 25,55' fill='%23fef08a'/%3E%3Cpolygon points='70,40 75,55 60,55' fill='%23fef08a'/%3E%3Cpolygon points='50,50 55,65 45,65' fill='%23fef08a'/%3E%3Cpath d='M25,75 Q50,90 75,75 Q70,70 65,75 Q60,80 50,80 Q40,80 35,75 Q30,70 25,75' fill='%23fef08a'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: pumpkin-glow 3s infinite alternate;
+}
+
+@keyframes pumpkin-glow {
+    0% { filter: drop-shadow(0 0 2px rgba(254, 240, 138, 0.4)); }
+    100% { filter: drop-shadow(0 0 12px rgba(254, 240, 138, 0.9)); }
+}
+
+/* Swarm of Bats Flying Across Screen */
+.kiosk-view::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,45 Q40,30 5,20 Q20,40 5,60 Q30,50 40,65 Q45,75 50,85 Q55,75 60,65 Q70,50 95,60 Q80,40 95,20 Q60,30 50,45' fill='%23110815'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,45 Q40,30 5,20 Q20,40 5,60 Q30,50 40,65 Q45,75 50,85 Q55,75 60,65 Q70,50 95,60 Q80,40 95,20 Q60,30 50,45' fill='%231a0e20'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,45 Q40,30 5,20 Q20,40 5,60 Q30,50 40,65 Q45,75 50,85 Q55,75 60,65 Q70,50 95,60 Q80,40 95,20 Q60,30 50,45' fill='%23150a18'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-size: 140px 140px, 80px 80px, 50px 50px;
+    z-index: 100;
+    pointer-events: none;
+    animation: bats-swarm 40s linear infinite;
+    opacity: 0.7;
+}
+
+@keyframes bats-swarm {
+    0% { background-position: -200px 110%, 110% 80%, -50px 20%; }
+    50% { background-position: 110% -200px, -200px 40%, 110% 60%; }
+    100% { background-position: -200px 110%, 110% 80%, -50px 20%; }
+}
+
+/* Animated Spider Crawling on Widget Edges */
+.widget {
+    position: relative; /* Context for spider */
+}
+
+.widget::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50,30 Q60,30 65,40 Q70,50 65,60 Q60,70 50,70 Q40,70 35,60 Q30,50 35,40 Q40,30 50,30Z' fill='%23111'/%3E%3Cpath d='M50,20 C55,20 60,25 60,30 C60,35 55,40 50,40 C45,40 40,35 40,30 C40,25 45,20 50,20Z' fill='%23111'/%3E%3Cpath d='M65,45 Q80,20 95,45 M65,50 Q85,40 95,55 M65,55 Q85,60 95,70 M60,65 Q70,80 85,95' fill='none' stroke='%23111' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M35,45 Q20,20 5,45 M35,50 Q15,40 5,55 M35,55 Q15,60 5,70 M40,65 Q30,80 15,95' fill='none' stroke='%23111' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 10;
+    pointer-events: none;
+    animation: spider-crawl 20s linear infinite;
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* Stagger spider animations for variety */
+.widget:nth-child(even)::after { animation-duration: 25s; animation-direction: reverse; }
+.widget:nth-child(3n)::after { animation-duration: 17s; }
+
+@keyframes spider-crawl {
+    0% { top: -12px; left: -12px; transform: rotate(90deg); }
+    24.9% { top: -12px; left: calc(100% - 12px); transform: rotate(90deg); }
+    25% { top: -12px; left: calc(100% - 12px); transform: rotate(180deg); }
+    49.9% { top: calc(100% - 12px); left: calc(100% - 12px); transform: rotate(180deg); }
+    50% { top: calc(100% - 12px); left: calc(100% - 12px); transform: rotate(270deg); }
+    74.9% { top: calc(100% - 12px); left: -12px; transform: rotate(270deg); }
+    75% { top: calc(100% - 12px); left: -12px; transform: rotate(0deg); }
+    99.9% { top: -12px; left: -12px; transform: rotate(0deg); }
+    100% { top: -12px; left: -12px; transform: rotate(90deg); }
+}

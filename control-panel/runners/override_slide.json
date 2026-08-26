@@ -1,0 +1,20 @@
+{
+  "name": "04. Override Daily Toolbox",
+  "script_path": "/app/scripts/upload_override.sh",
+  "description": "Upload a custom safety slide that replaces the Daily Toolbox slide for today only. It automatically resets to normal tomorrow.",
+  "parameters": [
+    {
+      "name": "Action",
+      "param": "-a",
+      "type": "list",
+      "values": ["Upload New Override", "Clear Current Override"],
+      "required": true
+    },
+    {
+      "name": "Slide Image",
+      "param": "-f",
+      "type": "file_upload",
+      "required": false
+    }
+  ]
+}

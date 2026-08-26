@@ -1,0 +1,9 @@
+{
+  "name": "ops-kiosk",
+  "version": "4.0.0",
+  "description": "Industrial Operations Dashboard, Kiosk Display & Multi-Site Cloud Sync Engine",
+  "main": "api/sync.js",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}

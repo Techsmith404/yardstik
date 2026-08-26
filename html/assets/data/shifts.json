@@ -1,0 +1,40 @@
+{
+  "shifts": [
+    {
+      "name": "A Shift",
+      "days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      "start": "07:00",
+      "end": "15:00"
+    },
+    {
+      "name": "B Shift",
+      "days": ["Mon", "Tue", "Wed"],
+      "days2": ["Sat", "Sun"],
+      "start": "15:00",
+      "end": "23:00",
+      "start2": "07:00",
+      "end2": "15:00"
+    },
+    {
+      "name": "C Shift",
+      "days": ["Sun", "Thu", "Fri", "Sat"],
+      "days2": ["Mon"],
+      "start": "15:00",
+      "end": "23:00",
+      "start2": "23:00",
+      "end2": "07:00"
+    },
+    {
+      "name": "D Shift",
+      "days": ["Tue", "Wed", "Thu", "Fri", "Sat"],
+      "start": "23:00",
+      "end": "07:00"
+    },
+    {
+      "name": "X Turn",
+      "days": ["Sun"],
+      "start": "23:00",
+      "end": "07:00"
+    }
+  ]
+}

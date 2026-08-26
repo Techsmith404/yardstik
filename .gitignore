@@ -1,0 +1,18 @@
+# Ignore sensitive config files
+html/js/config.js
+.env*
+
+# Node modules & logs
+node_modules/
+*.log
+npm-debug.log*
+
+# Legacy & Temp
+script-server/
+*.bak
+*.tmp
+*.xlsx
+*.xls
+*.csv
+.~lock.*
+.DS_Store

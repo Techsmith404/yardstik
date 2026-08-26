@@ -1,0 +1,14 @@
+{
+  "name": "02. Update OSHA Safe Date",
+  "script_path": "/app/scripts/update_osha.sh",
+  "description": "Update the date of the last recordable incident.",
+  "parameters": [
+    {
+      "name": "YYYY-MM-DD",
+      "param": "-d",
+      "type": "string",
+      "description": "Format: YYYY-MM-DD",
+      "required": true
+    }
+  ]
+}

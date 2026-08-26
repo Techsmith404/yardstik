@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Break Room Kiosk</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles-v2.css?v=2.2" id="theme-stylesheet">
+    <script>
+        (function() {
+            const today = new Date();
+            const month = today.getMonth(); // Oct = 9, Nov = 10
+            const date = today.getDate();
+            if ((month === 9 && date >= 17) || (month === 10 && date <= 2)) {
+                document.getElementById('theme-stylesheet').href = 'css/styles-v2-halloween.css';
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Desktop Top Navigation Bar (Visible in Desktop Mode Only) -->
+    <div id="desktop-nav-bar" class="desktop-nav-bar" style="display: none;">
+        <div class="desktop-nav-brand">
+            <span class="desktop-badge">DESKTOP PORTAL</span>
+            <h1 class="desktop-title" id="desktop-title">Operations Dashboard</h1>
+        </div>
+        <div class="desktop-nav-links">
+            <a href="#view-production" class="desktop-nav-btn"><i class="fa-solid fa-truck-ramp-box"></i> Equipment & Status</a>
+            <a href="#view-announcements" class="desktop-nav-btn"><i class="fa-solid fa-bullhorn"></i> Toolbox Talk & Reminders</a>
+            <a href="#panel-anniversaries" class="desktop-nav-btn"><i class="fa-solid fa-cake-candles"></i> Milestones</a>
+            <a href="#panel-safety" class="desktop-nav-btn"><i class="fa-solid fa-triangle-exclamation"></i> Safety Videos</a>
+        </div>
+        <div class="desktop-nav-actions">
+            <a href="?view=kiosk" class="desktop-nav-btn switch-mode-btn" title="Switch to TV Kiosk Slide Mode"><i class="fa-solid fa-tv"></i> TV Slide Mode</a>
+        </div>
+    </div>
+
+    <!-- Weather FX Overlays -->
+    <canvas id="weather-canvas" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 2s ease;"></canvas>
+    <div id="dark-overlay" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; pointer-events: none; opacity: 0; background: rgba(0,10,20,0.5); transition: opacity 2s ease;"></div>
+    <div id="vignette-overlay" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1s ease;"></div>
+
+    <div id="view-production" class="kiosk-view active" data-duration="40000">
+        <div class="widget header-widget">
+            <h2 id="header-dashboard-title">Operations Dashboard</h2>
+            
+            <div id="header-osha" style="display: none;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 22px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid var(--brand-green); border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--brand-green); box-shadow: 0 0 10px var(--brand-green); animation: pulse-emergency 3s infinite alternate;"></div>
+                        <div style="font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Safe Days:</div>
+                    </div>
+                    <div id="header-osha-counter" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #ffffff; line-height: 1; text-shadow: 0 0 15px rgba(105,165,121,0.5);">--</div>
+                </div>
+            </div>
+
+            <div id="weather-display">Loading Weather...</div>
+
+            <div id="header-blend" style="display: none;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 22px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #4da6ff; border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #4da6ff; box-shadow: 0 0 10px #4da6ff; animation: pulse-emergency 3s infinite alternate; animation-delay: -3s;"></div>
+                        <div style="font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Blend Recipe:</div>
+                    </div>
+                    <div id="header-blend-display" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #ffffff; line-height: 1; text-shadow: 0 0 15px rgba(77,166,255,0.5);">--</div>
+                </div>
+            </div>
+
+            <div id="clock"></div>
+        </div>
+        <div class="widget main-slide" id="equipment-dashboard-container" style="display: flex; flex-direction: column; overflow: hidden; padding: 25px; max-height: 100%;">
+            <style>
+                #equipment-scroll-wrapper::-webkit-scrollbar { display: none; }
+                #equipment-scroll-wrapper { -ms-overflow-style: none; scrollbar-width: none; }
+            </style>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid rgba(255,255,255,0.1); margin-bottom: 20px; padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.8rem; border: none; padding: 0;">Equipment Status</h3>
+                <div id="lightning-container" style="display: flex; justify-content: flex-end; align-items: center; min-height: 60px;"></div>
+            </div>
+            <div id="equipment-scroll-wrapper" style="overflow-y: auto; flex: 1; scroll-behavior: smooth;">
+                <div id="equipment-masonry" style="column-count: 2; column-gap: 20px; padding-right: 10px;">
+                    <!-- Dynamic equipment categories will be rendered here -->
+                    <div style="color: var(--text-secondary);">Loading Equipment...</div>
+                </div>
+            </div>
+        </div>
+        <div class="side-stats">
+            <!-- Dynamic alerts container (Weather alerts) -->
+            <div id="dynamic-alerts-container" style="display: flex; flex-direction: column; gap: 15px; flex-shrink: 0;"></div>
+            
+            <div class="widget" id="osha-widget-container" style="flex-shrink: 1; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(105, 165, 121, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Days since last OSHA recordable:</h3>
+                <div class="osha-number" id="osha-counter" style="font-size: clamp(3.5rem, 5vw, 6.5rem);">..</div>
+            </div>
+            
+            <div class="widget" id="blend-widget-container" style="flex-shrink: 1; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(77, 166, 255, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Active Blend Recipe:</h3>
+                <div class="osha-number" id="blend-recipe-display" style="color: var(--brand-blue); text-shadow: 0 0 25px rgba(77, 166, 255, 0.35); font-size: clamp(3.5rem, 5vw, 6.5rem);">..</div>
+            </div>
+            
+            <!-- Filler Widgets (Hidden when weather alerts are active) -->
+            <div id="filler-widgets-container" style="display: flex; flex-direction: column; gap: 15px; flex-shrink: 1; min-height: 0;">
+                <div class="widget" id="daylight-widget" style="padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;">
+                    <canvas id="daylight-canvas" width="220" height="110" style="width: 100%; max-width: 220px;"></canvas>
+                    <div id="daylight-text" style="text-align: center; margin-top: 10px; font-weight: 600; font-size: 1rem; color: var(--text-secondary); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Loading Sun Data...</div>
+                </div>
+                <div class="widget" id="shift-widget" style="padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="font-size: 1rem; text-align: center; margin-bottom: 12px; letter-spacing: 0.05em;" id="shift-name">Shift Tracker</h3>
+                    <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.4); border-radius: 5px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+                        <div id="shift-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4da6ff, #a855f7); box-shadow: 0 0 15px #4da6ff; transition: width 1s ease-in-out;"></div>
+                    </div>
+                    <div id="shift-text" style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">Loading Shift...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-announcements" class="kiosk-view" data-duration="40000">
+        <div class="widget announcement-slide">
+            <h3>Daily Toolbox Talk <span id="toolbox-slide-number" style="float: right; color: var(--text-secondary); font-size: 0.9em; opacity: 0.7;"></span></h3>
+            <img id="slow-slide-img" src="" alt="Announcements" style="cursor: pointer; transition: filter 0.2s;" onclick="if(this.src) window.open(this.src, '_blank')" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+        </div>
+        <div class="side-stats" style="display: flex; flex-direction: column; gap: 25px;">
+            <div id="reminders-widget-container" class="widget" style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 id="reminders-title">Reminders</h3>
+                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px;">Loading...</div>
+            </div>
+            <div id="rotating-panels-wrapper" style="flex: 1; position: relative; overflow: hidden; margin: 0; display: flex;">
+                <!-- Anniversary Panel -->
+                <div class="widget anniversary-panel" id="panel-anniversaries" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease;">
+                    <h3 id="anniversary-title">Upcoming Anniversaries</h3>
+                    <ul id="anniversaries-list" style="flex: 1; overflow: hidden; margin: 0; padding: 0; list-style: none;">
+                        <li>Loading milestones...</li>
+                    </ul>
+                </div>
+                <!-- Safety Videos Panel -->
+                <div class="widget safety-panel" id="panel-safety" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; transform: translateX(120%); opacity: 0; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease;">
+                    <h3 id="safety-title" style="color: #ef4444; border-bottom-color: rgba(239, 68, 68, 0.3);">Action Required: Safety Videos</h3>
+                    <ul id="safety-list" style="flex: 1; overflow: hidden; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; align-content: start;">
+                        <li style="color: var(--text-secondary); font-style: italic; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">Pending API Integration...</li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">John Doe</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Forklift Safety</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Jane Smith</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Hazard Comm</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Mike Johnson</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Lockout/Tagout</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Emily Davis</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Bloodborne Pathogens</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Chris Wilson</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Fall Protection</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Sarah Taylor</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Ergonomics</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">David Anderson</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: PPE Training</span></li>
+                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong style="color: white;">Lisa Martinez</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Fire Extinguisher</span></li>
+                        <li style="padding: 12px 15px;"><strong style="color: white;">James Taylor</strong><br><span style="color: var(--text-secondary); font-size: 0.9em;">Missing: Machine Guarding</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="view-special" class="kiosk-view" data-duration="20000" data-disabled="true" style="display: none; align-items: center; justify-content: center; height: 100vh; width: 100vw; background: var(--bg-primary); overflow: hidden;">
+        <div class="widget" style="width: 90%; max-width: 1400px; max-height: 90vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; border: 2px solid #ff4d4d; box-shadow: 0 0 50px rgba(255, 77, 77, 0.3);">
+            <div style="font-size: 1.5rem; color: #ff4d4d; text-transform: uppercase; letter-spacing: 5px; font-weight: 800; margin-bottom: 20px; flex-shrink: 0;"><i class="fa-solid fa-triangle-exclamation"></i> Special Announcement</div>
+            <h1 id="special-title" style="font-size: 4rem; color: #ffffff; margin-bottom: 20px; font-family: 'Outfit', sans-serif; flex-shrink: 0;"></h1>
+            <p id="special-desc" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 20px; flex-shrink: 0; line-height: 1.4;"></p>
+            <img id="special-img" src="" style="max-width: 100%; flex: 1; min-height: 0; border-radius: 12px; display: none; object-fit: contain;">
+        </div>
+    </div>
+
+    <!-- Permanent Mobile Dashboard QR Code Overlay (Populated dynamically via siteConfig) -->
+    <img id="mobile-qr-img" src="" alt="Mobile Dashboard QR" style="position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; z-index: 1000; opacity: 0.5; transition: opacity 0.3s; display: none;" onload="this.style.display='block'" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+
+
+    <script src="js/app.js?v=2.2"></script>
+</body>
+</html>
