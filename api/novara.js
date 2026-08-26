@@ -138,9 +138,21 @@ module.exports = async function handler(req, res) {
                 }
             })
         });
-        const reportData = await reportReq.json();
-        if (!reportData.ok || !reportData.response) {
-            return res.status(500).json({ success: false, error: 'Invalid Report API response format' });
+        
+        let reportData = null;
+        try {
+            reportData = await reportReq.json();
+        } catch (parseErr) {
+            return res.status(500).json({ success: false, error: 'Novara report endpoint returned non-JSON response', httpStatus: reportReq.status });
+        }
+
+        if (!reportData || !reportData.ok || !reportData.response) {
+            return res.status(200).json({
+                success: false,
+                error: reportData?.error || reportData?.message || 'Invalid Report API response format',
+                activeUserCount: activeIds.length,
+                rawNovaraResponse: reportData
+            });
         }
 
         if (req.query.inspect === 'report') {
