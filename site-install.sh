@@ -43,10 +43,14 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+APT_FLAGS="-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+
 section "Step 1 — System Update & Base Packages"
-sudo apt-get update -y
-sudo apt-get upgrade -y
-sudo apt-get install -y \
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade $APT_FLAGS
+sudo DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS \
     curl wget git unzip zip \
     ca-certificates gnupg lsb-release \
     python3 python3-pip \
@@ -57,18 +61,18 @@ log "Base packages and mDNS (.local) discovery installed."
 
 section "Step 2 — Install Docker Engine & Compose"
 # Remove old docker installs if any
-sudo apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
 
 # Add Docker's official GPG key and repo
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-sudo apt-get update -y
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get install $APT_FLAGS docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Allow current user to run Docker without sudo
 sudo usermod -aG docker "$USER"
