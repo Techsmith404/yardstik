@@ -61,7 +61,10 @@ crontab "$TMP_CRON"
 rm -f "$TMP_CRON"
 
 echo "[8/8] Forcing Kiosk TV browser to live-reload..."
-date +%s > html/assets/data/version.txt
+if [ -d "/opt/kiosk-data/data" ]; then
+    date +%s | sudo tee /opt/kiosk-data/data/version.txt > /dev/null 2>&1 || true
+fi
+date +%s > html/assets/data/version.txt 2>/dev/null || true
 
 echo "========================================="
 echo "✅ Deployment Complete! The Kiosk is now running the latest version."
