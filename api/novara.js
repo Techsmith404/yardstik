@@ -284,7 +284,7 @@ module.exports = async function handler(req, res) {
             if (daysUntil >= 0 && daysUntil <= 30 && yearsOfService >= 1) {
                 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                 anniversaryEmployees.push({
-                    name: fullNameReversed,
+                    name: userMap[u.id] ? userMap[u.id].name : `${u.firstname} ${u.lastname}`,
                     years: yearsOfService,
                     date: `${monthNames[hireMonth]} ${hireDay}`,
                     days_until: daysUntil,
