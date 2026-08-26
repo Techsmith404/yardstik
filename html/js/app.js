@@ -1066,9 +1066,8 @@
             if (!list) return;
 
             try {
-                const apiBase = siteConfig.vercel_api_url || '';
-                const officeParam = siteConfig.novara_office_id ? `?office=${siteConfig.novara_office_id}` : '';
-                const res = await fetch(`${apiBase}/api/novara${officeParam}`);
+                const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+                const res = await fetch(`${apiBase}/api/novara?t=` + new Date().getTime());
                 if (!res.ok) throw new Error("Novara API not available");
                 const data = await res.json();
                 
@@ -1149,12 +1148,11 @@
 
         async function getAnniversaries() {
             try {
-                const apiBase = siteConfig.vercel_api_url || '';
+                const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
                 let data = null;
 
                 try {
-                    const officeParam = siteConfig.novara_office_id ? `&office=${siteConfig.novara_office_id}` : '';
-                    const res = await fetch(`${apiBase}/api/novara?type=anniversaries${officeParam}&t=` + new Date().getTime());
+                    const res = await fetch(`${apiBase}/api/novara?type=anniversaries&t=` + new Date().getTime());
                     if (res.ok) {
                         data = await res.json();
                     }

@@ -725,8 +725,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('cfg-longitude').value     = cfg.longitude     ?? '';
                 document.getElementById('cfg-timezone').value      = cfg.timezone      || '';
                 document.getElementById('cfg-vercel-url').value    = cfg.vercel_api_url || '';
-                const officeInput = document.getElementById('cfg-novara-office-id');
-                if (officeInput) officeInput.value = cfg.novara_office_id || '';
                 document.getElementById('cfg-admin-username').value = cfg.admin_username || 'admin';
                 document.getElementById('cfg-admin-password').value = '';
                 loadSeniorityOverrides();
@@ -853,7 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
             longitude:        parseFloat(document.getElementById('cfg-longitude').value),
             timezone:         document.getElementById('cfg-timezone').value.trim(),
             vercel_api_url:   document.getElementById('cfg-vercel-url').value.trim(),
-            novara_office_id: document.getElementById('cfg-novara-office-id') ? document.getElementById('cfg-novara-office-id').value.trim() : '',
             admin_username:   document.getElementById('cfg-admin-username').value.trim()
         };
 

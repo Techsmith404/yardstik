@@ -31,9 +31,9 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const apiKey = process.env.NOVARA_API_KEY;
+        const apiKey = process.env.NOVARA_API_KEY || process.env.NOVARA_API_TOKEN;
         if (!apiKey) {
-            return res.status(500).json({ success: false, error: 'NOVARA_API_KEY not configured' });
+            return res.status(500).json({ success: false, error: 'NOVARA_API_KEY / NOVARA_API_TOKEN not configured' });
         }
 
         // 1. Fetch Users
@@ -87,7 +87,7 @@ module.exports = async function handler(req, res) {
         }
 
         // 2. Filter for specific Field Office (configurable via env/query/default) and only get active employees
-        const TARGET_FIELD_OFFICE = req.query.office || process.env.NOVARA_FIELD_OFFICE_ID || '645d0bbbe777001e69637041';
+        const TARGET_FIELD_OFFICE = process.env.NOVARA_FIELD_OFFICE_ID || process.env.TARGET_FIELD_OFFICE || req.query.office || '645d0bbbe777001e69637041';
         const userMap = {};
         const activeIds = [];
         const inspectUsers = [];
