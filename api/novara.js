@@ -204,7 +204,7 @@ module.exports = async function handler(req, res) {
         if (rClient) {
             try {
                 if (rClient.status === 'wait' || rClient.status === 'close') await rClient.connect();
-                const siteKey = req.query.site || 'burns-harbor';
+                const siteKey = req.query.site || process.env.DEFAULT_SITE_ID || 'burns-harbor';
                 const redisSeniority = await rClient.get(`kiosk:${siteKey}:seniority.json`);
                 if (redisSeniority) {
                     const parsedSeniority = JSON.parse(redisSeniority);
