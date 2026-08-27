@@ -47,6 +47,41 @@ module.exports = async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'Invalid Users API response format' });
         }
 
+        // Endpoint Discovery Probe
+        if (req.query.probe) {
+            const probeEndpoints = [
+                'trainings.list',
+                'training.list',
+                'training-modules.list',
+                'training-assignments.list',
+                'user-trainings.list',
+                'employee-trainings.list',
+                'training-records.list',
+                'training-requirements.list'
+            ];
+            const probeResults = {};
+            for (const ep of probeEndpoints) {
+                try {
+                    const r = await fetch(`https://api.novaraflex.com/v1/${ep}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: apiKey, m_user_id: '69e63ee7d857c10012b18813' })
+                    });
+                    const resJson = await r.json();
+                    probeResults[ep] = { 
+                        status: r.status, 
+                        ok: resJson.ok, 
+                        keys: Object.keys(resJson), 
+                        error: resJson.error || null,
+                        summary: resJson.trainings ? `${resJson.trainings.length} trainings` : (resJson.modules ? `${resJson.modules.length} modules` : null)
+                    };
+                } catch (pe) {
+                    probeResults[ep] = { error: pe.message };
+                }
+            }
+            return res.status(200).json({ success: true, probeResults });
+        }
+
         // Discovery Endpoint: List all field offices across the entire organization
         if (req.query.inspect === 'offices' || req.query.inspect === 'locations') {
             let directOfficesApi = null;
