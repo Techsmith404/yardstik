@@ -147,22 +147,59 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // 4. Calculate missing training videos per user
+        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
+            return res.status(200).json({ success: true, count: statusData.employees.length, employees: statusData.employees });
+        }
+
+        // 4. Calculate missing and expiring training videos per user
+        const todayD = new Date();
+        const todayNum = parseInt(
+            todayD.getFullYear().toString() + 
+            String(todayD.getMonth() + 1).padStart(2, '0') + 
+            String(todayD.getDate()).padStart(2, '0'), 
+            10
+        );
+
         const result = [];
         statusData.employees.forEach(emp => {
-            if (emp.incomplete_training_ids && emp.incomplete_training_ids.length > 0) {
+            const incompleteIds = new Set(emp.incomplete_training_ids || []);
+            
+            // Check for trainings that have reached their "startsExpiringOn" date window
+            let expiringCount = 0;
+            if (Array.isArray(emp.last_completed)) {
+                emp.last_completed.forEach(item => {
+                    const startsExp = typeof item.startsExpiringOn === 'number' ? item.startsExpiringOn : parseInt((item.startsExpiringOn || '').toString().replace(/[^0-9]/g, ''), 10);
+                    if (startsExp && todayNum >= startsExp) {
+                        // Avoid double-counting if it already moved to incomplete
+                        if (!incompleteIds.has(item.id)) {
+                            expiringCount++;
+                        }
+                    } else if (item.expiresOn) {
+                        const expNum = parseInt((item.expiresOn || '').toString().replace(/[^0-9]/g, ''), 10);
+                        if (expNum && expNum <= todayNum + 30 && !incompleteIds.has(item.id)) {
+                            expiringCount++;
+                        }
+                    }
+                });
+            }
+
+            const totalDue = incompleteIds.size + expiringCount;
+
+            if (totalDue > 0) {
                 if (userMap[emp.m_user_id]) {
                     result.push({
                         userId: emp.m_user_id,
                         name: userMap[emp.m_user_id].name,
                         photoUrl: userMap[emp.m_user_id].photoUrl,
-                        missingCount: emp.incomplete_training_ids.length
+                        missingCount: totalDue,
+                        incompleteCount: incompleteIds.size,
+                        expiringCount: expiringCount
                     });
                 }
             }
         });
 
-        // Sort by total missing count descending (people with most due at the top)
+        // Sort by total missing/expiring count descending (people with most due at the top)
         result.sort((a, b) => b.missingCount - a.missingCount);
 
         // Helper to parse date without timezone shifting
