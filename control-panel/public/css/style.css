@@ -703,20 +703,22 @@ select.form-control option {
     color: var(--accent);
     transform: scale(1.15);
 }
-/* Collapse items list into compact category bars while dragging categories */
-.category-dragging-active .equipment-category-card {
-    margin-bottom: 8px !important;
-    padding: 14px 20px !important;
-    border-style: dashed !important;
-    background: rgba(28, 32, 41, 0.8) !important;
+/* Stable drag-and-drop styles without layout shifting or scroll jumps */
+.equipment-category-card.is-dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--accent) !important;
 }
-.category-dragging-active .equipment-category-header {
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
+.equipment-category-card.drag-over {
+    border-color: var(--accent) !important;
+    background: rgba(59, 130, 246, 0.08) !important;
 }
-.category-dragging-active .equipment-items-list {
-    display: none !important;
+.equipment-item-row.is-dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--accent) !important;
+}
+.equipment-item-row.drag-over {
+    border-color: var(--accent) !important;
+    background: rgba(59, 130, 246, 0.1) !important;
 }
 
 .input-status-select {

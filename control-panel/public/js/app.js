@@ -189,25 +189,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'category', cIdx }));
                 e.dataTransfer.effectAllowed = 'move';
-                equipmentContainer.classList.add('category-dragging-active');
-                catDiv.style.opacity = '0.4';
+                catDiv.classList.add('is-dragging');
             });
             catDiv.addEventListener('dragend', () => {
                 isCategoryDrag = false;
-                equipmentContainer.classList.remove('category-dragging-active');
-                catDiv.style.opacity = '1';
+                catDiv.classList.remove('is-dragging');
+                document.querySelectorAll('.equipment-category-card').forEach(c => c.classList.remove('drag-over'));
             });
             catDiv.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                catDiv.style.borderColor = 'var(--accent)';
+                catDiv.classList.add('drag-over');
             });
             catDiv.addEventListener('dragleave', () => {
-                catDiv.style.borderColor = '';
+                catDiv.classList.remove('drag-over');
             });
             catDiv.addEventListener('drop', (e) => {
                 e.preventDefault();
-                catDiv.style.borderColor = '';
-                equipmentContainer.classList.remove('category-dragging-active');
+                catDiv.classList.remove('drag-over');
                 try {
                     const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                     if (data.type === 'category' && data.cIdx !== cIdx) {
@@ -302,24 +300,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         e.stopPropagation();
                         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'item', cIdx, iIdx }));
                         e.dataTransfer.effectAllowed = 'move';
-                        itemRow.style.opacity = '0.4';
+                        itemRow.classList.add('is-dragging');
                     });
                     itemRow.addEventListener('dragend', () => {
                         isItemDrag = false;
-                        itemRow.style.opacity = '1';
+                        itemRow.classList.remove('is-dragging');
+                        document.querySelectorAll('.equipment-item-row').forEach(r => r.classList.remove('drag-over'));
                     });
                     itemRow.addEventListener('dragover', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        itemRow.style.borderColor = 'var(--accent)';
+                        itemRow.classList.add('drag-over');
                     });
                     itemRow.addEventListener('dragleave', () => {
-                        itemRow.style.borderColor = '';
+                        itemRow.classList.remove('drag-over');
                     });
                     itemRow.addEventListener('drop', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        itemRow.style.borderColor = '';
+                        itemRow.classList.remove('drag-over');
                         try {
                             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                             if (data.type === 'item' && data.cIdx === cIdx && data.iIdx !== iIdx) {
