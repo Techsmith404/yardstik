@@ -160,6 +160,23 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({ success: true, count: statusData.employees.length, employees: statusData.employees });
         }
 
+        if (req.query.inspect === 'expiring') {
+            const expiringUsers = [];
+            statusData.employees.forEach(emp => {
+                if (Array.isArray(emp.last_completed)) {
+                    const expList = emp.last_completed.filter(item => item.startsExpiringOn && todayNum >= item.startsExpiringOn);
+                    if (expList.length > 0 && userMap[emp.m_user_id]) {
+                        expiringUsers.push({
+                            name: userMap[emp.m_user_id].name,
+                            expiringCount: expList.length,
+                            expList
+                        });
+                    }
+                }
+            });
+            return res.status(200).json({ success: true, count: expiringUsers.length, expiringUsers });
+        }
+
         if (req.query.inspect === 'kaden' || req.query.inspect === 'user' || req.query.user) {
             const searchName = (req.query.user || req.query.inspect || 'kaden').toLowerCase();
             const matchingUsers = Object.entries(userMap).filter(([id, u]) => u.name.toLowerCase().includes(searchName));
