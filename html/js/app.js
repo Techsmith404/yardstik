@@ -1087,13 +1087,13 @@
                     const incompCount = emp.incompleteCount || 0;
 
                     if (expCount > 0) {
-                        badgesHtml += `<span class="badge-safety-expiring" title="Due in the current monthly window"><i class="fa-solid fa-clock"></i> ${expCount} Due Soon</span>`;
+                        badgesHtml += `<span class="badge-safety-expiring" title="${expCount} Due This Month"><i class="fa-solid fa-clock"></i> ${expCount}</span>`;
                     }
                     if (incompCount > 0) {
-                        badgesHtml += `<span class="badge-safety-incomplete" title="Past deadline / Overdue"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount} Overdue</span>`;
+                        badgesHtml += `<span class="badge-safety-incomplete" title="${incompCount} Overdue"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount}</span>`;
                     }
                     if (!badgesHtml) {
-                        badgesHtml = `<span class="badge-safety-incomplete"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount} Due</span>`;
+                        badgesHtml = `<span class="badge-safety-incomplete" title="${emp.missingCount} Due"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount}</span>`;
                     }
 
                     html += `

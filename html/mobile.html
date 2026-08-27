@@ -210,13 +210,13 @@
                     const incompCount = emp.incompleteCount || 0;
 
                     if (expCount > 0) {
-                        badgesHtml += `<span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fcd34d; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-clock"></i> ${expCount} Due Soon</span>`;
+                        badgesHtml += `<span class="badge-safety-expiring" title="${expCount} Due This Month" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fcd34d; padding: 2px 7px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-clock"></i> ${expCount}</span>`;
                     }
                     if (incompCount > 0) {
-                        badgesHtml += `<span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount} Overdue</span>`;
+                        badgesHtml += `<span class="badge-safety-incomplete" title="${incompCount} Overdue" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 7px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount}</span>`;
                     }
                     if (!badgesHtml) {
-                        badgesHtml = `<span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount} Due</span>`;
+                        badgesHtml = `<span class="badge-safety-incomplete" title="${emp.missingCount} Due" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 7px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount}</span>`;
                     }
 
                     html += `
