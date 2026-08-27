@@ -49,34 +49,25 @@ module.exports = async function handler(req, res) {
 
         // Endpoint Discovery Probe
         if (req.query.probe) {
-            const probeEndpoints = [
-                'trainings.list',
-                'training-events.list',
-                'training-categories.list',
-                'training-types.list',
-                'training-requirements.list'
-            ];
-            const probeResults = {};
-            for (const ep of probeEndpoints) {
-                try {
-                    const r = await fetch(`https://api.novaraflex.com/v1/${ep}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: apiKey })
-                    });
-                    const resJson = await r.json();
-                    probeResults[ep] = { 
-                        status: r.status, 
-                        ok: resJson.ok, 
-                        keys: Object.keys(resJson), 
-                        error: resJson.error || null,
-                        sample: resJson.trainings ? resJson.trainings.slice(0, 3) : (resJson.ok ? resJson : null)
-                    };
-                } catch (pe) {
-                    probeResults[ep] = { error: pe.message };
-                }
+            try {
+                const r = await fetch(`https://api.novaraflex.com/v1/trainings.list`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: apiKey })
+                });
+                const resJson = await r.json();
+                const allTrainings = resJson.trainings || [];
+                const augustTrainings = allTrainings.filter(t => (t.title || '').toLowerCase().includes('august') || (t.title || '').toLowerCase().includes('compressed gas') || (t.title || '').toLowerCase().includes('narcan'));
+                
+                return res.status(200).json({
+                    success: true,
+                    totalTrainingsCount: allTrainings.length,
+                    augustTrainings: augustTrainings,
+                    sampleFields: allTrainings[0] ? Object.keys(allTrainings[0]) : []
+                });
+            } catch (pe) {
+                return res.status(500).json({ error: pe.message });
             }
-            return res.status(200).json({ success: true, probeResults });
         }
 
         // Discovery Endpoint: List all field offices across the entire organization
