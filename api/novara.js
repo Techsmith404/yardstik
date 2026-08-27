@@ -47,29 +47,6 @@ module.exports = async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'Invalid Users API response format' });
         }
 
-        // Endpoint Discovery Probe
-        if (req.query.probe) {
-            try {
-                const r = await fetch(`https://api.novaraflex.com/v1/trainings.list`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: apiKey })
-                });
-                const resJson = await r.json();
-                const allTrainings = resJson.trainings || [];
-                const augustTrainings = allTrainings.filter(t => (t.title || '').toLowerCase().includes('august') || (t.title || '').toLowerCase().includes('compressed gas') || (t.title || '').toLowerCase().includes('narcan'));
-                
-                return res.status(200).json({
-                    success: true,
-                    totalTrainingsCount: allTrainings.length,
-                    augustTrainings: augustTrainings,
-                    sampleFields: allTrainings[0] ? Object.keys(allTrainings[0]) : []
-                });
-            } catch (pe) {
-                return res.status(500).json({ error: pe.message });
-            }
-        }
-
         // Discovery Endpoint: List all field offices across the entire organization
         if (req.query.inspect === 'offices' || req.query.inspect === 'locations') {
             let directOfficesApi = null;
@@ -147,12 +124,19 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({ success: true, response: [] });
         }
 
-        // 3. Fetch Training Status ONLY for active employees (bypasses 1000 limit pagination)
-        const statusReq = await fetch('https://api.novaraflex.com/v1/training-employee-status.list', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: apiKey, m_user_ids: activeIds })
-        });
+        // 3. Fetch Training Status AND Catalog in parallel
+        const [statusReq, catalogReq] = await Promise.all([
+            fetch('https://api.novaraflex.com/v1/training-employee-status.list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: apiKey, m_user_ids: activeIds })
+            }),
+            fetch('https://api.novaraflex.com/v1/trainings.list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: apiKey })
+            }).catch(() => null)
+        ]);
         
         let statusData = null;
         try {
@@ -170,34 +154,82 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        let catalogTrainings = [];
+        if (catalogReq) {
+            try {
+                const catJson = await catalogReq.json();
+                if (catJson && Array.isArray(catJson.trainings)) {
+                    catalogTrainings = catJson.trainings;
+                }
+            } catch (e) {}
+        }
+
         // 4. Calculate missing and expiring training videos per user
         const todayD = new Date();
+        const currentMonth = todayD.getMonth() + 1; // 1-12 (e.g. 8 for August)
+        const currentDay = todayD.getDate(); // 1-31
         const todayNum = parseInt(
             todayD.getFullYear().toString() + 
-            String(todayD.getMonth() + 1).padStart(2, '0') + 
-            String(todayD.getDate()).padStart(2, '0'), 
+            String(currentMonth).padStart(2, '0') + 
+            String(currentDay).padStart(2, '0'), 
             10
         );
 
-        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
-            return res.status(200).json({ success: true, count: statusData.employees.length, employees: statusData.employees });
+        function parseTrainingNumericId(idStr) {
+            if (typeof idStr === 'number') return idStr;
+            if (!idStr) return null;
+            const match = idStr.toString().match(/\d+/);
+            return match ? parseInt(match[0], 10) : null;
         }
 
-        if (req.query.inspect === 'expiring') {
-            const expiringUsers = [];
-            statusData.employees.forEach(emp => {
-                if (Array.isArray(emp.last_completed)) {
-                    const expList = emp.last_completed.filter(item => item.startsExpiringOn && todayNum >= item.startsExpiringOn);
-                    if (expList.length > 0 && userMap[emp.m_user_id]) {
-                        expiringUsers.push({
-                            name: userMap[emp.m_user_id].name,
-                            expiringCount: expList.length,
-                            expList
-                        });
-                    }
-                }
+        function isTrainingAssignedToOffice(training, targetOffice) {
+            if (!targetOffice) return true;
+            if (!training.assignedToType || training.assignedToType === 'none' || training.assignedToType === 'all') return true;
+            const condStr = JSON.stringify(training.assignedToCondition || '');
+            return condStr.includes(targetOffice);
+        }
+
+        function isWindowTrainingCurrentlyOpen(t) {
+            if (t.scheduleType !== 'window') return false;
+            if (t.window_openMonth == null || t.window_closeMonth == null) return false;
+            
+            const oM = t.window_openMonth;
+            const oD = t.window_openDay || 1;
+            const cM = t.window_closeMonth;
+            const cD = t.window_closeDay || 1;
+
+            if (oM <= cM) {
+                return (currentMonth > oM || (currentMonth === oM && currentDay >= oD)) &&
+                       (currentMonth < cM || (currentMonth === cM && currentDay <= cD));
+            } else {
+                // Window wraps around new year (e.g. Dec to Jan)
+                return (currentMonth > oM || (currentMonth === oM && currentDay >= oD)) ||
+                       (currentMonth < cM || (currentMonth === cM && currentDay <= cD));
+            }
+        }
+
+        // Collect all currently open window-based monthly trainings for this location
+        const activeWindowTrainings = catalogTrainings.filter(t => 
+            isWindowTrainingCurrentlyOpen(t) && isTrainingAssignedToOffice(t, TARGET_FIELD_OFFICE)
+        ).map(t => {
+            const primaryId = parseTrainingNumericId(t.id);
+            const includedIds = (t.includedTrainings_id || []).map(parseTrainingNumericId).filter(Boolean);
+            const lessonId = t.lesson_id ? parseTrainingNumericId(t.lesson_id) : null;
+            return {
+                title: t.title,
+                primaryId,
+                allAcceptedIds: new Set([primaryId, lessonId, ...includedIds].filter(Boolean))
+            };
+        });
+
+        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
+            return res.status(200).json({ 
+                success: true, 
+                count: statusData.employees.length, 
+                activeWindowTrainingsCount: activeWindowTrainings.length,
+                activeWindowTrainings,
+                employees: statusData.employees 
             });
-            return res.status(200).json({ success: true, count: expiringUsers.length, expiringUsers });
         }
 
         if (req.query.inspect === 'kaden' || req.query.inspect === 'user' || req.query.user) {
@@ -207,6 +239,8 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 todayNum,
+                activeWindowTrainingsCount: activeWindowTrainings.length,
+                activeWindowTrainings,
                 matchingUsers,
                 matchingEmployees
             });
@@ -215,27 +249,38 @@ module.exports = async function handler(req, res) {
         const result = [];
         statusData.employees.forEach(emp => {
             const incompleteIds = new Set(emp.incomplete_training_ids || []);
+            const completeIds = new Set(emp.complete_training_ids || []);
             
-            // Check for trainings that have reached their "startsExpiringOn" date window
-            let expiringCount = 0;
+            // 1. Check for recurring trainings that have reached their "startsExpiringOn" date window
+            let expiringAnnualCount = 0;
             if (Array.isArray(emp.last_completed)) {
                 emp.last_completed.forEach(item => {
                     const startsExp = typeof item.startsExpiringOn === 'number' ? item.startsExpiringOn : parseInt((item.startsExpiringOn || '').toString().replace(/[^0-9]/g, ''), 10);
                     if (startsExp && todayNum >= startsExp) {
-                        // Avoid double-counting if it already moved to incomplete
                         if (!incompleteIds.has(item.id)) {
-                            expiringCount++;
+                            expiringAnnualCount++;
                         }
                     } else if (item.expiresOn) {
                         const expNum = parseInt((item.expiresOn || '').toString().replace(/[^0-9]/g, ''), 10);
                         if (expNum && expNum <= todayNum + 30 && !incompleteIds.has(item.id)) {
-                            expiringCount++;
+                            expiringAnnualCount++;
                         }
                     }
                 });
             }
 
-            const totalDue = incompleteIds.size + expiringCount;
+            // 2. Check for currently open monthly window trainings not yet completed
+            let openWindowDueCount = 0;
+            activeWindowTrainings.forEach(wt => {
+                const isCompleted = Array.from(wt.allAcceptedIds).some(id => completeIds.has(id));
+                const isAlreadyIncomplete = Array.from(wt.allAcceptedIds).some(id => incompleteIds.has(id));
+                
+                if (!isCompleted && !isAlreadyIncomplete) {
+                    openWindowDueCount++;
+                }
+            });
+
+            const totalDue = incompleteIds.size + expiringAnnualCount + openWindowDueCount;
 
             if (totalDue > 0) {
                 if (userMap[emp.m_user_id]) {
@@ -245,7 +290,7 @@ module.exports = async function handler(req, res) {
                         photoUrl: userMap[emp.m_user_id].photoUrl,
                         missingCount: totalDue,
                         incompleteCount: incompleteIds.size,
-                        expiringCount: expiringCount
+                        expiringCount: expiringAnnualCount + openWindowDueCount
                     });
                 }
             }
