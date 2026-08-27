@@ -703,7 +703,29 @@ select.form-control option {
     color: var(--accent);
     transform: scale(1.15);
 }
-/* Stable drag-and-drop styles without layout shifting or scroll jumps */
+/* Compact Category Collapse during drag */
+.category-dragging-active .equipment-category-card {
+    margin-bottom: 8px !important;
+    padding: 12px 18px !important;
+    background: rgba(28, 32, 41, 0.85) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.15s ease;
+}
+.category-dragging-active .equipment-category-header {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+.category-dragging-active .equipment-items-list {
+    display: none !important;
+}
+.category-dragging-active .equipment-category-card.drag-over {
+    border-color: var(--accent) !important;
+    background: rgba(59, 130, 246, 0.15) !important;
+    transform: scale(1.02);
+}
+
 .equipment-category-card.is-dragging {
     opacity: 0.4;
     border: 2px dashed var(--accent) !important;

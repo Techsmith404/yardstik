@@ -190,10 +190,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'category', cIdx }));
                 e.dataTransfer.effectAllowed = 'move';
                 catDiv.classList.add('is-dragging');
+                
+                // Defer adding collapse class by 1 event loop tick so native drag session locks in first
+                setTimeout(() => {
+                    equipmentContainer.classList.add('category-dragging-active');
+                }, 0);
             });
             catDiv.addEventListener('dragend', () => {
                 isCategoryDrag = false;
                 catDiv.classList.remove('is-dragging');
+                equipmentContainer.classList.remove('category-dragging-active');
                 document.querySelectorAll('.equipment-category-card').forEach(c => c.classList.remove('drag-over'));
             });
             catDiv.addEventListener('dragover', (e) => {
@@ -206,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             catDiv.addEventListener('drop', (e) => {
                 e.preventDefault();
                 catDiv.classList.remove('drag-over');
+                equipmentContainer.classList.remove('category-dragging-active');
                 try {
                     const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                     if (data.type === 'category' && data.cIdx !== cIdx) {
