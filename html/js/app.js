@@ -1073,29 +1073,50 @@
                 
                 if (!data.success || !data.response || data.response.length === 0) {
                     list.innerHTML = '<li style="grid-column: 1 / -1; color: #4ade80; font-style: italic; padding: 15px; text-align: center;">All employees are 100% up to date! 🎉</li>';
-                    if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">|| 0 People</span>';
+                    if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">(0 This Month • 0 Total)</span>';
                     return;
                 }
                 
+                const totalThisMonth = typeof data.totalExpiring === 'number' ? data.totalExpiring : data.response.reduce((sum, e) => sum + (e.expiringCount || 0), 0);
+                const totalOverall = typeof data.totalMissing === 'number' ? data.totalMissing : data.response.reduce((sum, e) => sum + (e.missingCount || 0), 0);
+
                 let html = '';
                 data.response.forEach(emp => {
+                    let badgesHtml = '';
+                    const expCount = emp.expiringCount || 0;
+                    const incompCount = emp.incompleteCount || 0;
+
+                    if (expCount > 0) {
+                        badgesHtml += `<span class="badge-safety-expiring" title="Due in the current monthly window"><i class="fa-solid fa-clock"></i> ${expCount} Due Soon</span>`;
+                    }
+                    if (incompCount > 0) {
+                        badgesHtml += `<span class="badge-safety-incomplete" title="Past deadline / Overdue"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount} Overdue</span>`;
+                    }
+                    if (!badgesHtml) {
+                        badgesHtml = `<span class="badge-safety-incomplete"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount} Due</span>`;
+                    }
+
                     html += `
-                        <li style="padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 12px;">
-                            <img src="${emp.photoUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
-                            <div style="display: flex; flex-direction: column;">
-                                <strong style="color: white; font-size: 0.95rem;">${emp.name}</strong>
-                                <span style="color: #ef4444; font-size: 0.8rem; font-weight: 600;">${emp.missingCount} Video${emp.missingCount > 1 ? 's' : ''} Missing</span>
+                        <li style="padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                <img src="${emp.photoUrl}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 5px rgba(0,0,0,0.5); flex-shrink: 0;">
+                                <strong style="color: white; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.name}</strong>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">
+                                ${badgesHtml}
                             </div>
                         </li>
                     `;
                 });
                 
                 list.innerHTML = html;
-                if (titleEl) titleEl.innerHTML = `Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">|| ${data.response.length} People</span>`;
+                if (titleEl) {
+                    titleEl.innerHTML = `Action Required: Safety Videos <span style="font-size: 0.8em; font-weight: 500; opacity: 0.85; margin-left: 8px; color: #fca5a5;">(${totalThisMonth} This Month • ${totalOverall} Total)</span>`;
+                }
             } catch (err) {
                 console.warn("Safety video API not available:", err);
                 list.innerHTML = '<li style="grid-column: 1 / -1; color: #94a3b8; font-style: italic; padding: 15px; text-align: center;"><i class="fa-solid fa-circle-info"></i> All safety modules up to date.</li>';
-                if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">|| 0 People</span>';
+                if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">(0 This Month • 0 Total)</span>';
             }
         }
         

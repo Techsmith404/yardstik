@@ -101,7 +101,7 @@
     </div>
     
     <div class="widget" id="safety-feed">
-        <h2 style="color: #ef4444; border-bottom-color: rgba(239,68,68,0.3);">Action Required: Safety Videos</h2>
+        <h2 id="safety-title" style="color: #ef4444; border-bottom-color: rgba(239,68,68,0.3);">Action Required: Safety Videos</h2>
         <div id="safety-content">Loading...</div>
     </div>
     
@@ -188,6 +188,7 @@
         }
 
         async function loadSafety() {
+            const titleEl = document.getElementById('safety-title');
             try {
                 const vercelBase = siteConfig.vercel_api_url ? siteConfig.vercel_api_url.replace(/\/+$/, '') : '';
                 const res = await fetch(`${vercelBase}/api/novara`);
@@ -195,22 +196,45 @@
                 
                 if (!data.success || !data.response || data.response.length === 0) {
                     document.getElementById('safety-content').innerHTML = '<div style="color: #10b981; font-style: italic; text-align: center;">All employees are 100% up to date! 🎉</div>';
+                    if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="font-size: 0.85em; font-weight: normal; opacity: 0.8; color: #fca5a5;">(0 This Month • 0 Total)</span>';
                     return;
                 }
                 
+                const totalThisMonth = typeof data.totalExpiring === 'number' ? data.totalExpiring : data.response.reduce((sum, e) => sum + (e.expiringCount || 0), 0);
+                const totalOverall = typeof data.totalMissing === 'number' ? data.totalMissing : data.response.reduce((sum, e) => sum + (e.missingCount || 0), 0);
+
                 let html = '';
                 data.response.forEach(emp => {
+                    let badgesHtml = '';
+                    const expCount = emp.expiringCount || 0;
+                    const incompCount = emp.incompleteCount || 0;
+
+                    if (expCount > 0) {
+                        badgesHtml += `<span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fcd34d; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-clock"></i> ${expCount} Due Soon</span>`;
+                    }
+                    if (incompCount > 0) {
+                        badgesHtml += `<span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-triangle-exclamation"></i> ${incompCount} Overdue</span>`;
+                    }
+                    if (!badgesHtml) {
+                        badgesHtml = `<span style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> ${emp.missingCount} Due</span>`;
+                    }
+
                     html += `
-                        <div class="safety-person">
-                            <img src="${emp.photoUrl}">
-                            <div style="display: flex; flex-direction: column;">
+                        <div class="safety-person" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="${emp.photoUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
                                 <strong style="color: white; font-size: 0.95rem;">${emp.name}</strong>
-                                <span style="color: #ef4444; font-size: 0.8rem; font-weight: 600;">${emp.missingCount} Videos Missing</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                                ${badgesHtml}
                             </div>
                         </div>
                     `;
                 });
                 document.getElementById('safety-content').innerHTML = html;
+                if (titleEl) {
+                    titleEl.innerHTML = `Action Required: Safety Videos <span style="font-size: 0.8em; font-weight: normal; opacity: 0.85; color: #fca5a5;">(${totalThisMonth} This Month • ${totalOverall} Total)</span>`;
+                }
             } catch (e) {
                 document.getElementById('safety-content').innerText = "Error loading safety data.";
             }

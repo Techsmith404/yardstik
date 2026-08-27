@@ -439,8 +439,16 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({ success: true, ...anniversariesPayload });
         }
 
+        const totalIncomplete = result.reduce((sum, e) => sum + (e.incompleteCount || 0), 0);
+        const totalExpiring = result.reduce((sum, e) => sum + (e.expiringCount || 0), 0);
+        const totalMissing = totalIncomplete + totalExpiring;
+
         res.status(200).json({
             success: true,
+            totalMissing,
+            totalIncomplete,
+            totalExpiring,
+            employeeCount: result.length,
             response: result,
             anniversaries: anniversariesPayload
         });
