@@ -147,10 +147,6 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
-            return res.status(200).json({ success: true, count: statusData.employees.length, employees: statusData.employees });
-        }
-
         // 4. Calculate missing and expiring training videos per user
         const todayD = new Date();
         const todayNum = parseInt(
@@ -159,6 +155,22 @@ module.exports = async function handler(req, res) {
             String(todayD.getDate()).padStart(2, '0'), 
             10
         );
+
+        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
+            return res.status(200).json({ success: true, count: statusData.employees.length, employees: statusData.employees });
+        }
+
+        if (req.query.inspect === 'kaden' || req.query.inspect === 'user' || req.query.user) {
+            const searchName = (req.query.user || req.query.inspect || 'kaden').toLowerCase();
+            const matchingUsers = Object.entries(userMap).filter(([id, u]) => u.name.toLowerCase().includes(searchName));
+            const matchingEmployees = statusData.employees.filter(emp => matchingUsers.some(([id]) => id === emp.m_user_id));
+            return res.status(200).json({
+                success: true,
+                todayNum,
+                matchingUsers,
+                matchingEmployees
+            });
+        }
 
         const result = [];
         statusData.employees.forEach(emp => {
