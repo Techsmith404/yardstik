@@ -87,7 +87,7 @@ module.exports = async function handler(req, res) {
         }
 
         // 2. Filter for specific Field Office (configurable via env/query/default) and only get active employees
-        const TARGET_FIELD_OFFICE = process.env.NOVARA_FIELD_OFFICE_ID || process.env.TARGET_FIELD_OFFICE || req.query.office || '645d0bbbe777001e69637041';
+        const TARGET_FIELD_OFFICE = process.env.NOVARA_FIELD_OFFICE_ID || process.env.TARGET_FIELD_OFFICE || req.query.office || null;
         const userMap = {};
         const activeIds = [];
         const inspectUsers = [];
