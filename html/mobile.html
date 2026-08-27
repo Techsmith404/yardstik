@@ -258,9 +258,9 @@
                         let extraBadges = '';
                         if (isMobileCranes && item.scale && item.scale !== 'NO' && item.scale !== 'NONE') {
                             if (item.scale === 'OK') {
-                                const isAudited = auditIsCurrent && !!item.blend_audit;
+                                const isAudited = !!item.blend_audit;
                                 extraBadges += `<span style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">SCALE OK</span>`;
-                                extraBadges += `<span style="background: ${isAudited ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; border: 1px solid ${isAudited ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}; color: ${isAudited ? '#6ee7b7' : '#fcd34d'}; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">Audit: ${isAudited ? '✅' : '❌'}</span>`;
+                                extraBadges += `<span style="background: ${isAudited ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; border: 1px solid ${isAudited ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}; color: ${isAudited ? '#6ee7b7' : '#fcd34d'}; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Audit: <i class="fa-solid ${isAudited ? 'fa-check' : 'fa-xmark'}"></i></span>`;
                             } else if (item.scale === 'OS') {
                                 extraBadges += `<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">SCALE OS</span>`;
                             }

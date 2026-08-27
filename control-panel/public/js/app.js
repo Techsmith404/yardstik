@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         equipmentData.categories.forEach((cat, cIdx) => {
             const catDiv = document.createElement('div');
             catDiv.className = 'equipment-category-card';
-            catDiv.draggable = false;
+            catDiv.draggable = true;
             
             // Category Header
             const header = document.createElement('div');
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             header.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px; width: 60%;">
-                    <div class="category-drag-handle" title="Drag to reorder category"><i class="fa-solid fa-grip-vertical"></i></div>
+                    <div class="category-drag-handle" title="Drag to reorder category" style="cursor: grab;"><i class="fa-solid fa-grip-vertical"></i></div>
                     <i class="fa-solid fa-folder" style="color: var(--accent); font-size: 1.1rem;"></i>
                     <input type="text" class="equipment-category-input" value="${cat.name}" onchange="updateCategoryName(${cIdx}, this.value)" placeholder="Category Name (e.g. Engines, Cranes)">
                 </div>
@@ -177,20 +177,25 @@ document.addEventListener('DOMContentLoaded', () => {
             catDiv.appendChild(header);
 
             // Category Drag Events (Handle-Only)
+            let isCategoryDrag = false;
             const catHandle = header.querySelector('.category-drag-handle');
-            catHandle.addEventListener('mousedown', () => { catDiv.draggable = true; });
-            catHandle.addEventListener('mouseup', () => { catDiv.draggable = false; });
-            catHandle.addEventListener('mouseleave', () => { catDiv.draggable = false; });
+            catHandle.addEventListener('mousedown', () => { isCategoryDrag = true; });
+            window.addEventListener('mouseup', () => { isCategoryDrag = false; });
 
             catDiv.addEventListener('dragstart', (e) => {
+                if (!isCategoryDrag && !e.target.closest('.category-drag-handle')) {
+                    e.preventDefault();
+                    return;
+                }
                 e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'category', cIdx }));
+                e.dataTransfer.effectAllowed = 'move';
                 equipmentContainer.classList.add('category-dragging-active');
                 catDiv.style.opacity = '0.4';
             });
             catDiv.addEventListener('dragend', () => {
+                isCategoryDrag = false;
                 equipmentContainer.classList.remove('category-dragging-active');
                 catDiv.style.opacity = '1';
-                catDiv.draggable = false;
             });
             catDiv.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -238,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const hasScaleOk = scaleVal === 'OK';
                     const isAudited = !!item.blend_audit;
                     itemRow.className = `equipment-item-row ${isMobileCranes ? 'mobile-crane-row' : ''}`;
-                    itemRow.draggable = false;
+                    itemRow.draggable = true;
                     
                     let auditHtml = '';
                     if (isMobileCranes && hasScaleOk) {
@@ -271,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
 
                     itemRow.innerHTML = `
-                        <div class="equipment-drag-handle" title="Drag to reorder item"><i class="fa-solid fa-grip-vertical"></i></div>
+                        <div class="equipment-drag-handle" title="Drag to reorder item" style="cursor: grab;"><i class="fa-solid fa-grip-vertical"></i></div>
                         ${nameAndAuditCell}
                         ${scaleSelectHtml}
                         <select class="form-control input-status-select" data-status="${item.status}" onchange="this.setAttribute('data-status', this.value); updateEquipmentItem(${cIdx}, ${iIdx}, 'status', this.value)">
@@ -284,19 +289,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
 
                     // Item Drag Events (Handle-Only)
+                    let isItemDrag = false;
                     const itemHandle = itemRow.querySelector('.equipment-drag-handle');
-                    itemHandle.addEventListener('mousedown', () => { itemRow.draggable = true; });
-                    itemHandle.addEventListener('mouseup', () => { itemRow.draggable = false; });
-                    itemHandle.addEventListener('mouseleave', () => { itemRow.draggable = false; });
+                    itemHandle.addEventListener('mousedown', () => { isItemDrag = true; });
+                    window.addEventListener('mouseup', () => { isItemDrag = false; });
 
                     itemRow.addEventListener('dragstart', (e) => {
+                        if (!isItemDrag && !e.target.closest('.equipment-drag-handle')) {
+                            e.preventDefault();
+                            return;
+                        }
                         e.stopPropagation();
                         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'item', cIdx, iIdx }));
+                        e.dataTransfer.effectAllowed = 'move';
                         itemRow.style.opacity = '0.4';
                     });
                     itemRow.addEventListener('dragend', () => {
+                        isItemDrag = false;
                         itemRow.style.opacity = '1';
-                        itemRow.draggable = false;
                     });
                     itemRow.addEventListener('dragover', (e) => {
                         e.preventDefault();

@@ -978,10 +978,10 @@
                             scaleBadge.innerText = 'SCALE OK';
                             badgesContainer.appendChild(scaleBadge);
 
-                            const isAudited = auditIsCurrent && !!item.blend_audit;
+                            const isAudited = !!item.blend_audit;
                             const auditBadge = document.createElement('span');
                             auditBadge.className = `badge-audit ${isAudited ? 'badge-audit-yes' : 'badge-audit-no'}`;
-                            auditBadge.innerHTML = `Audit: ${isAudited ? '✅' : '❌'}`;
+                            auditBadge.innerHTML = `Audit: <i class="fa-solid ${isAudited ? 'fa-check' : 'fa-xmark'}"></i>`;
                             badgesContainer.appendChild(auditBadge);
                         } else if (item.scale === 'OS') {
                             const scaleBadge = document.createElement('span');

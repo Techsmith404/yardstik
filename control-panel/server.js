@@ -249,10 +249,7 @@ app.get('/api/equipment', (req, res) => {
 app.post('/api/equipment', express.json(), (req, res) => {
     try {
         const payload = req.body || { categories: [] };
-        if (!payload.last_audit_reset) {
-            payload.last_audit_reset = getLatestSunday11PMEpoch();
-        }
-        processWeeklyAuditReset(payload);
+        payload.last_audit_reset = getLatestSunday11PMEpoch();
         fs.writeFileSync(EQUIPMENT_PATH, JSON.stringify(payload, null, 2), 'utf8');
         
         // Bump version.txt to instantly refresh Kiosk TVs

@@ -84,7 +84,9 @@ module.exports = async function handler(req, res) {
             // Auto-heal equipment.json audit status if needed
             if (files['equipment.json']) {
                 let eqData = typeof files['equipment.json'] === 'string' ? JSON.parse(files['equipment.json']) : files['equipment.json'];
-                processWeeklyAuditReset(eqData);
+                if (!eqData.last_audit_reset) {
+                    eqData.last_audit_reset = getLatestSunday11PMEpoch();
+                }
                 files['equipment.json'] = eqData;
             }
 
