@@ -51,12 +51,9 @@ module.exports = async function handler(req, res) {
         if (req.query.probe) {
             const probeEndpoints = [
                 'trainings.list',
-                'training.list',
-                'training-modules.list',
-                'training-assignments.list',
-                'user-trainings.list',
-                'employee-trainings.list',
-                'training-records.list',
+                'training-events.list',
+                'training-categories.list',
+                'training-types.list',
                 'training-requirements.list'
             ];
             const probeResults = {};
@@ -65,7 +62,7 @@ module.exports = async function handler(req, res) {
                     const r = await fetch(`https://api.novaraflex.com/v1/${ep}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: apiKey, m_user_id: '69e63ee7d857c10012b18813' })
+                        body: JSON.stringify({ token: apiKey })
                     });
                     const resJson = await r.json();
                     probeResults[ep] = { 
@@ -73,7 +70,7 @@ module.exports = async function handler(req, res) {
                         ok: resJson.ok, 
                         keys: Object.keys(resJson), 
                         error: resJson.error || null,
-                        summary: resJson.trainings ? `${resJson.trainings.length} trainings` : (resJson.modules ? `${resJson.modules.length} modules` : null)
+                        sample: resJson.trainings ? resJson.trainings.slice(0, 3) : (resJson.ok ? resJson : null)
                     };
                 } catch (pe) {
                     probeResults[ep] = { error: pe.message };
