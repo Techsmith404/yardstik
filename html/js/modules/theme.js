@@ -17,7 +17,7 @@ const themeIcons = {
     },
     newyear: {
         left: '<i class="fa-solid fa-champagne-glasses" style="color: #fbbf24; font-size: 1.25rem; filter: drop-shadow(0 0 12px #fbbf24);"></i>',
-        right: '<i class="fa-solid fa-sparkles" style="color: #38bdf8; font-size: 1.25rem; filter: drop-shadow(0 0 12px #38bdf8); animation: festive-sparkle 2s infinite alternate;"></i>'
+        right: '<i class="fa-solid fa-star" style="color: #38bdf8; font-size: 1.25rem; filter: drop-shadow(0 0 12px #38bdf8); animation: gold-sparkle 2s infinite alternate;"></i>'
     },
     stpatricks: {
         left: '<i class="fa-solid fa-clover" style="color: #22c55e; font-size: 1.25rem; filter: drop-shadow(0 0 12px #22c55e);"></i>',
