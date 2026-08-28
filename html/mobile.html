@@ -315,12 +315,19 @@
                 
                 let extraHtml = '';
                 
-                // Blend Recipe
-                if (data.blend_recipe) {
+                // Production Tracker (Configurable: Blend Recipe / Heat # / Daily Target / etc)
+                const trackerVal = (data.production_tracker_value !== undefined && data.production_tracker_value !== null && data.production_tracker_value !== '')
+                    ? data.production_tracker_value
+                    : data.blend_recipe;
+                const trackerLabel = (data.production_tracker_label && data.production_tracker_label.trim())
+                    ? data.production_tracker_label.trim()
+                    : 'Active Blend Recipe';
+
+                if (trackerVal !== undefined && trackerVal !== null && trackerVal !== '') {
                     extraHtml += `
-                        <div class="reminder-card" style="border-left-color: var(--success); text-align: center; margin-bottom: 20px;">
-                            <h3 style="margin-bottom: 5px;">Active Blend Recipe</h3>
-                            <div style="font-size: 2rem; font-weight: 900; color: var(--success);">#${data.blend_recipe}</div>
+                        <div class="reminder-card" style="border-left-color: var(--brand-blue, #4da6ff); text-align: center; margin-bottom: 20px;">
+                            <h3 style="margin-bottom: 5px;">${trackerLabel}</h3>
+                            <div style="font-size: 2rem; font-weight: 900; color: var(--brand-blue, #4da6ff);">${trackerVal}</div>
                         </div>
                     `;
                 }

@@ -1,13 +1,21 @@
 {
-  "name": "01. Update Blend Recipe",
+  "name": "01. Update Production Tracker",
   "script_path": "/app/scripts/update_blend.sh",
-  "description": "Change the active Blend Recipe displayed on the dashboard.",
+  "description": "Change the active Production Tracker label and value displayed on the dashboard (e.g. Active Blend Recipe, Current Heat #, Daily Target).",
   "parameters": [
     {
-      "name": "Recipe Number",
-      "param": "-r",
-      "type": "int",
-      "required": true
+      "name": "Tracker Label",
+      "param": "-l",
+      "type": "text",
+      "required": false,
+      "description": "Widget Title (e.g. 'Active Blend Recipe', 'Current Heat #', 'Daily Target'). Leave blank to keep current."
+    },
+    {
+      "name": "Tracker Value",
+      "param": "-v",
+      "type": "text",
+      "required": true,
+      "description": "Displayed Value (e.g. '338', 'Grade-B', 'Batch 104', '95%')"
     }
   ]
 }

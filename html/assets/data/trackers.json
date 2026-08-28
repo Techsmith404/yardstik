@@ -1,5 +1,7 @@
 {
     "last_incident_date": "2023-10-15",
+    "production_tracker_label": "Active Blend Recipe",
+    "production_tracker_value": "338",
     "blend_recipe": "338",
     "toolbox_override_date": "2026-08-07",
     "toolbox_override_file": "override.png"

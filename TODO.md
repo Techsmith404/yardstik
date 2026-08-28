@@ -17,10 +17,11 @@
 
 ---
 
-### 2. Configurable Production Tracker (Blend Recipe / Heat # / Daily Target)
-- [ ] Support facility-customizable tracker title (`production_tracker_label` in `trackers.json`, e.g. *Active Blend Recipe*, *Current Heat #*, *Active Production Grade*, *Daily Target*).
-- [ ] Support string and numerical values (`production_tracker_value`, e.g. `338`, `Grade-B`, `Batch 104`, `95%`).
-- [ ] Control Panel UI inputs for live updates from Trackers card.
+### 2. Configurable Production Tracker (Blend Recipe / Heat # / Daily Target) ✅ (Completed)
+- [x] Support facility-customizable tracker title (`production_tracker_label` in `trackers.json`, e.g. *Active Blend Recipe*, *Current Heat #*, *Active Production Grade*, *Daily Target*).
+- [x] Support string and numerical values (`production_tracker_value`, e.g. `338`, `Grade-B`, `Batch 104`, `95%`).
+- [x] Control Panel UI inputs for live updates from Trackers card.
+- [x] Kiosk TV and Mobile dashboard dynamic rendering.
 
 ---
 

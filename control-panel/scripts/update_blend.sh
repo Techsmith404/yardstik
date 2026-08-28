@@ -1,11 +1,39 @@
 #!/bin/sh
-while getopts r: flag
+label=""
+val=""
+
+while getopts "l:v:r:" flag
 do
     case "${flag}" in
-        r) recipe=${OPTARG};;
+        l) label=${OPTARG};;
+        v) val=${OPTARG};;
+        r) val=${OPTARG};;
     esac
 done
-echo "Updating blend recipe to: $recipe"
-sed -i "s/\"blend_recipe\": \"[^\"]*\"/\"blend_recipe\": \"$recipe\"/" /data/trackers.json
+
+python3 -c "
+import json
+
+path = '/data/trackers.json'
+try:
+    with open(path, 'r') as f:
+        data = json.load(f)
+except Exception:
+    data = {}
+
+val = '''$val'''.strip()
+label = '''$label'''.strip()
+
+if val:
+    data['production_tracker_value'] = val
+    data['blend_recipe'] = val
+
+if label:
+    data['production_tracker_label'] = label
+
+with open(path, 'w') as f:
+    json.dump(data, f, indent=4)
+"
+
 date +%s > /data/version.txt
-echo "Successfully updated trackers.json and refreshed the kiosk."
+echo "Successfully updated Production Tracker in trackers.json and refreshed the kiosk."

@@ -256,11 +256,32 @@
                     if (hOsha) hOsha.innerText = safeDays;
                 }
                 
-                // Update Blend Recipe
-                if (data.blend_recipe) {
-                    document.getElementById('blend-recipe-display').innerText = "#" + data.blend_recipe;
+                // Update Production Tracker (Configurable: Blend Recipe / Heat # / Daily Target / etc)
+                const trackerVal = (data.production_tracker_value !== undefined && data.production_tracker_value !== null && data.production_tracker_value !== '')
+                    ? data.production_tracker_value
+                    : data.blend_recipe;
+
+                const trackerLabel = (data.production_tracker_label && data.production_tracker_label.trim())
+                    ? data.production_tracker_label.trim()
+                    : 'Active Blend Recipe';
+
+                if (trackerVal !== undefined && trackerVal !== null && trackerVal !== '') {
+                    const displayVal = trackerVal.toString();
+                    const titleText = trackerLabel.endsWith(':') ? trackerLabel : trackerLabel + ':';
+                    const headerLabelText = trackerLabel.replace(/^Active\s+/i, '').trim();
+                    const cleanHeaderLabel = (headerLabelText.endsWith(':') ? headerLabelText : headerLabelText + ':').toUpperCase();
+
+                    const mainTitle = document.getElementById('blend-widget-title');
+                    if (mainTitle) mainTitle.innerText = titleText;
+
+                    const mainDisplay = document.getElementById('blend-recipe-display');
+                    if (mainDisplay) mainDisplay.innerText = displayVal;
+
+                    const hLabel = document.getElementById('header-blend-label');
+                    if (hLabel) hLabel.innerText = cleanHeaderLabel;
+
                     const hBlend = document.getElementById('header-blend-display');
-                    if (hBlend) hBlend.innerText = "#" + data.blend_recipe;
+                    if (hBlend) hBlend.innerText = displayVal;
                 }
             } catch (e) {
                 document.getElementById('osha-counter').innerText = "Err";

@@ -60,7 +60,7 @@
                 <div style="display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 22px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #4da6ff; border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #4da6ff; box-shadow: 0 0 10px #4da6ff; animation: pulse-emergency 3s infinite alternate; animation-delay: -3s;"></div>
-                        <div style="font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Blend Recipe:</div>
+                        <div id="header-blend-label" style="font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;">Blend Recipe:</div>
                     </div>
                     <div id="header-blend-display" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #ffffff; line-height: 1; text-shadow: 0 0 15px rgba(77,166,255,0.5);">--</div>
                 </div>
@@ -94,7 +94,7 @@
             </div>
             
             <div class="widget" id="blend-widget-container" style="flex-shrink: 1; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(77, 166, 255, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
-                <h3 style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Active Blend Recipe:</h3>
+                <h3 id="blend-widget-title" style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Active Blend Recipe:</h3>
                 <div class="osha-number" id="blend-recipe-display" style="color: var(--brand-blue); text-shadow: 0 0 25px rgba(77, 166, 255, 0.35); font-size: clamp(3.5rem, 5vw, 6.5rem);">..</div>
             </div>
             
