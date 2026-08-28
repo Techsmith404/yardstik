@@ -1,27 +1,81 @@
-/* YardStik Seasonal Theme: Christmas & Winter Holidays (Dec 1 - Dec 26) */
+/* YardStik Seasonal Theme: Christmas & Winter Holidays (Dec 1 - Dec 26) 🎄 */
 :root {
-    --bg-gradient: linear-gradient(135deg, #0d1f18 0%, #08140f 50%, #030806 100%);
-    --card-bg: linear-gradient(145deg, rgba(20, 48, 36, 0.75) 0%, rgba(10, 25, 18, 0.9) 100%);
-    --card-border: rgba(239, 68, 68, 0.25);
+    --bg-gradient: linear-gradient(135deg, #091f16 0%, #05130e 50%, #020806 100%);
+    --card-bg: linear-gradient(145deg, rgba(16, 48, 34, 0.8) 0%, rgba(8, 24, 17, 0.92) 100%);
+    --card-border: rgba(239, 68, 68, 0.35);
     
     --text-primary: #ffffff;
     --text-secondary: #dcfce7;
     --text-muted: #86efac;
     
-    --brand-green: #10b981; /* Evergreen Emerald */
-    --brand-blue: #ef4444;  /* Holly Berry Red */
+    --brand-green: #22c55e; /* Bright Holly Green */
+    --brand-blue: #ef4444;  /* Cranberry Red */
     
-    --neon-cyan: #10b981;
+    --neon-cyan: #34d399;
     --neon-purple: #ef4444;
     --neon-green: #22c55e;
     --neon-amber: #fbbf24;
     --neon-red: #ef4444;
 }
 
-.osha-number {
-    text-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
+@keyframes holiday-lights {
+    0%, 100% {
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5), inset 0 2px 8px rgba(34, 197, 94, 0.4);
+        border-bottom-color: #ef4444 !important;
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(34, 197, 94, 0.6), inset 0 2px 8px rgba(251, 191, 36, 0.5);
+        border-bottom-color: #22c55e !important;
+    }
 }
 
+@keyframes festive-sparkle {
+    0%, 100% { text-shadow: 0 0 15px rgba(251, 191, 36, 0.8), 0 0 30px rgba(239, 68, 68, 0.4); }
+    50% { text-shadow: 0 0 25px rgba(34, 197, 94, 0.9), 0 0 45px rgba(251, 191, 36, 0.7); }
+}
+
+/* Header Festive Christmas Lights */
 #header-bar {
-    border-bottom: 2px solid rgba(239, 68, 68, 0.35) !important;
+    border-bottom: 3px solid #ef4444 !important;
+    animation: holiday-lights 3s infinite ease-in-out !important;
+}
+
+#header-dashboard-title::before {
+    content: "🎄 ";
+}
+
+#header-dashboard-title::after {
+    content: " ❄️";
+}
+
+/* Festive Candy Cane Accents & Glowing Cards */
+.widget {
+    position: relative;
+    border-color: rgba(34, 197, 94, 0.25) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(239, 68, 68, 0.3) !important;
+}
+
+.osha-number {
+    color: #22c55e !important;
+    animation: festive-sparkle 3s infinite alternate !important;
+}
+
+#blend-recipe-display {
+    color: #ef4444 !important;
+    text-shadow: 0 0 25px rgba(239, 68, 68, 0.8), 0 0 45px rgba(251, 191, 36, 0.5) !important;
+}
+
+/* Equipment Headers with Holly */
+.equipment-category h4 {
+    color: #dcfce7 !important;
+}
+
+.equipment-category h4::before {
+    content: "🎁 ";
+}
+
+.years-badge {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: #ef4444 !important;
+    color: #fee2e2 !important;
 }

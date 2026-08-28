@@ -1,27 +1,84 @@
-/* YardStik Seasonal Theme: Halloween (Oct 15 - Oct 31) */
+/* YardStik Seasonal Theme: Halloween (Oct 15 - Oct 31) 🎃 */
 :root {
-    --bg-gradient: linear-gradient(135deg, #1f1122 0%, #0d0812 50%, #050305 100%);
-    --card-bg: linear-gradient(145deg, rgba(45, 25, 45, 0.75) 0%, rgba(25, 15, 25, 0.9) 100%);
-    --card-border: rgba(249, 115, 22, 0.25);
+    --bg-gradient: linear-gradient(135deg, #18091f 0%, #0c0512 50%, #030105 100%);
+    --card-bg: linear-gradient(145deg, rgba(42, 18, 48, 0.8) 0%, rgba(20, 8, 24, 0.92) 100%);
+    --card-border: rgba(249, 115, 22, 0.35);
     
     --text-primary: #ffffff;
     --text-secondary: #fed7aa;
-    --text-muted: #f97316;
+    --text-muted: #ea580c;
     
     --brand-green: #f97316; /* Pumpkin Orange */
-    --brand-blue: #a855f7;  /* Witch Purple */
+    --brand-blue: #c084fc;  /* Ghostly Lavender / Purple */
     
     --neon-cyan: #f97316;
     --neon-purple: #a855f7;
-    --neon-green: #84cc16;
-    --neon-amber: #f59e0b;
+    --neon-green: #a3e635;
+    --neon-amber: #f97316;
     --neon-red: #ef4444;
 }
 
-.osha-number {
-    text-shadow: 0 0 20px rgba(249, 115, 22, 0.6) !important;
+@keyframes pumpkin-flicker {
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.8)); opacity: 1; }
+    50% { filter: drop-shadow(0 0 25px rgba(249, 115, 22, 1)); opacity: 0.92; }
+    75% { filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5)); opacity: 0.98; }
 }
 
+@keyframes spooky-float {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(2deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* Header Spooky Flair */
 #header-bar {
-    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+    border-bottom: 2px solid rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 4px 25px rgba(168, 85, 247, 0.25) !important;
+}
+
+#header-dashboard-title::before {
+    content: "🎃 ";
+    display: inline-block;
+    animation: spooky-float 3s ease-in-out infinite;
+}
+
+#header-dashboard-title::after {
+    content: " 🦇";
+    display: inline-block;
+    animation: spooky-float 3s ease-in-out infinite reverse;
+}
+
+/* Widget Card Glowing Borders & Corner Webs */
+.widget {
+    position: relative;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(249, 115, 22, 0.2) !important;
+}
+
+.osha-number {
+    color: #f97316 !important;
+    animation: pumpkin-flicker 4s infinite alternate !important;
+}
+
+/* Metric Display Jack-O'-Lantern Glow */
+#blend-recipe-display {
+    color: #f97316 !important;
+    text-shadow: 0 0 25px rgba(249, 115, 22, 0.9), 0 0 50px rgba(168, 85, 247, 0.4) !important;
+}
+
+/* Equipment Badges */
+.equipment-category h4 {
+    color: #fed7aa !important;
+}
+
+.equipment-category h4::before {
+    content: "🕸️ ";
+    opacity: 0.7;
+}
+
+/* Anniversaries Celebration Badge */
+.years-badge {
+    background: rgba(249, 115, 22, 0.25) !important;
+    border-color: #f97316 !important;
+    color: #fed7aa !important;
 }

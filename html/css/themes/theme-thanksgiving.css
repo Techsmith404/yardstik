@@ -1,27 +1,66 @@
-/* YardStik Seasonal Theme: Thanksgiving & Autumn Harvest (Nov 15 - Nov 30) */
+/* YardStik Seasonal Theme: Thanksgiving & Autumn Harvest (Nov 15 - Nov 30) 🦃 */
 :root {
-    --bg-gradient: linear-gradient(135deg, #24140e 0%, #170d08 50%, #0a0503 100%);
-    --card-bg: linear-gradient(145deg, rgba(55, 32, 22, 0.75) 0%, rgba(28, 16, 11, 0.9) 100%);
-    --card-border: rgba(234, 179, 8, 0.25);
+    --bg-gradient: linear-gradient(135deg, #22120b 0%, #130a06 50%, #080402 100%);
+    --card-bg: linear-gradient(145deg, rgba(50, 26, 16, 0.8) 0%, rgba(24, 12, 7, 0.92) 100%);
+    --card-border: rgba(234, 179, 8, 0.3);
     
     --text-primary: #ffffff;
     --text-secondary: #fef08a;
     --text-muted: #d97706;
     
-    --brand-green: #d97706; /* Autumn Amber */
-    --brand-blue: #dc2626;  /* Cranberry / Maple Red */
+    --brand-green: #eab308; /* Harvest Gold */
+    --brand-blue: #dc2626;  /* Maple / Cranberry */
     
     --neon-cyan: #eab308;
     --neon-purple: #b45309;
     --neon-green: #ca8a04;
     --neon-amber: #f59e0b;
-    --neon-red: #ef4444;
+    --neon-red: #dc2626;
 }
 
-.osha-number {
-    text-shadow: 0 0 20px rgba(234, 179, 8, 0.5) !important;
+@keyframes harvest-hearth {
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.7)); }
+    50% { filter: drop-shadow(0 0 25px rgba(220, 38, 38, 0.8)); }
 }
 
 #header-bar {
-    border-bottom: 2px solid rgba(217, 119, 6, 0.35) !important;
+    border-bottom: 2px solid rgba(234, 179, 8, 0.4) !important;
+    box-shadow: 0 4px 25px rgba(220, 38, 38, 0.25) !important;
+}
+
+#header-dashboard-title::before {
+    content: "🦃 ";
+}
+
+#header-dashboard-title::after {
+    content: " 🍁";
+}
+
+.widget {
+    border-color: rgba(234, 179, 8, 0.25) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(234, 179, 8, 0.2) !important;
+}
+
+.osha-number {
+    color: #eab308 !important;
+    animation: harvest-hearth 4s infinite ease-in-out !important;
+}
+
+#blend-recipe-display {
+    color: #dc2626 !important;
+    text-shadow: 0 0 25px rgba(220, 38, 38, 0.8), 0 0 45px rgba(234, 179, 8, 0.5) !important;
+}
+
+.equipment-category h4 {
+    color: #fef08a !important;
+}
+
+.equipment-category h4::before {
+    content: "🌾 ";
+}
+
+.years-badge {
+    background: rgba(217, 119, 6, 0.25) !important;
+    border-color: #d97706 !important;
+    color: #fef08a !important;
 }

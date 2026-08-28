@@ -45,12 +45,16 @@ export function getSeasonalTheme(date = new Date()) {
     return 'default';
 }
 
+import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
+
 export function applyTheme(themeName) {
     let themeLink = document.getElementById('seasonal-theme-link');
+    setHolidayAtmosphereTheme(themeName);
     
     if (!themeName || themeName === 'default' || themeName === 'none') {
         if (themeLink) themeLink.remove();
         console.log('Active Theme: Default');
+        startWeatherAnimation('none');
         return;
     }
 
@@ -66,6 +70,8 @@ export function applyTheme(themeName) {
         themeLink.href = themeHref;
         console.log(`Active Seasonal Theme: ${themeName}`);
     }
+
+    startWeatherAnimation('none');
 }
 
 export function initSeasonalTheme() {

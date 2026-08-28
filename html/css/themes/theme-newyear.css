@@ -1,27 +1,72 @@
-/* YardStik Seasonal Theme: New Year's Celebration (Dec 27 - Jan 5) */
+/* YardStik Seasonal Theme: New Year's Celebration (Dec 27 - Jan 5) 🥂 */
 :root {
-    --bg-gradient: linear-gradient(135deg, #18181b 0%, #09090b 50%, #000000 100%);
-    --card-bg: linear-gradient(145deg, rgba(39, 39, 42, 0.75) 0%, rgba(24, 24, 27, 0.9) 100%);
-    --card-border: rgba(245, 158, 11, 0.3);
+    --bg-gradient: linear-gradient(135deg, #18141f 0%, #0c0a12 50%, #000000 100%);
+    --card-bg: linear-gradient(145deg, rgba(38, 30, 48, 0.8) 0%, rgba(18, 14, 24, 0.92) 100%);
+    --card-border: rgba(245, 158, 11, 0.35);
     
     --text-primary: #ffffff;
     --text-secondary: #fef3c7;
-    --text-muted: #d4d4d8;
+    --text-muted: #e2e8f0;
     
-    --brand-green: #f59e0b; /* Champagne Gold */
-    --brand-blue: #06b6d4;  /* Celebration Cyan */
+    --brand-green: #fbbf24; /* Champagne Gold */
+    --brand-blue: #38bdf8;  /* Electric Celebration Blue */
     
-    --neon-cyan: #06b6d4;
-    --neon-purple: #f59e0b;
+    --neon-cyan: #38bdf8;
+    --neon-purple: #c084fc;
     --neon-green: #fbbf24;
     --neon-amber: #f59e0b;
     --neon-red: #ef4444;
 }
 
-.osha-number {
-    text-shadow: 0 0 25px rgba(245, 158, 11, 0.7) !important;
+@keyframes gold-sparkle {
+    0%, 100% {
+        text-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(245, 158, 11, 0.6);
+        filter: brightness(1);
+    }
+    50% {
+        text-shadow: 0 0 35px rgba(255, 255, 255, 1), 0 0 60px rgba(56, 189, 248, 0.8);
+        filter: brightness(1.2);
+    }
 }
 
 #header-bar {
-    border-bottom: 2px solid rgba(245, 158, 11, 0.4) !important;
+    border-bottom: 2px solid rgba(251, 191, 36, 0.5) !important;
+    box-shadow: 0 4px 30px rgba(245, 158, 11, 0.3) !important;
+}
+
+#header-dashboard-title::before {
+    content: "🥂 ";
+}
+
+#header-dashboard-title::after {
+    content: " ✨";
+}
+
+.widget {
+    border-color: rgba(251, 191, 36, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(251, 191, 36, 0.3) !important;
+}
+
+.osha-number {
+    color: #fbbf24 !important;
+    animation: gold-sparkle 3s infinite ease-in-out !important;
+}
+
+#blend-recipe-display {
+    color: #38bdf8 !important;
+    text-shadow: 0 0 25px rgba(56, 189, 248, 0.9), 0 0 50px rgba(251, 191, 36, 0.5) !important;
+}
+
+.equipment-category h4 {
+    color: #fef3c7 !important;
+}
+
+.equipment-category h4::before {
+    content: "⭐ ";
+}
+
+.years-badge {
+    background: rgba(251, 191, 36, 0.25) !important;
+    border-color: #fbbf24 !important;
+    color: #fef3c7 !important;
 }

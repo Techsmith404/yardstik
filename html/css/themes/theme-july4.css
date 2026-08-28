@@ -1,8 +1,8 @@
-/* YardStik Seasonal Theme: 4th of July / Independence Day (Jul 1 - Jul 7) */
+/* YardStik Seasonal Theme: 4th of July / Independence Day (Jul 1 - Jul 7) 🎆 */
 :root {
-    --bg-gradient: linear-gradient(135deg, #0f1d38 0%, #081020 50%, #03060d 100%);
-    --card-bg: linear-gradient(145deg, rgba(25, 45, 85, 0.75) 0%, rgba(12, 22, 42, 0.9) 100%);
-    --card-border: rgba(239, 68, 68, 0.3);
+    --bg-gradient: linear-gradient(135deg, #091326 0%, #050a14 50%, #020408 100%);
+    --card-bg: linear-gradient(145deg, rgba(16, 32, 64, 0.8) 0%, rgba(8, 16, 32, 0.92) 100%);
+    --card-border: rgba(239, 68, 68, 0.35);
     
     --text-primary: #ffffff;
     --text-secondary: #e0e7ff;
@@ -11,17 +11,62 @@
     --brand-green: #3b82f6; /* Liberty Blue */
     --brand-blue: #ef4444;  /* Patriot Red */
     
-    --neon-cyan: #3b82f6;
+    --neon-cyan: #60a5fa;
     --neon-purple: #ef4444;
-    --neon-green: #60a5fa;
+    --neon-green: #3b82f6;
     --neon-amber: #fbbf24;
     --neon-red: #ef4444;
 }
 
-.osha-number {
-    text-shadow: 0 0 25px rgba(239, 68, 68, 0.7) !important;
+@keyframes patriotic-glow {
+    0%, 100% {
+        box-shadow: 0 4px 25px rgba(239, 68, 68, 0.5), inset 0 2px 8px rgba(59, 130, 246, 0.4);
+        border-bottom-color: #ef4444 !important;
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(59, 130, 246, 0.6), inset 0 2px 8px rgba(255, 255, 255, 0.5);
+        border-bottom-color: #3b82f6 !important;
+    }
 }
 
 #header-bar {
-    border-bottom: 2px solid rgba(59, 130, 246, 0.4) !important;
+    border-bottom: 3px solid #ef4444 !important;
+    animation: patriotic-glow 3s infinite ease-in-out !important;
+}
+
+#header-dashboard-title::before {
+    content: "🎆 ";
+}
+
+#header-dashboard-title::after {
+    content: " ⭐";
+}
+
+.widget {
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(239, 68, 68, 0.3) !important;
+}
+
+.osha-number {
+    color: #ef4444 !important;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(59, 130, 246, 0.6) !important;
+}
+
+#blend-recipe-display {
+    color: #3b82f6 !important;
+    text-shadow: 0 0 25px rgba(59, 130, 246, 0.9), 0 0 50px rgba(239, 68, 68, 0.6) !important;
+}
+
+.equipment-category h4 {
+    color: #e0e7ff !important;
+}
+
+.equipment-category h4::before {
+    content: "🗽 ";
+}
+
+.years-badge {
+    background: rgba(59, 130, 246, 0.25) !important;
+    border-color: #3b82f6 !important;
+    color: #e0e7ff !important;
 }
