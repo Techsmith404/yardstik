@@ -261,19 +261,23 @@
                     ? data.production_tracker_value
                     : data.blend_recipe;
 
-                const trackerLabel = (data.production_tracker_label && data.production_tracker_label.trim())
+                const rawTrackerLabel = (data.production_tracker_label && data.production_tracker_label.trim())
                     ? data.production_tracker_label.trim()
                     : 'Active Blend Recipe';
 
                 if (trackerVal !== undefined && trackerVal !== null && trackerVal !== '') {
                     let displayVal = trackerVal.toString().trim();
+                    const hasHash = rawTrackerLabel.includes('#');
+
                     // If label contains '#' and value doesn't already start with '#', prepend '#'
-                    if (trackerLabel.includes('#') && !displayVal.startsWith('#')) {
+                    if (hasHash && !displayVal.startsWith('#')) {
                         displayVal = '#' + displayVal;
                     }
 
-                    const titleText = trackerLabel.endsWith(':') ? trackerLabel : trackerLabel + ':';
-                    const headerLabelText = trackerLabel.replace(/^Active\s+/i, '').trim();
+                    // Remove '#' from displayed title for clean appearance
+                    const displayLabel = rawTrackerLabel.replace(/#/g, '').replace(/\s+/g, ' ').trim();
+                    const titleText = displayLabel.endsWith(':') ? displayLabel : displayLabel + ':';
+                    const headerLabelText = displayLabel.replace(/^Active\s+/i, '').trim();
                     const cleanHeaderLabel = (headerLabelText.endsWith(':') ? headerLabelText : headerLabelText + ':').toUpperCase();
 
                     const mainTitle = document.getElementById('blend-widget-title');
