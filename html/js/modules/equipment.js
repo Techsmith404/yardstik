@@ -30,28 +30,7 @@ export async function fetchEquipmentStatus() {
     }
 }
 
-function getCategoryIcon(name = '') {
-    const n = name.toLowerCase();
-    if (n.includes('locomotive') || n.includes('switcher') || n.includes('train')) {
-        return '<i class="fa-solid fa-train" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    if (n.includes('crane')) {
-        return '<i class="fa-solid fa-truck-monster" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    if (n.includes('truck') || n.includes('haul')) {
-        return '<i class="fa-solid fa-truck" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    if (n.includes('mobile equipment') || n.includes('tractor') || n.includes('stacker')) {
-        return '<i class="fa-solid fa-tractor" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    if (n.includes('scale')) {
-        return '<i class="fa-solid fa-scale-balanced" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    if (n.includes('forklift')) {
-        return '<i class="fa-solid fa-dolly" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-    }
-    return '<i class="fa-solid fa-gears" style="margin-right: 8px; color: var(--brand-blue);"></i>';
-}
+import { getHolidayEquipmentIcon } from './theme.js';
 
 export function renderEquipmentDashboard() {
     const container = document.getElementById('equipment-masonry');
@@ -59,6 +38,7 @@ export function renderEquipmentDashboard() {
     
     container.innerHTML = '';
     const auditIsCurrent = isAuditResetCurrent(cachedEquipment.last_audit_reset);
+    const holidayIcon = getHolidayEquipmentIcon();
     
     cachedEquipment.categories.forEach(cat => {
         if (!cat.items || cat.items.length === 0) return;
@@ -75,7 +55,7 @@ export function renderEquipmentDashboard() {
         
         // Category Title
         const title = document.createElement('h4');
-        title.innerHTML = `${getCategoryIcon(cat.name)}${cat.name.toUpperCase()}`;
+        title.innerHTML = `${holidayIcon}${cat.name.toUpperCase()}`;
         title.style.margin = '0 0 12px 0';
         title.style.fontSize = '1.1rem';
         title.style.letterSpacing = '0.05em';

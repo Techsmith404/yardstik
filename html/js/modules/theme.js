@@ -1,5 +1,6 @@
 // Dynamic Seasonal Holiday Stylesheets & Vector Icon Manager Module
 import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
+import { renderEquipmentDashboard } from './equipment.js';
 
 const themeIcons = {
     halloween: {
@@ -27,6 +28,20 @@ const themeIcons = {
         right: '<i class="fa-solid fa-flag-usa" style="color: #3b82f6; font-size: 1.25rem; filter: drop-shadow(0 0 10px #3b82f6);"></i>'
     }
 };
+
+const holidayEquipmentIcons = {
+    halloween: '<i class="fa-solid fa-spider" style="margin-right: 8px; color: #f97316; font-size: 0.9em;"></i>',
+    christmas: '<i class="fa-solid fa-gift" style="margin-right: 8px; color: #ef4444; font-size: 0.9em;"></i>',
+    thanksgiving: '<i class="fa-solid fa-wheat-awn" style="margin-right: 8px; color: #eab308; font-size: 0.9em;"></i>',
+    newyear: '<i class="fa-solid fa-star" style="margin-right: 8px; color: #fbbf24; font-size: 0.9em;"></i>',
+    stpatricks: '<i class="fa-solid fa-clover" style="margin-right: 8px; color: #22c55e; font-size: 0.9em;"></i>',
+    july4: '<i class="fa-solid fa-flag" style="margin-right: 8px; color: #3b82f6; font-size: 0.9em;"></i>'
+};
+
+export function getHolidayEquipmentIcon() {
+    const currentTheme = getSeasonalTheme();
+    return holidayEquipmentIcons[currentTheme] || '';
+}
 
 export function getSeasonalTheme(date = new Date()) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -91,6 +106,7 @@ export function applyTheme(themeName) {
         iconSlots.forEach(el => { if (el) el.innerHTML = ''; });
         console.log('Active Theme: Default');
         startWeatherAnimation('none');
+        renderEquipmentDashboard();
         return;
     }
 
@@ -101,7 +117,7 @@ export function applyTheme(themeName) {
         document.head.appendChild(themeLink);
     }
 
-    const themeHref = `css/themes/theme-${themeName}.css?v=4.1`;
+    const themeHref = `css/themes/theme-${themeName}.css?v=4.2`;
     if (themeLink.getAttribute('href') !== themeHref) {
         themeLink.href = themeHref;
         console.log(`Active Seasonal Theme: ${themeName}`);
@@ -119,6 +135,7 @@ export function applyTheme(themeName) {
     }
 
     startWeatherAnimation('none');
+    renderEquipmentDashboard();
 }
 
 export function initSeasonalTheme() {

@@ -174,20 +174,25 @@ h2, h3 {
 
 .header-widget h2 {
     font-size: 2.4rem; /* Slightly larger */
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
     text-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Lift the text off the background */
-}
-
-.header-widget h2 #header-dashboard-title {
-    background: linear-gradient(135deg, #ffffff 30%, #a0aec0 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
 }
 
 .theme-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     -webkit-text-fill-color: initial !important;
-    display: inline-flex;
-    align-items: center;
+}
+
+.theme-icon i {
+    -webkit-text-fill-color: currentColor !important;
+    display: inline-block !important;
 }
 
 /* Digital clock design */
