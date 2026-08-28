@@ -1,4 +1,6 @@
 // Weather Animation, Holiday Atmosphere & High-Performance Particle FX Module
+import { cachedFeatures } from './features.js';
+
 let weatherAnimFrame = null;
 let currentHolidayTheme = null;
 
@@ -20,7 +22,7 @@ export function startWeatherAnimation(type) {
     }
     
     if (weatherAnimFrame) cancelAnimationFrame(weatherAnimFrame);
-    canvas.style.opacity = '1';
+    canvas.style.opacity = '0';
     vignette.style.opacity = '0';
     vignette.style.animation = 'none';
     vignette.style.boxShadow = 'none';
@@ -30,8 +32,14 @@ export function startWeatherAnimation(type) {
     if (darkOverlay) {
         darkOverlay.style.opacity = '0';
         darkOverlay.style.animation = 'none';
-        darkOverlay.style.background = 'rgba(0,10,20,0.5)';
+        darkOverlay.style.background = 'transparent';
     }
+
+    if (cachedFeatures.features?.weather_fx === false) {
+        return;
+    }
+
+    canvas.style.opacity = '1';
     
     // If no severe weather is active, check if a holiday atmospheric particle effect should play
     if (type === 'none' && currentHolidayTheme && currentHolidayTheme !== 'default') {

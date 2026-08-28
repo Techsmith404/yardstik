@@ -1,6 +1,7 @@
 // Lightning Strike Detection & All-Clear Countdown Engine Module
 import { siteConfig } from './config.js';
 import { activeAlertCount, currentWeatherCode, currentPrecipProb, allocateSlots } from './weather.js';
+import { cachedFeatures } from './features.js';
 
 export let activeLightningStrike = null;
 export let lightningDistance = null;
@@ -15,6 +16,9 @@ export function isLightningConditionsMet() {
 }
 
 export async function checkLightning() {
+    if (cachedFeatures.features?.lightning_radar === false) {
+        return;
+    }
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const mock = urlParams.get('mock');
@@ -51,6 +55,16 @@ export async function checkLightning() {
 
 export function updateLightningWidget() {
     const existingWidget = document.getElementById('lightning-alert-widget');
+    
+    if (cachedFeatures.features?.lightning_radar === false) {
+        if (existingWidget) existingWidget.remove();
+        activeLightningStrike = null;
+        if (hasAllocatedLightningSlot) {
+            hasAllocatedLightningSlot = false;
+            allocateSlots(activeAlertCount);
+        }
+        return;
+    }
     
     if (activeLightningStrike) {
         const now = new Date();

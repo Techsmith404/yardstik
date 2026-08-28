@@ -1,5 +1,7 @@
 // Dashboard Features & Layout Adaptation Module
 import { allocateSlots, activeAlertCount } from './weather.js';
+import { startWeatherAnimation } from './fx.js';
+import { updateLightningWidget } from './lightning.js';
 
 export let cachedFeatures = {
     theme_mode: "auto",
@@ -40,10 +42,12 @@ export function applyFeatureFlags() {
     const f = cachedFeatures.features || {};
     const body = document.body;
 
-    // 1. Weather FX
-    const weatherCanvas = document.getElementById('weather-canvas');
-    if (weatherCanvas) {
-        weatherCanvas.style.display = (f.weather_fx !== false) ? 'block' : 'none';
+    // 1. Weather FX & Lightning Widget Teardown
+    if (f.weather_fx === false) {
+        startWeatherAnimation('none');
+    }
+    if (f.lightning_radar === false) {
+        updateLightningWidget();
     }
 
     // 2. Equipment Status Grid
