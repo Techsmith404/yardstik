@@ -81,6 +81,13 @@ export function applyFeatureFlags() {
     // 7. Recalculate OSHA, Blend & Shift slot allocations in weather sidebar & header
     allocateSlots(activeAlertCount);
 
+    // 8. Background Texture Style (Issue #9)
+    const urlParams = new URLSearchParams(window.location.search);
+    const bgOverride = urlParams.get('bg');
+    const activeBg = (bgOverride || cachedFeatures.bg_style || 'dots').toLowerCase().trim();
+    ['bg-dots', 'bg-hex', 'bg-diagonal', 'bg-aurora', 'bg-minimal', 'bg-grid'].forEach(cls => body.classList.remove(cls));
+    body.classList.add(`bg-${activeBg}`);
+
     // --- Adaptive Mosaic Classes ---
     const viewAnnouncements = document.getElementById('view-announcements');
 

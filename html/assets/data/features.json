@@ -3,10 +3,13 @@
     "dedicated_theme": "default",
     "shift_theme_dedication": false,
     "shift_themes": {
-        "1": "default",
-        "2": "obsidian",
-        "3": "cyberpunk"
+        "A Shift": "default",
+        "B Shift": "obsidian",
+        "C Shift": "cyberpunk",
+        "D Shift": "emerald",
+        "X Turn": "default"
     },
+    "bg_style": "dots",
     "features": {
         "weather_fx": true,
         "lightning_radar": true,

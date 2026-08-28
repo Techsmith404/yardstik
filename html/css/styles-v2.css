@@ -72,17 +72,69 @@ blockquote p {
     margin: 0;
 }
 
-/* Industrial Grid Pattern Overlay */
+/* Background Texture Patterns (Issue #9) */
 body::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
     z-index: -1;
     pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+/* Classic Square Grid */
+body.bg-grid::before {
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* 1. Modern Micro Dot Matrix (Recommended Modern Lobby Look) */
+body.bg-dots::before,
+body:not([class*="bg-"])::before {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1.2px, transparent 1.2px);
+    background-size: 26px 26px;
+}
+
+/* 2. Geometric Hexagonal Carbon Hive */
+body.bg-hex::before {
+    background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.06) 15%, transparent 16%),
+        radial-gradient(rgba(255, 255, 255, 0.06) 15%, transparent 16%);
+    background-size: 36px 36px;
+    background-position: 0 0, 18px 18px;
+}
+
+/* 3. Industrial Diagonal Cross-Hatch */
+body.bg-diagonal::before {
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.02) 0px,
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px,
+        transparent 18px
+    );
+}
+
+/* 4. Ambient Aurora Bloom (No Grid, Soft Color Aura) */
+body.bg-aurora::before {
+    display: none;
+}
+body.bg-aurora::after {
+    background: 
+        radial-gradient(ellipse at 20% 25%, rgba(77, 166, 255, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 75%, rgba(105, 165, 121, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.12) 0%, transparent 65%) !important;
+    animation: industrial-glow-drift 25s ease-in-out infinite alternate !important;
+}
+
+/* 5. Minimalist Clean Slate */
+body.bg-minimal::before {
+    display: none;
+}
+body.bg-minimal::after {
+    opacity: 0.4;
 }
 
 /* Drifting Brand-Color Ambient Auras */

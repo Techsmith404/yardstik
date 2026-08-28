@@ -911,6 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const extrasStatus = document.getElementById('extras-status');
     const themeModeSelect = document.getElementById('theme-mode-select');
     const dedicatedThemeSelect = document.getElementById('dedicated-theme-select');
+    const bgStyleSelect = document.getElementById('bg-style-select');
     const chkShiftThemeDedication = document.getElementById('chk-shift-theme-dedication');
     const shiftThemesContainer = document.getElementById('shift-themes-container');
 
@@ -948,6 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(([featuresData, shiftsData]) => {
                 if (themeModeSelect) themeModeSelect.value = featuresData.theme_mode || 'auto';
                 if (dedicatedThemeSelect) dedicatedThemeSelect.value = featuresData.dedicated_theme || 'default';
+                if (bgStyleSelect) bgStyleSelect.value = featuresData.bg_style || 'dots';
                 if (chkShiftThemeDedication) chkShiftThemeDedication.checked = !!featuresData.shift_theme_dedication;
                 
                 // Render Dynamic Per-Shift Theme Dropdowns
@@ -1040,6 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 theme_mode: themeModeSelect ? themeModeSelect.value : 'auto',
                 dedicated_theme: dedicatedThemeSelect ? dedicatedThemeSelect.value : 'default',
+                bg_style: bgStyleSelect ? bgStyleSelect.value : 'dots',
                 shift_theme_dedication: chkShiftThemeDedication ? chkShiftThemeDedication.checked : false,
                 shift_themes: shiftThemesPayload,
                 features: feats
