@@ -1,5 +1,8 @@
 // Clock, Shift Tracker & Countdown Engine Module
+import { applyTheme, getSeasonalTheme } from './theme.js';
+
 export let cachedShifts = [];
+let lastTrackedShiftName = '__INIT__';
 
 export async function fetchShifts() {
     try {
@@ -100,6 +103,11 @@ export function updateShiftTracker() {
             if (sProg) sProg.style.width = '0%';
             if (sText) sText.innerText = "Standby...";
             window.globalActiveShiftName = null;
+        }
+
+        if (lastTrackedShiftName !== window.globalActiveShiftName) {
+            lastTrackedShiftName = window.globalActiveShiftName;
+            applyTheme(getSeasonalTheme());
         }
     } catch (e) {}
 }

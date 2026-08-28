@@ -56,15 +56,14 @@ export function getSeasonalTheme(date = new Date()) {
 
     // Per-Shift Theme Dedication
     if (cachedFeatures && cachedFeatures.shift_theme_dedication) {
-        const activeShiftName = (window.globalActiveShiftName || '').toLowerCase();
-        let shiftKey = "1";
-        if (activeShiftName.includes('2nd') || activeShiftName.includes('night') || activeShiftName.includes('swing')) {
-            shiftKey = "2";
-        } else if (activeShiftName.includes('3rd') || activeShiftName.includes('graveyard')) {
-            shiftKey = "3";
-        }
-        if (cachedFeatures.shift_themes && cachedFeatures.shift_themes[shiftKey]) {
-            return cachedFeatures.shift_themes[shiftKey];
+        const activeShiftName = window.globalActiveShiftName;
+        if (activeShiftName && cachedFeatures.shift_themes) {
+            const lowerActive = activeShiftName.toLowerCase().trim();
+            for (const [sName, themeVal] of Object.entries(cachedFeatures.shift_themes)) {
+                if (sName.toLowerCase().trim() === lowerActive) {
+                    return themeVal;
+                }
+            }
         }
     }
 

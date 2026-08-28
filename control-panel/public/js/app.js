@@ -912,14 +912,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeModeSelect = document.getElementById('theme-mode-select');
     const dedicatedThemeSelect = document.getElementById('dedicated-theme-select');
     const chkShiftThemeDedication = document.getElementById('chk-shift-theme-dedication');
-    const shift1Theme = document.getElementById('shift-1-theme');
-    const shift2Theme = document.getElementById('shift-2-theme');
-    const shift3Theme = document.getElementById('shift-3-theme');
+    const shiftThemesContainer = document.getElementById('shift-themes-container');
 
     const featureKeys = [
         'weather_fx', 'lightning_radar', 'osha_counter', 'production_tracker',
         'equipment_status', 'scale_audit_badges', 'shift_tracker', 'toolbox_talk',
         'reminders', 'anniversaries', 'safety_videos', 'mobile_qr'
+    ];
+
+    const themeOptionsList = [
+        { val: 'default', label: '🌿 Classic Corporate Sage (Default)' },
+        { val: 'obsidian', label: '🌌 Obsidian Midnight (Deep Dark & Ice Blue)' },
+        { val: 'cyberpunk', label: '⚡ Cyberpunk Neon (Cyan & Magenta)' },
+        { val: 'emerald', label: '🌲 Emerald Forest (Lush Green & Gold)' },
+        { val: 'halloween', label: '🎃 Halloween' },
+        { val: 'thanksgiving', label: '🦃 Thanksgiving' },
+        { val: 'christmas', label: '🎄 Christmas' },
+        { val: 'newyear', label: '🍾 New Year\'s' },
+        { val: 'stpatricks', label: '☘️ St. Patrick\'s' },
+        { val: 'july4', label: '🎆 4th of July' }
     ];
 
     if (navExtrasBtn) {
@@ -930,29 +941,70 @@ document.addEventListener('DOMContentLoaded', () => {
             if (extrasView) extrasView.classList.add('active');
             currentScriptTitle.innerText = 'Extras & Themes';
 
-            fetch('/api/features')
-                .then(res => res.json())
-                .then(data => {
-                    if (themeModeSelect) themeModeSelect.value = data.theme_mode || 'auto';
-                    if (dedicatedThemeSelect) dedicatedThemeSelect.value = data.dedicated_theme || 'default';
-                    if (chkShiftThemeDedication) chkShiftThemeDedication.checked = !!data.shift_theme_dedication;
-                    if (data.shift_themes) {
-                        if (shift1Theme && data.shift_themes["1"]) shift1Theme.value = data.shift_themes["1"];
-                        if (shift2Theme && data.shift_themes["2"]) shift2Theme.value = data.shift_themes["2"];
-                        if (shift3Theme && data.shift_themes["3"]) shift3Theme.value = data.shift_themes["3"];
+            Promise.all([
+                fetch('/api/features').then(r => r.json()),
+                fetch('/api/shifts').then(r => r.json()).catch(() => ({ shifts: [] }))
+            ])
+            .then(([featuresData, shiftsData]) => {
+                if (themeModeSelect) themeModeSelect.value = featuresData.theme_mode || 'auto';
+                if (dedicatedThemeSelect) dedicatedThemeSelect.value = featuresData.dedicated_theme || 'default';
+                if (chkShiftThemeDedication) chkShiftThemeDedication.checked = !!featuresData.shift_theme_dedication;
+                
+                // Render Dynamic Per-Shift Theme Dropdowns
+                if (shiftThemesContainer) {
+                    shiftThemesContainer.innerHTML = '';
+                    const shifts = shiftsData.shifts || [];
+                    const shiftThemes = featuresData.shift_themes || {};
+
+                    if (shifts.length === 0) {
+                        shiftThemesContainer.innerHTML = '<div style="color: var(--text-secondary); font-style: italic; font-size: 0.85rem;">No shifts configured in Shift Schedules yet.</div>';
+                    } else {
+                        shifts.forEach(shift => {
+                            const group = document.createElement('div');
+                            group.className = 'form-group';
+                            group.style.background = 'rgba(0,0,0,0.2)';
+                            group.style.padding = '10px 12px';
+                            group.style.borderRadius = '8px';
+                            group.style.border = '1px solid rgba(255,255,255,0.06)';
+
+                            const label = document.createElement('label');
+                            label.style.display = 'flex';
+                            label.style.justifyContent = 'space-between';
+                            label.style.alignItems = 'center';
+                            label.style.marginBottom = '6px';
+                            label.innerHTML = `<strong style="color: #fff;">${shift.name}</strong> <span style="font-size: 0.75rem; color: var(--text-secondary);">${shift.start} - ${shift.end}</span>`;
+                            group.appendChild(label);
+
+                            const select = document.createElement('select');
+                            select.className = 'form-control shift-theme-select';
+                            select.setAttribute('data-shift-name', shift.name);
+
+                            const activeThemeForShift = shiftThemes[shift.name] || 'default';
+                            themeOptionsList.forEach(opt => {
+                                const o = document.createElement('option');
+                                o.value = opt.val;
+                                o.innerText = opt.label;
+                                if (opt.val === activeThemeForShift) o.selected = true;
+                                select.appendChild(o);
+                            });
+                            group.appendChild(select);
+                            shiftThemesContainer.appendChild(group);
+                        });
                     }
-                    const feats = data.features || {};
-                    featureKeys.forEach(k => {
-                        const el = document.getElementById(`feat-${k}`);
-                        if (el) el.checked = feats[k] !== false;
-                    });
-                })
-                .catch(() => {
-                    if (extrasStatus) {
-                        extrasStatus.style.display = 'block';
-                        extrasStatus.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load features config.</span>';
-                    }
+                }
+
+                const feats = featuresData.features || {};
+                featureKeys.forEach(k => {
+                    const el = document.getElementById(`feat-${k}`);
+                    if (el) el.checked = feats[k] !== false;
                 });
+            })
+            .catch(() => {
+                if (extrasStatus) {
+                    extrasStatus.style.display = 'block';
+                    extrasStatus.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load features config.</span>';
+                }
+            });
         });
     }
 
@@ -964,15 +1016,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 feats[k] = el ? el.checked : true;
             });
 
+            const shiftThemesPayload = {};
+            document.querySelectorAll('.shift-theme-select').forEach(sel => {
+                const sName = sel.getAttribute('data-shift-name');
+                if (sName) {
+                    shiftThemesPayload[sName] = sel.value;
+                }
+            });
+
             const payload = {
                 theme_mode: themeModeSelect ? themeModeSelect.value : 'auto',
                 dedicated_theme: dedicatedThemeSelect ? dedicatedThemeSelect.value : 'default',
                 shift_theme_dedication: chkShiftThemeDedication ? chkShiftThemeDedication.checked : false,
-                shift_themes: {
-                    "1": shift1Theme ? shift1Theme.value : 'default',
-                    "2": shift2Theme ? shift2Theme.value : 'obsidian',
-                    "3": shift3Theme ? shift3Theme.value : 'cyberpunk'
-                },
+                shift_themes: shiftThemesPayload,
                 features: feats
             };
 
