@@ -13,6 +13,7 @@ done
 
 python3 -c "
 import json
+import time
 
 path = '/data/trackers.json'
 try:
@@ -23,10 +24,13 @@ except Exception:
 
 val = '''$val'''.strip()
 label = '''$label'''.strip()
+now_ms = int(time.time() * 1000)
 
 if val:
     data['production_tracker_value'] = val
     data['blend_recipe'] = val
+    data['production_tracker_updated_at'] = now_ms
+    data['blend_recipe_updated_at'] = now_ms
 
 if label:
     data['production_tracker_label'] = label

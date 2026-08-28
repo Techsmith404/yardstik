@@ -1015,6 +1015,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (param.required) input.required = true;
                 group.appendChild(input);
                 formInputs.appendChild(group);
+
+                // Auto pre-populate tracker values for update_blend and update_osha
+                if (script.id === 'update_blend' || script.id.includes('blend')) {
+                    fetch('/api/trackers')
+                        .then(r => r.json())
+                        .then(trackers => {
+                            if (param.name.toLowerCase().includes('value') || param.name.toLowerCase().includes('recipe')) {
+                                const currentVal = trackers.production_tracker_value || trackers.blend_recipe || '';
+                                if (currentVal && !input.value) {
+                                    input.value = currentVal;
+                                    input.placeholder = `Current: ${currentVal}`;
+                                }
+                            } else if (param.name.toLowerCase().includes('label') || param.name.toLowerCase().includes('title')) {
+                                const currentLabel = trackers.production_tracker_label || trackers.blend_recipe_label || 'Active Blend Recipe #';
+                                if (currentLabel && !input.value) {
+                                    input.value = currentLabel;
+                                    input.placeholder = `Current: ${currentLabel}`;
+                                }
+                            }
+                        })
+                        .catch(() => {});
+                } else if (script.id === 'update_osha' && param.name.toLowerCase().includes('date')) {
+                    fetch('/api/trackers')
+                        .then(r => r.json())
+                        .then(trackers => {
+                            if (trackers.last_incident_date && !input.value) {
+                                input.value = trackers.last_incident_date;
+                                input.placeholder = `Current: ${trackers.last_incident_date}`;
+                            }
+                        })
+                        .catch(() => {});
+                }
             });
         } else {
             formInputs.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No parameters required for this script.</p>';

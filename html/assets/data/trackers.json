@@ -3,6 +3,8 @@
     "production_tracker_label": "Active Blend Recipe #",
     "production_tracker_value": "338",
     "blend_recipe": "338",
+    "production_tracker_updated_at": 1787860000000,
+    "blend_recipe_updated_at": 1787860000000,
     "toolbox_override_date": "2026-08-07",
     "toolbox_override_file": "override.png"
 }

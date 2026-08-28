@@ -57,6 +57,34 @@ export async function updateTrackers() {
 
             const hBlend = document.getElementById('header-blend-display');
             if (hBlend) hBlend.innerText = displayVal;
+
+            // 16-Hour Glow effect when updated
+            const updatedEpoch = data.production_tracker_updated_at || data.blend_recipe_updated_at;
+            let isRecentlyUpdated = false;
+            if (updatedEpoch) {
+                const diffHours = (Date.now() - Number(updatedEpoch)) / (1000 * 60 * 60);
+                if (diffHours >= 0 && diffHours < 16) {
+                    isRecentlyUpdated = true;
+                }
+            }
+
+            const mainWidget = document.getElementById('blend-widget-container');
+            if (mainWidget) {
+                if (isRecentlyUpdated) {
+                    mainWidget.classList.add('blend-widget-updated');
+                } else {
+                    mainWidget.classList.remove('blend-widget-updated');
+                }
+            }
+
+            const hBlendWidget = document.getElementById('header-blend');
+            if (hBlendWidget) {
+                if (isRecentlyUpdated) {
+                    hBlendWidget.classList.add('blend-widget-updated');
+                } else {
+                    hBlendWidget.classList.remove('blend-widget-updated');
+                }
+            }
         }
     } catch (e) {
         const osha = document.getElementById('osha-counter');

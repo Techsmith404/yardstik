@@ -123,6 +123,21 @@ app.get('/api/scripts', (req, res) => {
     }
 });
 
+// Production Trackers Endpoints
+app.get('/api/trackers', (req, res) => {
+    try {
+        const trackersPath = '/data/trackers.json';
+        if (fs.existsSync(trackersPath)) {
+            const data = JSON.parse(fs.readFileSync(trackersPath, 'utf8'));
+            res.json(data);
+        } else {
+            res.json({});
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to read trackers file' });
+    }
+});
+
 // Native Markdown Editor Endpoints
 const REMINDERS_PATH = '/data/reminders.md'; // Mapped from ./html/assets/data
 

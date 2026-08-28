@@ -329,11 +329,20 @@
                     if (hasHash && !displayVal.startsWith('#')) {
                         displayVal = '#' + displayVal;
                     }
-                    const displayLabel = rawTrackerLabel.replace(/#/g, '').replace(/\s+/g, ' ').trim();
+                    const updatedEpoch = data.production_tracker_updated_at || data.blend_recipe_updated_at;
+                    let isRecent = false;
+                    if (updatedEpoch) {
+                        const diffH = (Date.now() - Number(updatedEpoch)) / (1000 * 60 * 60);
+                        if (diffH >= 0 && diffH < 16) isRecent = true;
+                    }
+                    const cardStyle = isRecent 
+                        ? 'border: 2px solid #4da6ff; box-shadow: 0 0 25px rgba(77, 166, 255, 0.6); text-align: center; margin-bottom: 20px; background: rgba(77, 166, 255, 0.1);' 
+                        : 'border-left-color: var(--brand-blue, #4da6ff); text-align: center; margin-bottom: 20px;';
+
                     extraHtml += `
-                        <div class="reminder-card" style="border-left-color: var(--brand-blue, #4da6ff); text-align: center; margin-bottom: 20px;">
+                        <div class="reminder-card" style="${cardStyle}">
                             <h3 style="margin-bottom: 5px;">${displayLabel}</h3>
-                            <div style="font-size: 2rem; font-weight: 900; color: var(--brand-blue, #4da6ff);">${displayVal}</div>
+                            <div style="font-size: 2rem; font-weight: 900; color: var(--brand-blue, #4da6ff); text-shadow: ${isRecent ? '0 0 20px #4da6ff' : 'none'};">${displayVal}</div>
                         </div>
                     `;
                 }
