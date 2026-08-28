@@ -1,0 +1,53 @@
+{
+    "settings": {
+        "enabled": true,
+        "require_approval": false,
+        "categories": [
+            {
+                "id": "safety",
+                "name": "Safety / Maintenance",
+                "icon": "fa-solid fa-shield-halved",
+                "color": "#f59e0b"
+            },
+            {
+                "id": "breakroom",
+                "name": "Breakroom / General",
+                "icon": "fa-solid fa-mug-hot",
+                "color": "#38bdf8"
+            }
+        ]
+    },
+    "users": {},
+    "messages": [
+        {
+            "id": "msg_welcome_safety",
+            "category_id": "safety",
+            "author": "Safety Committee",
+            "shift": "All Shifts",
+            "is_anonymous": false,
+            "text": "Reminder: All forklift operators please complete monthly walk-around inspections before beginning shift operations.",
+            "timestamp": 1724832000000,
+            "status": "approved",
+            "pinned": true,
+            "reactions": {
+                "thumbsup": 5,
+                "heart": 2
+            }
+        },
+        {
+            "id": "msg_welcome_breakroom",
+            "category_id": "breakroom",
+            "author": "Breakroom Committee",
+            "shift": "Plant",
+            "is_anonymous": false,
+            "text": "Welcome to the new Live Team Message Board! Scan the QR code on your mobile dashboard to leave shoutouts, shift notes, and suggestions.",
+            "timestamp": 1724832100000,
+            "status": "approved",
+            "pinned": true,
+            "reactions": {
+                "thumbsup": 8,
+                "fire": 4
+            }
+        }
+    ]
+}

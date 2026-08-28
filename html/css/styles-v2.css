@@ -429,6 +429,26 @@ body.feature-only-reminders #reminders-widget-container {
     font-size: 1.25rem !important;
 }
 
+/* View 3: Live Message Board */
+#view-message-board {
+    display: flex;
+    flex-direction: column;
+    padding: 35px;
+}
+
+.message-card {
+    animation: fadeIn 0.35s ease-out;
+}
+
+.message-card.message-pinned {
+    animation: pinned-pulse 3.5s infinite alternate;
+}
+
+@keyframes pinned-pulse {
+    0% { border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 0 15px rgba(56, 189, 248, 0.15); }
+    100% { border-color: rgba(56, 189, 248, 0.75); box-shadow: 0 0 30px rgba(56, 189, 248, 0.35); }
+}
+
 /* QR Code Toggle */
 body.feature-no-mobile-qr #mobile-qr-img {
     display: none !important;

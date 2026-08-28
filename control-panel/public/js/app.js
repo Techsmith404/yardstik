@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const featureKeys = [
         'weather_fx', 'lightning_radar', 'osha_counter', 'production_tracker',
         'equipment_status', 'scale_audit_badges', 'shift_tracker', 'toolbox_talk',
-        'reminders', 'anniversaries', 'safety_videos', 'mobile_qr'
+        'reminders', 'anniversaries', 'safety_videos', 'mobile_qr', 'message_board'
     ];
 
     const themeOptionsList = [
@@ -1077,6 +1077,263 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // ── Live Message Board Admin Controller (Issue #13) ─────────────────────────
+    const navMessageBoardBtn = document.getElementById('nav-message-board');
+    if (navMessageBoardBtn) navMessageBoardBtn.setAttribute('data-script', 'message-board');
+    const messageBoardView = document.getElementById('message-board-view');
+    const chkMbEnabled = document.getElementById('chk-mb-enabled');
+    const chkMbApproval = document.getElementById('chk-mb-approval');
+    const btnSaveMbSettings = document.getElementById('btn-save-mb-settings');
+    const mbSettingsStatus = document.getElementById('mb-settings-status');
+    const mbCategoriesList = document.getElementById('mb-categories-list');
+    const btnAddCategory = document.getElementById('btn-add-category');
+    const newCatName = document.getElementById('new-cat-name');
+    const newCatIcon = document.getElementById('new-cat-icon');
+    const newCatColor = document.getElementById('new-cat-color');
+    const mbPostsContainer = document.getElementById('mb-posts-container');
+    const mbBadgePending = document.getElementById('mb-badge-pending');
+
+    let mbAdminData = { settings: {}, categories: [], messages: [] };
+    let activeMbFilter = 'all';
+
+    function loadMessageBoardAdmin() {
+        if (!mbPostsContainer) return;
+        mbPostsContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px;">Loading posts...</div>';
+
+        fetch('/api/message-board?admin=1')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                mbAdminData = data;
+
+                if (chkMbEnabled) chkMbEnabled.checked = data.settings.enabled !== false;
+                if (chkMbApproval) chkMbApproval.checked = data.settings.require_approval === true;
+
+                renderAdminCategories();
+                renderAdminPosts();
+            })
+            .catch(err => {
+                mbPostsContainer.innerHTML = '<div style="color: var(--danger); text-align: center; padding: 20px;">Failed to load message board data.</div>';
+            });
+    }
+
+    function renderAdminCategories() {
+        if (!mbCategoriesList) return;
+        mbCategoriesList.innerHTML = '';
+        const cats = mbAdminData.categories || [];
+        if (cats.length === 0) {
+            mbCategoriesList.innerHTML = '<span style="color: var(--text-secondary); font-style: italic; font-size: 0.85rem;">No categories configured yet.</span>';
+            return;
+        }
+
+        cats.forEach((cat, index) => {
+            const pill = document.createElement('div');
+            pill.style.background = 'rgba(255,255,255,0.05)';
+            pill.style.border = `1px solid ${cat.color || '#38bdf8'}66`;
+            pill.style.padding = '6px 12px';
+            pill.style.borderRadius = '20px';
+            pill.style.display = 'inline-flex';
+            pill.style.alignItems = 'center';
+            pill.style.gap = '8px';
+            pill.style.fontSize = '0.85rem';
+
+            pill.innerHTML = `
+                <i class="${cat.icon || 'fa-solid fa-tag'}" style="color: ${cat.color || '#38bdf8'};"></i>
+                <strong style="color: #fff;">${cat.name}</strong>
+                <button type="button" class="btn-delete-cat" data-index="${index}" style="background: none; border: none; color: var(--danger, #ef4444); cursor: pointer; padding: 0 4px; font-size: 0.85rem;" title="Delete category">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            mbCategoriesList.appendChild(pill);
+        });
+
+        document.querySelectorAll('.btn-delete-cat').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.getAttribute('data-index'), 10);
+                if (confirm(`Remove the category "${mbAdminData.categories[idx].name}"?`)) {
+                    mbAdminData.categories.splice(idx, 1);
+                    saveMbSettingsDirect();
+                }
+            });
+        });
+    }
+
+    function renderAdminPosts() {
+        if (!mbPostsContainer) return;
+        const messages = mbAdminData.messages || [];
+        const pendingCount = messages.filter(m => m.status === 'pending').length;
+
+        if (mbBadgePending) {
+            if (pendingCount > 0) {
+                mbBadgePending.style.display = 'inline-block';
+                mbBadgePending.innerText = pendingCount;
+            } else {
+                mbBadgePending.style.display = 'none';
+            }
+        }
+
+        let filtered = messages;
+        if (activeMbFilter === 'pending') filtered = messages.filter(m => m.status === 'pending');
+        else if (activeMbFilter === 'approved') filtered = messages.filter(m => m.status === 'approved');
+        else if (activeMbFilter === 'pinned') filtered = messages.filter(m => m.pinned);
+        else if (activeMbFilter === 'hidden') filtered = messages.filter(m => m.status === 'hidden');
+
+        if (filtered.length === 0) {
+            mbPostsContainer.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 30px; font-style: italic;">No posts found under the "${activeMbFilter}" filter.</div>`;
+            return;
+        }
+
+        const catMap = {};
+        (mbAdminData.categories || []).forEach(c => catMap[c.id] = c);
+
+        mbPostsContainer.innerHTML = filtered.map(msg => {
+            const cat = catMap[msg.category_id] || { name: 'General', color: '#38bdf8', icon: 'fa-solid fa-comment' };
+            const timeStr = new Date(msg.timestamp).toLocaleString();
+            const isPending = msg.status === 'pending';
+            const isHidden = msg.status === 'hidden';
+            const isPinned = !!msg.pinned;
+
+            let statusBadge = `<span style="background: #10b98122; border: 1px solid #10b981; color: #10b981; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">Approved</span>`;
+            if (isPending) statusBadge = `<span style="background: #ef444422; border: 1px solid #ef4444; color: #ef4444; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">Pending Approval</span>`;
+            if (isHidden) statusBadge = `<span style="background: #64748b22; border: 1px solid #64748b; color: #64748b; padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">Hidden</span>`;
+
+            return `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${cat.color}; border-radius: 8px; padding: 14px 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="color: ${cat.color}; font-size: 0.8rem; font-weight: bold; background: ${cat.color}15; padding: 2px 8px; border-radius: 6px;">
+                                <i class="${cat.icon}"></i> ${cat.name}
+                            </span>
+                            <strong style="color: #fff;">${msg.is_anonymous ? 'Anonymous' : escapeHtml(msg.author)}</strong>
+                            <span style="color: var(--text-secondary); font-size: 0.8rem;">(${escapeHtml(msg.shift || 'Plant')})</span>
+                            ${statusBadge}
+                            ${isPinned ? '<span style="color: #38bdf8; font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-thumbtack"></i> Pinned</span>' : ''}
+                        </div>
+                        <span style="color: var(--text-secondary); font-size: 0.8rem; opacity: 0.8;">${timeStr}</span>
+                    </div>
+
+                    <p style="color: #f1f5f9; font-size: 0.95rem; margin: 0 0 12px 0; line-height: 1.45; word-break: break-word;">
+                        ${escapeHtml(msg.text)}
+                    </p>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                            Reactions: 👍 ${msg.reactions?.thumbsup || 0} • ❤️ ${msg.reactions?.heart || 0} • 🔥 ${msg.reactions?.fire || 0}
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            ${isPending ? `<button class="btn btn-sm btn-success btn-mod-action" data-id="${msg.id}" data-action="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ''}
+                            <button class="btn btn-sm ${isPinned ? 'btn-warning' : 'btn-secondary'} btn-mod-action" data-id="${msg.id}" data-action="pin">
+                                <i class="fa-solid fa-thumbtack"></i> ${isPinned ? 'Unpin' : 'Pin'}
+                            </button>
+                            <button class="btn btn-sm ${isHidden ? 'btn-info' : 'btn-secondary'} btn-mod-action" data-id="${msg.id}" data-action="${isHidden ? 'approve' : 'hide'}">
+                                <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${isHidden ? 'Show' : 'Hide'}
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-mod-action" data-id="${msg.id}" data-action="delete">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                            ${!msg.is_anonymous ? `<button class="btn btn-sm btn-secondary btn-reset-pin" data-name="${msg.author}" title="Reset this user's 4-digit PIN"><i class="fa-solid fa-key"></i> Reset PIN</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.querySelectorAll('.btn-mod-action').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const messageId = btn.getAttribute('data-id');
+                const action = btn.getAttribute('data-action');
+                if (action === 'delete' && !confirm('Are you sure you want to permanently delete this message?')) return;
+
+                fetch('/api/message-board/admin/moderate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message_id: messageId, action })
+                })
+                .then(r => r.json())
+                .then(() => loadMessageBoardAdmin());
+            });
+        });
+
+        document.querySelectorAll('.btn-reset-pin').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const empName = btn.getAttribute('data-name');
+                if (confirm(`Reset 4-digit PIN for "${empName}"? They will be able to create a new PIN on their next post.`)) {
+                    fetch('/api/message-board/admin/reset-pin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ employee_name: empName })
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        alert(d.message || 'PIN reset successfully');
+                    });
+                }
+            });
+        });
+    }
+
+    function saveMbSettingsDirect() {
+        const payload = {
+            enabled: chkMbEnabled ? chkMbEnabled.checked : true,
+            require_approval: chkMbApproval ? chkMbApproval.checked : false,
+            categories: mbAdminData.categories || []
+        };
+
+        fetch('/api/message-board/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (mbSettingsStatus) {
+                mbSettingsStatus.style.display = 'block';
+                mbSettingsStatus.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Message board settings saved!</span>';
+                setTimeout(() => mbSettingsStatus.style.display = 'none', 3000);
+            }
+            loadMessageBoardAdmin();
+        });
+    }
+
+    if (navMessageBoardBtn) {
+        navMessageBoardBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navMessageBoardBtn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            if (messageBoardView) messageBoardView.classList.add('active');
+            currentScriptTitle.innerText = 'Live Message Board';
+            loadMessageBoardAdmin();
+        });
+    }
+
+    if (btnSaveMbSettings) {
+        btnSaveMbSettings.addEventListener('click', () => saveMbSettingsDirect());
+    }
+
+    if (btnAddCategory) {
+        btnAddCategory.addEventListener('click', () => {
+            const name = newCatName ? newCatName.value.trim() : '';
+            if (!name) return alert('Please enter a category name.');
+            const icon = newCatIcon ? newCatIcon.value.trim() : 'fa-solid fa-tag';
+            const color = newCatColor ? newCatColor.value : '#38bdf8';
+            const id = name.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+            if (!mbAdminData.categories) mbAdminData.categories = [];
+            mbAdminData.categories.push({ id, name, icon, color });
+            if (newCatName) newCatName.value = '';
+            saveMbSettingsDirect();
+        });
+    }
+
+    document.querySelectorAll('.mb-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mb-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeMbFilter = btn.getAttribute('data-filter');
+            renderAdminPosts();
+        });
+    });
 
     function renderSidebar() {
         const dynamicContainer = document.getElementById('dynamic-scripts');

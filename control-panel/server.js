@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
@@ -183,6 +184,301 @@ app.post('/api/features', (req, res) => {
     } catch (err) {
         console.error('Error saving features:', err);
         res.status(500).json({ error: 'Failed to save features configuration' });
+    }
+});
+
+// ── Live Message Board API Endpoints (Issue #13) ───────────────────────────
+const MESSAGE_BOARD_PATH = fs.existsSync('/data') 
+    ? '/data/message_board.json' 
+    : path.join(__dirname, '../html/assets/data/message_board.json');
+
+const MB_BANNED_PATTERNS = [
+    /\bf+u+c+k+/i, /\bs+h+i+t+/i, /\bb+i+t+c+h+/i, /\ba+s+s+h+o+l+e+/i,
+    /\bd+i+c+k+/i, /\bc+u+n+t+/i, /\bp+u+s+s+y+/i, /\bb+a+s+t+a+r+d+/i,
+    /\bw+h+o+r+e+/i, /\bs+l+u+t+/i, /\bf+a+g+/i, /\bn+i+g+g+/i,
+    /\bn+i+g+a+/i, /\br+e+t+a+r+d+/i, /\bk+i+k+e+/i, /\bc+h+i+n+k+/i,
+    /\bs+p+i+c+/i, /\bw+t+f\b/i, /\bs+t+f+u\b/i
+];
+
+function checkMessageProfanity(text) {
+    if (!text || typeof text !== 'string') return false;
+    for (const p of MB_BANNED_PATTERNS) if (p.test(text)) return true;
+    const norm = text.toLowerCase()
+        .replace(/0/g, 'o').replace(/1|!|\|/g, 'i').replace(/3/g, 'e')
+        .replace(/4|@/g, 'a').replace(/5|\$/g, 's').replace(/7/g, 't')
+        .replace(/8/g, 'b').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+    for (const p of MB_BANNED_PATTERNS) if (p.test(norm)) return true;
+    const collapsed = norm.replace(/\s+/g, '');
+    for (const p of MB_BANNED_PATTERNS) if (p.test(collapsed)) return true;
+    return false;
+}
+
+function loadMessageBoardData() {
+    try {
+        if (fs.existsSync(MESSAGE_BOARD_PATH)) {
+            return JSON.parse(fs.readFileSync(MESSAGE_BOARD_PATH, 'utf8'));
+        }
+    } catch (e) {
+        console.error('Error reading message_board.json:', e);
+    }
+    return {
+        settings: {
+            enabled: true,
+            require_approval: false,
+            categories: [
+                { id: "safety", name: "Safety / Maintenance", icon: "fa-solid fa-shield-halved", color: "#f59e0b" },
+                { id: "breakroom", name: "Breakroom / General", icon: "fa-solid fa-mug-hot", color: "#38bdf8" }
+            ]
+        },
+        users: {},
+        messages: []
+    };
+}
+
+function saveMessageBoardData(data) {
+    fs.writeFileSync(MESSAGE_BOARD_PATH, JSON.stringify(data, null, 4), 'utf8');
+    try {
+        const verPath = fs.existsSync('/data') ? '/data/version.txt' : path.join(__dirname, '../html/assets/data/version.txt');
+        fs.writeFileSync(verPath, Date.now().toString(), 'utf8');
+    } catch (e) {}
+    syncToCloud();
+}
+
+app.get('/api/message-board', (req, res) => {
+    try {
+        const mb = loadMessageBoardData();
+        const isAdmin = req.query.admin === '1' || req.query.view === 'all';
+        
+        if (isAdmin) {
+            return res.json({
+                success: true,
+                settings: mb.settings,
+                categories: mb.settings.categories || [],
+                messages: mb.messages || [],
+                userCount: Object.keys(mb.users || {}).length
+            });
+        }
+
+        const approved = (mb.messages || [])
+            .filter(m => m.status === 'approved')
+            .sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return b.timestamp - a.timestamp;
+            });
+
+        res.json({
+            success: true,
+            settings: {
+                enabled: mb.settings ? mb.settings.enabled !== false : true,
+                require_approval: mb.settings ? mb.settings.require_approval === true : false
+            },
+            categories: (mb.settings && mb.settings.categories) || [],
+            messages: approved
+        });
+    } catch (err) {
+        console.error('Error fetching message board:', err);
+        res.status(500).json({ error: 'Failed to fetch message board' });
+    }
+});
+
+app.post('/api/message-board/post', (req, res) => {
+    try {
+        const { category_id, author, shift, pin, text, is_anonymous } = req.body;
+        const mb = loadMessageBoardData();
+
+        if (mb.settings && mb.settings.enabled === false) {
+            return res.status(403).json({ error: 'Live message board is currently disabled by administrator.' });
+        }
+
+        if (!text || typeof text !== 'string' || text.trim().length < 3) {
+            return res.status(400).json({ error: 'Message must be at least 3 characters long.' });
+        }
+
+        if (text.trim().length > 350) {
+            return res.status(400).json({ error: 'Message cannot exceed 350 characters.' });
+        }
+
+        if (checkMessageProfanity(text)) {
+            return res.status(400).json({ error: 'Your post contains inappropriate or prohibited language. Please keep messages respectful.' });
+        }
+
+        let finalAuthor = 'Anonymous';
+        let finalShift = (shift && shift.trim()) ? shift.trim() : 'Plant';
+
+        if (!is_anonymous) {
+            if (!author || typeof author !== 'string' || author.trim().length < 2) {
+                return res.status(400).json({ error: 'Please enter your name or check "Post Anonymously".' });
+            }
+            if (!pin || !/^\d{4}$/.test(pin.toString().trim())) {
+                return res.status(400).json({ error: 'Please enter a 4-digit PIN to secure your employee profile.' });
+            }
+
+            finalAuthor = author.trim();
+            const cleanPin = pin.toString().trim();
+            const pinHash = crypto.createHash('sha256').update(cleanPin + finalAuthor.toLowerCase()).digest('hex');
+
+            if (!mb.users) mb.users = {};
+            if (!mb.users[finalAuthor]) {
+                // Register user with their first PIN
+                mb.users[finalAuthor] = {
+                    pin_hash: pinHash,
+                    shift: finalShift,
+                    created_at: Date.now()
+                };
+            } else {
+                // Verify existing PIN
+                if (mb.users[finalAuthor].pin_hash !== pinHash) {
+                    return res.status(401).json({
+                        error: `Incorrect 4-digit PIN for ${finalAuthor}. Please enter the PIN you used when you first posted, or ask an administrator to reset it.`
+                    });
+                }
+                mb.users[finalAuthor].shift = finalShift;
+            }
+        }
+
+        let validCategory = category_id;
+        const categories = (mb.settings && mb.settings.categories) || [];
+        if (!categories.some(c => c.id === validCategory)) {
+            validCategory = categories.length > 0 ? categories[0].id : 'general';
+        }
+
+        const isApprovalRequired = mb.settings && mb.settings.require_approval === true;
+        const newMsg = {
+            id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            category_id: validCategory,
+            author: finalAuthor,
+            shift: finalShift,
+            is_anonymous: !!is_anonymous,
+            text: text.trim(),
+            timestamp: Date.now(),
+            status: isApprovalRequired ? 'pending' : 'approved',
+            pinned: false,
+            reactions: {}
+        };
+
+        if (!mb.messages) mb.messages = [];
+        mb.messages.unshift(newMsg);
+        saveMessageBoardData(mb);
+
+        res.json({
+            success: true,
+            message: newMsg,
+            pending: isApprovalRequired,
+            notice: isApprovalRequired ? 'Your message was submitted and is pending administrator approval before appearing on the TV.' : 'Message posted successfully!'
+        });
+    } catch (err) {
+        console.error('Error posting message:', err);
+        res.status(500).json({ error: 'Server error saving message' });
+    }
+});
+
+app.post('/api/message-board/react', (req, res) => {
+    try {
+        const { message_id, reaction } = req.body;
+        const mb = loadMessageBoardData();
+        const msg = (mb.messages || []).find(m => m.id === message_id);
+        if (!msg) return res.status(404).json({ error: 'Message not found' });
+
+        if (!msg.reactions) msg.reactions = {};
+        const cleanType = ['thumbsup', 'heart', 'fire', 'bulb'].includes(reaction) ? reaction : 'thumbsup';
+        msg.reactions[cleanType] = (msg.reactions[cleanType] || 0) + 1;
+
+        saveMessageBoardData(mb);
+        res.json({ success: true, reactions: msg.reactions });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to record reaction' });
+    }
+});
+
+app.post('/api/message-board/admin/moderate', (req, res) => {
+    try {
+        const { message_id, action } = req.body;
+        const mb = loadMessageBoardData();
+        if (!mb.messages) mb.messages = [];
+
+        if (action === 'delete') {
+            mb.messages = mb.messages.filter(m => m.id !== message_id);
+        } else {
+            const msg = mb.messages.find(m => m.id === message_id);
+            if (!msg) return res.status(404).json({ error: 'Message not found' });
+
+            if (action === 'approve') msg.status = 'approved';
+            else if (action === 'hide') msg.status = 'hidden';
+            else if (action === 'pin') msg.pinned = !msg.pinned;
+        }
+
+        saveMessageBoardData(mb);
+        res.json({ success: true, message: `Action "${action}" completed.` });
+    } catch (err) {
+        res.status(500).json({ error: 'Moderation action failed' });
+    }
+});
+
+app.post('/api/message-board/admin/settings', (req, res) => {
+    try {
+        const { enabled, require_approval, categories } = req.body;
+        const mb = loadMessageBoardData();
+        if (!mb.settings) mb.settings = {};
+
+        if (typeof enabled === 'boolean') mb.settings.enabled = enabled;
+        if (typeof require_approval === 'boolean') mb.settings.require_approval = require_approval;
+        if (Array.isArray(categories)) {
+            mb.settings.categories = categories.map((cat, idx) => ({
+                id: (cat.id || 'cat_' + idx).toLowerCase().replace(/[^a-z0-9_-]/g, ''),
+                name: cat.name ? cat.name.trim() : 'General',
+                icon: cat.icon || 'fa-solid fa-comment',
+                color: cat.color || '#38bdf8'
+            }));
+        }
+
+        saveMessageBoardData(mb);
+        res.json({ success: true, settings: mb.settings });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update message board settings' });
+    }
+});
+
+app.post('/api/message-board/admin/reset-pin', (req, res) => {
+    try {
+        const { employee_name } = req.body;
+        const mb = loadMessageBoardData();
+        if (mb.users && mb.users[employee_name]) {
+            delete mb.users[employee_name];
+            saveMessageBoardData(mb);
+            return res.json({ success: true, message: `PIN reset for ${employee_name}. They can choose a new PIN on next post.` });
+        }
+        res.status(404).json({ error: `User ${employee_name} not found or has no registered PIN.` });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to reset PIN' });
+    }
+});
+
+app.get('/api/message-board/employees', (req, res) => {
+    try {
+        const namesSet = new Set();
+
+        const senPath = fs.existsSync('/data/seniority.json')
+            ? '/data/seniority.json'
+            : path.join(__dirname, '../html/assets/data/seniority.json');
+        if (fs.existsSync(senPath)) {
+            try {
+                const senData = JSON.parse(fs.readFileSync(senPath, 'utf8'));
+                Object.keys(senData).forEach(k => {
+                    if (k && !k.toLowerCase().includes('sample')) namesSet.add(k.trim());
+                });
+            } catch (e) {}
+        }
+
+        const mb = loadMessageBoardData();
+        if (mb.users) {
+            Object.keys(mb.users).forEach(u => namesSet.add(u.trim()));
+        }
+
+        const sorted = Array.from(namesSet).sort((a, b) => a.localeCompare(b));
+        res.json({ success: true, employees: sorted });
+    } catch (err) {
+        res.json({ success: true, employees: [] });
     }
 });
 

@@ -110,6 +110,105 @@
         <div id="equipment-content">Loading...</div>
     </div>
 
+    <!-- Live Message Board Mobile Widget (Issue #13) -->
+    <div class="widget" id="message-board-feed">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px;">
+            <h2 style="margin: 0; border: none; padding: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-comments" style="color: var(--brand-blue);"></i> Live Message Board
+            </h2>
+            <button id="btn-open-post-modal" style="background: var(--brand-blue); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> New Post
+            </button>
+        </div>
+
+        <!-- Category Filters -->
+        <div id="mobile-mb-categories" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; -webkit-overflow-scrolling: touch;">
+            <button class="mobile-cat-filter active" data-cat="all" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; white-space: nowrap; cursor: pointer;">All</button>
+        </div>
+
+        <!-- Messages List -->
+        <div id="mobile-mb-messages" style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="text-align: center; color: #94a3b8; padding: 15px;">Loading message board...</div>
+        </div>
+    </div>
+
+    <!-- Post Message Modal -->
+    <div id="mb-post-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box;">
+        <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #fff; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-pen-to-square" style="color: var(--brand-blue);"></i> New Bulletin Post
+                </h3>
+                <button id="btn-close-post-modal" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <form id="mb-post-form">
+                <!-- Anonymous Toggle -->
+                <div style="margin-bottom: 14px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #e2e8f0; cursor: pointer;">
+                        <input type="checkbox" id="mb-chk-anon" style="width: 16px; height: 16px; accent-color: var(--brand-blue);">
+                        Post as Anonymous
+                    </label>
+                </div>
+
+                <!-- Named User Fields -->
+                <div id="mb-user-fields">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Employee Name (Auto-fill)</label>
+                        <input type="text" id="mb-input-author" list="mb-employees-datalist" placeholder="Select or type your name" style="width: 100%; box-sizing: border-box; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.95rem;">
+                        <datalist id="mb-employees-datalist"></datalist>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Shift</label>
+                            <select id="mb-select-shift" style="width: 100%; box-sizing: border-box; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.95rem;">
+                                <option value="A Shift">A Shift</option>
+                                <option value="B Shift">B Shift</option>
+                                <option value="C Shift">C Shift</option>
+                                <option value="D Shift">D Shift</option>
+                                <option value="Plant">Plant / General</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">4-Digit PIN</label>
+                            <input type="password" id="mb-input-pin" maxlength="4" placeholder="••••" style="width: 100%; box-sizing: border-box; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.95rem; letter-spacing: 3px; text-align: center;">
+                        </div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 14px; line-height: 1.3;">
+                        🔒 <em>Set a 4-digit PIN on your first post to prevent others from using your name. Your device will remember it.</em>
+                    </div>
+                </div>
+
+                <!-- Category Field -->
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Topic Category</label>
+                    <select id="mb-select-category" style="width: 100%; box-sizing: border-box; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.95rem;">
+                        <!-- Options populated from categories -->
+                    </select>
+                </div>
+
+                <!-- Message Field -->
+                <div style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label style="font-size: 0.8rem; color: #94a3b8;">Your Message</label>
+                        <span id="mb-char-counter" style="font-size: 0.75rem; color: #94a3b8;">0 / 350</span>
+                    </div>
+                    <textarea id="mb-input-text" rows="4" maxlength="350" placeholder="Share a safety observation, equipment tip, shoutout, or breakroom idea..." style="width: 100%; box-sizing: border-box; padding: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.95rem; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+
+                <div id="mb-modal-error" style="display: none; color: #ef4444; font-size: 0.85rem; margin-bottom: 12px; line-height: 1.3; background: rgba(239,68,68,0.1); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3);"></div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" id="btn-cancel-post" style="padding: 10px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; border-radius: 6px; font-weight: 500; cursor: pointer;">Cancel</button>
+                    <button type="submit" id="btn-submit-post" style="padding: 10px 20px; background: var(--brand-blue); border: none; color: #fff; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-paper-plane"></i> Post Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let siteConfig = {
             site_name: "Operations Dashboard",
@@ -605,6 +704,287 @@
             }
         }
 
+        // ── Mobile Live Message Board Logic (Issue #13) ──────────────────────
+        let mobileMbData = { settings: {}, categories: [], messages: [] };
+        let activeMobileMbCat = 'all';
+
+        async function loadMobileMessageBoard() {
+            try {
+                const res = await fetch('/api/message-board?t=' + Date.now());
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success) return;
+                mobileMbData = data;
+
+                const feed = document.getElementById('message-board-feed');
+                if (data.settings && data.settings.enabled === false) {
+                    if (feed) feed.style.display = 'none';
+                    return;
+                }
+                if (feed) feed.style.display = 'block';
+
+                renderMobileMbCategories();
+                renderMobileMbMessages();
+            } catch (e) {
+                console.warn('Could not load mobile message board:', e);
+            }
+        }
+
+        function renderMobileMbCategories() {
+            const container = document.getElementById('mobile-mb-categories');
+            const selectCategory = document.getElementById('mb-select-category');
+            if (!container) return;
+
+            const cats = mobileMbData.categories || [];
+            let pillsHtml = `<button class="mobile-cat-filter ${activeMobileMbCat === 'all' ? 'active' : ''}" data-cat="all" style="background: ${activeMobileMbCat === 'all' ? 'var(--brand-blue)' : 'rgba(255,255,255,0.08)'}; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 5px 14px; border-radius: 16px; font-size: 0.8rem; white-space: nowrap; cursor: pointer;">All</button>`;
+            
+            let selectOptionsHtml = '';
+            cats.forEach(c => {
+                const isAct = activeMobileMbCat === c.id;
+                pillsHtml += `<button class="mobile-cat-filter ${isAct ? 'active' : ''}" data-cat="${c.id}" style="background: ${isAct ? c.color : 'rgba(255,255,255,0.08)'}; border: 1px solid ${c.color}66; color: #fff; padding: 5px 14px; border-radius: 16px; font-size: 0.8rem; white-space: nowrap; cursor: pointer;"><i class="${c.icon}"></i> ${c.name}</button>`;
+                selectOptionsHtml += `<option value="${c.id}">${c.name}</option>`;
+            });
+
+            container.innerHTML = pillsHtml;
+            if (selectCategory) selectCategory.innerHTML = selectOptionsHtml;
+
+            container.querySelectorAll('.mobile-cat-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeMobileMbCat = btn.getAttribute('data-cat');
+                    renderMobileMbCategories();
+                    renderMobileMbMessages();
+                });
+            });
+        }
+
+        function renderMobileMbMessages() {
+            const list = document.getElementById('mobile-mb-messages');
+            if (!list) return;
+
+            let messages = mobileMbData.messages || [];
+            if (activeMobileMbCat !== 'all') {
+                messages = messages.filter(m => m.category_id === activeMobileMbCat);
+            }
+
+            if (messages.length === 0) {
+                list.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 25px; font-style: italic; background: rgba(255,255,255,0.02); border-radius: 8px;">No messages in this category yet. Tap "+ New Post" to be the first!</div>`;
+                return;
+            }
+
+            const catMap = {};
+            (mobileMbData.categories || []).forEach(c => catMap[c.id] = c);
+
+            list.innerHTML = messages.map(msg => {
+                const cat = catMap[msg.category_id] || { name: 'General', color: '#38bdf8', icon: 'fa-solid fa-comment' };
+                const timeStr = formatRelativeTime(msg.timestamp);
+                const reactions = msg.reactions || {};
+                const isPinned = !!msg.pinned;
+
+                return `
+                    <div style="background: ${isPinned ? 'linear-gradient(145deg, rgba(56, 189, 248, 0.1) 0%, rgba(20, 30, 45, 0.8) 100%)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isPinned ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)'}; border-left: 4px solid ${cat.color}; border-radius: 10px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="background: ${cat.color}22; border: 1px solid ${cat.color}55; color: ${cat.color}; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="${cat.icon}"></i> ${cat.name}
+                            </span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                ${isPinned ? '<span style="color: #38bdf8; font-size: 0.75rem; font-weight: bold;"><i class="fa-solid fa-thumbtack"></i> PINNED</span>' : ''}
+                                <span style="font-size: 0.75rem; color: #94a3b8;">${timeStr}</span>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 0.95rem; color: #f1f5f9; line-height: 1.45; margin: 0 0 10px 0; word-break: break-word;">
+                            ${escapeHtml(msg.text)}
+                        </p>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #cbd5e1;">
+                                <strong>${msg.is_anonymous ? 'Anonymous' : escapeHtml(msg.author)}</strong>
+                                <span style="color: #94a3b8; font-size: 0.75rem;">• ${escapeHtml(msg.shift || 'Plant')}</span>
+                            </div>
+
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn-react" data-id="${msg.id}" data-reaction="thumbsup" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                    👍 ${reactions.thumbsup || 0}
+                                </button>
+                                <button class="btn-react" data-id="${msg.id}" data-reaction="heart" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                    ❤️ ${reactions.heart || 0}
+                                </button>
+                                <button class="btn-react" data-id="${msg.id}" data-reaction="fire" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                    🔥 ${reactions.fire || 0}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.btn-react').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const msgId = btn.getAttribute('data-id');
+                    const reaction = btn.getAttribute('data-reaction');
+                    try {
+                        const res = await fetch('/api/message-board/react', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message_id: msgId, reaction })
+                        });
+                        if (res.ok) loadMobileMessageBoard();
+                    } catch (e) {}
+                });
+            });
+        }
+
+        function formatRelativeTime(ts) {
+            const diff = Date.now() - ts;
+            const m = Math.floor(diff / 60000);
+            if (m < 1) return 'Just now';
+            if (m < 60) return `${m}m ago`;
+            const h = Math.floor(m / 60);
+            if (h < 24) return `${h}h ago`;
+            return `${Math.floor(h / 24)}d ago`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Modal & Autocomplete setup
+        async function setupMobileMessageBoardModal() {
+            const modal = document.getElementById('mb-post-modal');
+            const openBtn = document.getElementById('btn-open-post-modal');
+            const closeBtn = document.getElementById('btn-close-post-modal');
+            const cancelBtn = document.getElementById('btn-cancel-post');
+            const form = document.getElementById('mb-post-form');
+            const chkAnon = document.getElementById('mb-chk-anon');
+            const userFields = document.getElementById('mb-user-fields');
+            const inputAuthor = document.getElementById('mb-input-author');
+            const inputPin = document.getElementById('mb-input-pin');
+            const selectShift = document.getElementById('mb-select-shift');
+            const inputText = document.getElementById('mb-input-text');
+            const charCounter = document.getElementById('mb-char-counter');
+            const errorDiv = document.getElementById('mb-modal-error');
+            const datalist = document.getElementById('mb-employees-datalist');
+
+            // Load saved user from localStorage
+            try {
+                const saved = JSON.parse(localStorage.getItem('yardstik_mb_user') || '{}');
+                if (saved.name && inputAuthor) inputAuthor.value = saved.name;
+                if (saved.shift && selectShift) selectShift.value = saved.shift;
+                if (saved.pin && inputPin) inputPin.value = saved.pin;
+            } catch (e) {}
+
+            // Populate employee autofill names from /api/message-board/employees
+            try {
+                const res = await fetch('/api/message-board/employees');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.employees && datalist) {
+                        datalist.innerHTML = data.employees.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+                    }
+                }
+            } catch (e) {}
+
+            if (openBtn && modal) openBtn.onclick = () => { modal.style.display = 'flex'; errorDiv.style.display = 'none'; };
+            if (closeBtn && modal) closeBtn.onclick = () => { modal.style.display = 'none'; };
+            if (cancelBtn && modal) cancelBtn.onclick = () => { modal.style.display = 'none'; };
+
+            if (chkAnon && userFields) {
+                chkAnon.addEventListener('change', () => {
+                    userFields.style.display = chkAnon.checked ? 'none' : 'block';
+                });
+            }
+
+            if (inputText && charCounter) {
+                inputText.addEventListener('input', () => {
+                    charCounter.innerText = `${inputText.value.length} / 350`;
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    errorDiv.style.display = 'none';
+
+                    const isAnon = chkAnon.checked;
+                    const author = inputAuthor ? inputAuthor.value.trim() : '';
+                    const shift = selectShift ? selectShift.value : 'Plant';
+                    const pin = inputPin ? inputPin.value.trim() : '';
+                    const categoryId = document.getElementById('mb-select-category')?.value;
+                    const text = inputText ? inputText.value.trim() : '';
+
+                    if (!text || text.length < 3) {
+                        errorDiv.innerText = 'Please write at least 3 characters.';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+
+                    if (!isAnon) {
+                        if (!author) {
+                            errorDiv.innerText = 'Please enter your name or check "Post as Anonymous".';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+                        if (!pin || !/^\d{4}$/.test(pin)) {
+                            errorDiv.innerText = 'Please enter your 4-digit security PIN.';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+                    }
+
+                    const submitBtn = document.getElementById('btn-submit-post');
+                    const origBtnText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Posting...';
+
+                    try {
+                        const res = await fetch('/api/message-board/post', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                category_id: categoryId,
+                                author,
+                                shift,
+                                pin,
+                                text,
+                                is_anonymous: isAnon
+                            })
+                        });
+
+                        const data = await res.json();
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = origBtnText;
+
+                        if (!res.ok || !data.success) {
+                            errorDiv.innerText = data.error || 'Failed to post message.';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+
+                        // Save profile to localStorage for seamless future posts
+                        if (!isAnon) {
+                            localStorage.setItem('yardstik_mb_user', JSON.stringify({ name: author, shift, pin }));
+                        }
+
+                        inputText.value = '';
+                        if (charCounter) charCounter.innerText = '0 / 350';
+                        modal.style.display = 'none';
+
+                        if (data.pending) {
+                            alert('Thank you! Your post was submitted and is pending administrator approval before appearing on the TV.');
+                        }
+
+                        loadMobileMessageBoard();
+                    } catch (err) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = origBtnText;
+                        errorDiv.innerText = 'Network error posting message.';
+                        errorDiv.style.display = 'block';
+                    }
+                });
+            }
+        }
+
         // Initialize All
         async function initializeAll() {
             await fetchSiteConfig();
@@ -612,11 +992,14 @@
                 loadReminders(),
                 loadSafety(),
                 loadEquipment(),
-                loadSpecial()
+                loadSpecial(),
+                loadMobileMessageBoard()
             ]);
+            setupMobileMessageBoardModal();
             // Trackers depends on Reminders being loaded to prepend
             await loadTrackers();
             await loadWeatherAlerts();
+            setInterval(loadMobileMessageBoard, 30000); // 30s live reload
         }
         initializeAll();
 

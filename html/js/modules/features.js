@@ -123,4 +123,16 @@ export function applyFeatureFlags() {
             viewAnnouncements.removeAttribute('data-disabled');
         }
     }
+
+    // Check if View 3 (Live Message Board) is disabled
+    const viewMessageBoard = document.getElementById('view-message-board');
+    if (viewMessageBoard) {
+        if (f.message_board === false) {
+            viewMessageBoard.setAttribute('data-disabled', 'true');
+            viewMessageBoard.style.display = 'none';
+        } else {
+            viewMessageBoard.removeAttribute('data-disabled');
+            viewMessageBoard.style.display = '';
+        }
+    }
 }

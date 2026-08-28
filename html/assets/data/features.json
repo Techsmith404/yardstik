@@ -22,6 +22,7 @@
         "reminders": true,
         "anniversaries": true,
         "safety_videos": true,
-        "mobile_qr": true
+        "mobile_qr": true,
+        "message_board": true
     }
 }

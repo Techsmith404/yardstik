@@ -13,6 +13,7 @@ import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
 import { initSeasonalTheme, applyTheme, getSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures } from './modules/features.js';
+import { fetchMessageBoard, advanceMessageBoardSlide } from './modules/message-board.js';
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 initMobileRedirect();
@@ -57,6 +58,9 @@ setTimeout(checkLightning, 2000);
 setInterval(fetchSafetyVideos, 3600000); // 1 hr
 setInterval(getAnniversaries, 3600000); // 1 hr
 setInterval(checkVersion, 5000); // 5s live reload check
+
+fetchMessageBoard();
+setInterval(fetchMessageBoard, 30000); // 30s live message sync
 
 // 4. Equipment Autoscroll on Kiosk TV Mode
 if (!isDesktopMode) {
@@ -148,6 +152,16 @@ if (isDesktopMode) {
                     });
                 });
             }
+        }
+        
+        if (checkView.id === 'view-message-board') {
+            advanceMessageBoardSlide();
+            setTimeout(() => {
+                if (checkView.classList.contains('active')) advanceMessageBoardSlide();
+            }, 10000);
+            setTimeout(() => {
+                if (checkView.classList.contains('active')) advanceMessageBoardSlide();
+            }, 20000);
         }
         
         if (isShort) ms = 10000;

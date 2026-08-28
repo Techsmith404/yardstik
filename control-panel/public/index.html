@@ -25,6 +25,7 @@
                 <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
                 <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
                 <button id="nav-extras" class="nav-item nav-special" data-script="extras" style="margin-top: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Themes</button>
+                <button id="nav-message-board" class="nav-item nav-special" data-script="message-board" style="margin-top: 8px;"><i class="fa-solid fa-comments"></i> Message Board</button>
                 <div class="nav-divider"></div>
                 <div id="dynamic-scripts" style="display: flex; flex-direction: column; gap: 8px;">
                     <!-- Dynamically populated script links -->
@@ -562,10 +563,113 @@
                                     <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Bottom-corner QR badge for phone access.</p>
                                 </div>
                             </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-message_board" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">💬 Live Team Message Board</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Enables the 30-second live employee bulletin board rotation (View 3).</p>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
                     <div id="extras-status" style="margin-top: 15px; display: none;"></div>
+                </div>
+
+                <!-- Live Message Board Management View (Issue #13) -->
+                <div id="message-board-view" class="view">
+                    <!-- Top Settings Card -->
+                    <div class="card" style="margin-bottom: 25px;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h3><i class="fa-solid fa-comments"></i> Message Board Settings & Moderation</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    Manage message board policies, customize topic categories, and moderate employee posts displayed on the TV.
+                                </p>
+                            </div>
+                            <button id="btn-save-mb-settings" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                                <div style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                                    <label style="font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+                                        <input type="checkbox" id="chk-mb-enabled" style="width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                        Enable Live Message Board
+                                    </label>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; display: block;">
+                                        When enabled, View 3 joins the TV slideshow rotation for 30s.
+                                    </span>
+                                </div>
+
+                                <div style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                                    <label style="font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+                                        <input type="checkbox" id="chk-mb-approval" style="width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                        Require Admin Pre-Approval
+                                    </label>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; display: block;">
+                                        If checked, new posts must be manually approved here before appearing on the TV. (Default: Off / immediate).
+                                    </span>
+                                </div>
+                            </div>
+                            <div id="mb-settings-status" style="display: none; margin-top: 12px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Category Manager Card -->
+                    <div class="card" style="margin-bottom: 25px;">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-tags"></i> Topic Categories</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                Add, customize, or remove topic categories available when employees submit notes or shoutouts.
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <div id="mb-categories-list" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+                                <!-- Rendered dynamically -->
+                            </div>
+                            
+                            <!-- Add Category Form -->
+                            <div style="background: rgba(0,0,0,0.25); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                                <div class="form-group" style="margin: 0; flex: 1; min-width: 180px;">
+                                    <label style="font-size: 0.8rem; margin-bottom: 4px;">Category Name</label>
+                                    <input type="text" id="new-cat-name" class="form-control" placeholder="e.g. Kudos & Shoutouts">
+                                </div>
+                                <div class="form-group" style="margin: 0; width: 160px;">
+                                    <label style="font-size: 0.8rem; margin-bottom: 4px;">Icon Class</label>
+                                    <input type="text" id="new-cat-icon" class="form-control" placeholder="fa-solid fa-star" value="fa-solid fa-star">
+                                </div>
+                                <div class="form-group" style="margin: 0; width: 90px;">
+                                    <label style="font-size: 0.8rem; margin-bottom: 4px;">Color</label>
+                                    <input type="color" id="new-cat-color" class="form-control" value="#10b981" style="height: 38px; padding: 2px;">
+                                </div>
+                                <button id="btn-add-category" class="btn btn-primary" style="height: 38px;"><i class="fa-solid fa-plus"></i> Add Category</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Moderation Queue & Post History Card -->
+                    <div class="card">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h3><i class="fa-solid fa-list-check"></i> Post Moderation & History</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    Approve pending messages, pin special announcements to the top, hide posts, or reset employee PINs.
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary mb-filter-btn active" data-filter="all">All</button>
+                                <button class="btn btn-secondary mb-filter-btn" data-filter="pending">Pending <span id="mb-badge-pending" class="badge" style="display:none; background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; margin-left: 4px;">0</span></button>
+                                <button class="btn btn-secondary mb-filter-btn" data-filter="approved">Approved</button>
+                                <button class="btn btn-secondary mb-filter-btn" data-filter="pinned">Pinned</button>
+                                <button class="btn btn-secondary mb-filter-btn" data-filter="hidden">Hidden</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="mb-posts-container" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="text-align: center; color: var(--text-secondary); padding: 30px;">Loading posts...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

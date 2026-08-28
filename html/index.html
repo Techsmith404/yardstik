@@ -155,6 +155,33 @@
                     </ul>
                 </div>
             </div>
+    </div>
+
+    <!-- View 3: Live Team Bulletin & Message Board (Issue #13) -->
+    <div id="view-message-board" class="kiosk-view" data-duration="30000">
+        <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+            <!-- Header Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="theme-icon-mb-left" class="theme-icon"></span>
+                    <h2 style="margin: 0; font-size: clamp(1.4rem, 1.8vw, 2rem); font-family: 'Outfit', sans-serif; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-comments" style="color: var(--brand-blue, #38bdf8);"></i> Live Team Bulletin & Message Board
+                    </h2>
+                    <span id="theme-icon-mb-right" class="theme-icon"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 18px;">
+                    <div id="mb-header-info" style="font-size: 0.95rem; color: var(--text-secondary); font-weight: 500;"></div>
+                    <div id="mb-page-indicator" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; color: #fff; font-weight: 600;"></div>
+                    <div style="font-size: 0.85rem; color: var(--brand-blue, #38bdf8); display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-qrcode"></i> Scan QR to Post
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Grid: 3 columns x 2 rows -->
+            <div id="message-board-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 20px; flex: 1; min-height: 0;">
+                <!-- Dynamically populated by message-board.js -->
+            </div>
         </div>
     </div>
     
