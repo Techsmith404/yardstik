@@ -266,7 +266,12 @@
                     : 'Active Blend Recipe';
 
                 if (trackerVal !== undefined && trackerVal !== null && trackerVal !== '') {
-                    const displayVal = trackerVal.toString();
+                    let displayVal = trackerVal.toString().trim();
+                    // If label contains '#' and value doesn't already start with '#', prepend '#'
+                    if (trackerLabel.includes('#') && !displayVal.startsWith('#')) {
+                        displayVal = '#' + displayVal;
+                    }
+
                     const titleText = trackerLabel.endsWith(':') ? trackerLabel : trackerLabel + ':';
                     const headerLabelText = trackerLabel.replace(/^Active\s+/i, '').trim();
                     const cleanHeaderLabel = (headerLabelText.endsWith(':') ? headerLabelText : headerLabelText + ':').toUpperCase();
