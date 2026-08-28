@@ -9,7 +9,7 @@
         "D Shift": "emerald",
         "X Turn": "default"
     },
-    "bg_style": "dots",
+    "bg_style": "diagonal",
     "features": {
         "weather_fx": true,
         "lightning_radar": true,
