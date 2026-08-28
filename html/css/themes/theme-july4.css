@@ -34,14 +34,6 @@
     animation: patriotic-glow 3s infinite ease-in-out !important;
 }
 
-#header-dashboard-title::before {
-    content: "🎆 ";
-}
-
-#header-dashboard-title::after {
-    content: " ⭐";
-}
-
 .widget {
     border-color: rgba(59, 130, 246, 0.3) !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(239, 68, 68, 0.3) !important;
@@ -59,10 +51,6 @@
 
 .equipment-category h4 {
     color: #e0e7ff !important;
-}
-
-.equipment-category h4::before {
-    content: "🗽 ";
 }
 
 .years-badge {

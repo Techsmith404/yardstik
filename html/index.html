@@ -42,7 +42,11 @@
 
     <div id="view-production" class="kiosk-view active" data-duration="40000">
         <div class="widget header-widget">
-            <h2 id="header-dashboard-title">Operations Dashboard</h2>
+            <h2 id="header-title-container" style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0;">
+                <span id="theme-icon-left" class="theme-icon" style="display: inline-flex; align-items: center;"></span>
+                <span id="header-dashboard-title">Operations Dashboard</span>
+                <span id="theme-icon-right" class="theme-icon" style="display: inline-flex; align-items: center;"></span>
+            </h2>
             
             <div id="header-osha" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 22px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid var(--brand-green); border-radius: 12px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0,0,0,0.2);">

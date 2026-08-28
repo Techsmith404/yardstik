@@ -18,37 +18,23 @@
     --neon-red: #ef4444;
 }
 
+@keyframes spooky-float {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(4deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+
 @keyframes pumpkin-flicker {
     0%, 100% { filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.8)); opacity: 1; }
     50% { filter: drop-shadow(0 0 25px rgba(249, 115, 22, 1)); opacity: 0.92; }
     75% { filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5)); opacity: 0.98; }
 }
 
-@keyframes spooky-float {
-    0% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-6px) rotate(2deg); }
-    100% { transform: translateY(0) rotate(0deg); }
-}
-
-/* Header Spooky Flair */
 #header-bar {
     border-bottom: 2px solid rgba(249, 115, 22, 0.4) !important;
     box-shadow: 0 4px 25px rgba(168, 85, 247, 0.25) !important;
 }
 
-#header-dashboard-title::before {
-    content: "🎃 ";
-    display: inline-block;
-    animation: spooky-float 3s ease-in-out infinite;
-}
-
-#header-dashboard-title::after {
-    content: " 🦇";
-    display: inline-block;
-    animation: spooky-float 3s ease-in-out infinite reverse;
-}
-
-/* Widget Card Glowing Borders & Corner Webs */
 .widget {
     position: relative;
     border-color: rgba(249, 115, 22, 0.3) !important;
@@ -60,23 +46,15 @@
     animation: pumpkin-flicker 4s infinite alternate !important;
 }
 
-/* Metric Display Jack-O'-Lantern Glow */
 #blend-recipe-display {
     color: #f97316 !important;
     text-shadow: 0 0 25px rgba(249, 115, 22, 0.9), 0 0 50px rgba(168, 85, 247, 0.4) !important;
 }
 
-/* Equipment Badges */
 .equipment-category h4 {
     color: #fed7aa !important;
 }
 
-.equipment-category h4::before {
-    content: "🕸️ ";
-    opacity: 0.7;
-}
-
-/* Anniversaries Celebration Badge */
 .years-badge {
     background: rgba(249, 115, 22, 0.25) !important;
     border-color: #f97316 !important;

@@ -34,14 +34,6 @@
     box-shadow: 0 4px 30px rgba(245, 158, 11, 0.3) !important;
 }
 
-#header-dashboard-title::before {
-    content: "🥂 ";
-}
-
-#header-dashboard-title::after {
-    content: " ✨";
-}
-
 .widget {
     border-color: rgba(251, 191, 36, 0.3) !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(251, 191, 36, 0.3) !important;
@@ -59,10 +51,6 @@
 
 .equipment-category h4 {
     color: #fef3c7 !important;
-}
-
-.equipment-category h4::before {
-    content: "⭐ ";
 }
 
 .years-badge {

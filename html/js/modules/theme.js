@@ -1,4 +1,32 @@
-// Dynamic Seasonal Holiday Stylesheets Module
+// Dynamic Seasonal Holiday Stylesheets & Vector Icon Manager Module
+import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
+
+const themeIcons = {
+    halloween: {
+        left: '<i class="fa-solid fa-ghost" style="color: #c084fc; font-size: 1.25rem; filter: drop-shadow(0 0 10px #c084fc); animation: spooky-float 3s infinite alternate ease-in-out;"></i>',
+        right: '<i class="fa-solid fa-skull" style="color: #f97316; font-size: 1.25rem; filter: drop-shadow(0 0 10px #f97316); animation: spooky-float 3s infinite alternate-reverse ease-in-out;"></i>'
+    },
+    christmas: {
+        left: '<i class="fa-solid fa-candy-cane" style="color: #ef4444; font-size: 1.25rem; filter: drop-shadow(0 0 10px #ef4444); transform: rotate(-15deg);"></i>',
+        right: '<i class="fa-solid fa-snowflake" style="color: #67e8f9; font-size: 1.25rem; filter: drop-shadow(0 0 10px #67e8f9); animation: festive-sparkle 3s infinite alternate;"></i>'
+    },
+    thanksgiving: {
+        left: '<i class="fa-solid fa-wheat-awn" style="color: #eab308; font-size: 1.25rem; filter: drop-shadow(0 0 10px #eab308);"></i>',
+        right: '<i class="fa-solid fa-leaf" style="color: #ea580c; font-size: 1.25rem; filter: drop-shadow(0 0 10px #ea580c); transform: rotate(20deg);"></i>'
+    },
+    newyear: {
+        left: '<i class="fa-solid fa-champagne-glasses" style="color: #fbbf24; font-size: 1.25rem; filter: drop-shadow(0 0 12px #fbbf24);"></i>',
+        right: '<i class="fa-solid fa-sparkles" style="color: #38bdf8; font-size: 1.25rem; filter: drop-shadow(0 0 12px #38bdf8); animation: festive-sparkle 2s infinite alternate;"></i>'
+    },
+    stpatricks: {
+        left: '<i class="fa-solid fa-clover" style="color: #22c55e; font-size: 1.25rem; filter: drop-shadow(0 0 12px #22c55e);"></i>',
+        right: '<i class="fa-solid fa-coins" style="color: #eab308; font-size: 1.25rem; filter: drop-shadow(0 0 12px #eab308);"></i>'
+    },
+    july4: {
+        left: '<i class="fa-solid fa-star" style="color: #ef4444; font-size: 1.25rem; filter: drop-shadow(0 0 10px #ef4444);"></i>',
+        right: '<i class="fa-solid fa-flag-usa" style="color: #3b82f6; font-size: 1.25rem; filter: drop-shadow(0 0 10px #3b82f6);"></i>'
+    }
+};
 
 export function getSeasonalTheme(date = new Date()) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -45,14 +73,17 @@ export function getSeasonalTheme(date = new Date()) {
     return 'default';
 }
 
-import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
-
 export function applyTheme(themeName) {
     let themeLink = document.getElementById('seasonal-theme-link');
     setHolidayAtmosphereTheme(themeName);
     
+    const iconLeft = document.getElementById('theme-icon-left');
+    const iconRight = document.getElementById('theme-icon-right');
+
     if (!themeName || themeName === 'default' || themeName === 'none') {
         if (themeLink) themeLink.remove();
+        if (iconLeft) iconLeft.innerHTML = '';
+        if (iconRight) iconRight.innerHTML = '';
         console.log('Active Theme: Default');
         startWeatherAnimation('none');
         return;
@@ -69,6 +100,14 @@ export function applyTheme(themeName) {
     if (themeLink.getAttribute('href') !== themeHref) {
         themeLink.href = themeHref;
         console.log(`Active Seasonal Theme: ${themeName}`);
+    }
+
+    if (themeIcons[themeName]) {
+        if (iconLeft) iconLeft.innerHTML = themeIcons[themeName].left;
+        if (iconRight) iconRight.innerHTML = themeIcons[themeName].right;
+    } else {
+        if (iconLeft) iconLeft.innerHTML = '';
+        if (iconRight) iconRight.innerHTML = '';
     }
 
     startWeatherAnimation('none');
