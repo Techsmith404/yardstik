@@ -38,15 +38,20 @@
 
 ---
 
-### 5. Modular Frontend Architecture (`html/js/modules/`)
-- **Goal:** Break up the 1,600-line monolithic `html/js/app.js` file into clean, isolated ES Modules in `html/js/modules/` for readability and easier maintenance.
-- **Module Structure:**
+### 5. Modular Frontend Architecture (`html/js/modules/`) ✅ (Completed)
+- [x] Broken up monolithic `html/js/app.js` into clean, isolated ES Modules:
+  - `modules/config.js` — Mode detection (Desktop/Kiosk), site configuration, and live reload engine.
   - `modules/clock.js` — Digital clock, 1s tick render loop, and Shift Tracker minute math.
+  - `modules/trackers.js` — OSHA Days Safe counter and Configurable Production Tracker.
   - `modules/weather.js` — Open-Meteo current/forecast API, NWS severe weather alerts, solar position & daylight/moon tracker.
   - `modules/lightning.js` — Xweather API client, 10-mile radius strike detection, and 30-minute all-clear countdown timer.
-  - `modules/equipment.js` — Dynamic Masonry grid layout, status chips, and real-time refresh listener.
+  - `modules/equipment.js` — Dynamic Masonry grid layout, status chips, and weekly blend audit engine.
+  - `modules/safety.js` — Novara safety curriculum parser and vertical smooth scroll loop.
+  - `modules/anniversaries.js` — Employee milestone calculation and celebration highlights.
   - `modules/reminders.js` — Markdown parser, `#` header slide cycler, and Magic Words (`!LONG`, `!CENTER`, `!SPLIT`, `!QR`, `!COUNTDOWN`).
+  - `modules/slideshow.js` — Daily 365-day Toolbox Talk rotation with daily override support.
   - `modules/special.js` — High-priority third view and emergency override display.
+  - `modules/fx.js` — Canvas 2D particle simulations (Rain, Snow, Lightning, Fog, Vignettes).
   - `app.js` — Master controller (orchestrates module lifecycle, slot allocation, and version polling).
 
 ---
