@@ -2,10 +2,10 @@
 
 export function getSeasonalTheme(date = new Date()) {
     const urlParams = new URLSearchParams(window.location.search);
-    const mockTheme = (urlParams.get('theme') || '').toLowerCase();
+    const mockTheme = (urlParams.get('holiday') || urlParams.get('theme') || '').toLowerCase().trim();
     
     if (mockTheme) {
-        if (mockTheme === 'none' || mockTheme === 'default') return 'default';
+        if (mockTheme === 'none' || mockTheme === 'default' || mockTheme === 'false') return 'default';
         return mockTheme;
     }
 
