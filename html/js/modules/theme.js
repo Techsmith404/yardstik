@@ -79,11 +79,15 @@ export function applyTheme(themeName) {
     
     const iconLeft = document.getElementById('theme-icon-left');
     const iconRight = document.getElementById('theme-icon-right');
+    const dIconLeft = document.getElementById('theme-icon-desktop-left');
+    const dIconRight = document.getElementById('theme-icon-desktop-right');
 
     if (!themeName || themeName === 'default' || themeName === 'none') {
         if (themeLink) themeLink.remove();
         if (iconLeft) iconLeft.innerHTML = '';
         if (iconRight) iconRight.innerHTML = '';
+        if (dIconLeft) dIconLeft.innerHTML = '';
+        if (dIconRight) dIconRight.innerHTML = '';
         console.log('Active Theme: Default');
         startWeatherAnimation('none');
         return;
@@ -105,9 +109,13 @@ export function applyTheme(themeName) {
     if (themeIcons[themeName]) {
         if (iconLeft) iconLeft.innerHTML = themeIcons[themeName].left;
         if (iconRight) iconRight.innerHTML = themeIcons[themeName].right;
+        if (dIconLeft) dIconLeft.innerHTML = themeIcons[themeName].left;
+        if (dIconRight) dIconRight.innerHTML = themeIcons[themeName].right;
     } else {
         if (iconLeft) iconLeft.innerHTML = '';
         if (iconRight) iconRight.innerHTML = '';
+        if (dIconLeft) dIconLeft.innerHTML = '';
+        if (dIconRight) dIconRight.innerHTML = '';
     }
 
     startWeatherAnimation('none');

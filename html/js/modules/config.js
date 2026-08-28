@@ -77,8 +77,13 @@ export async function fetchSiteConfig(onLoaded) {
             }
             if (siteConfig.site_name) {
                 document.title = siteConfig.site_name;
-                const desktopTitle = document.getElementById('desktop-title');
-                if (desktopTitle) desktopTitle.innerText = siteConfig.site_name;
+                const desktopText = document.getElementById('desktop-title-text');
+                if (desktopText) {
+                    desktopText.innerText = siteConfig.site_name;
+                } else {
+                    const desktopTitle = document.getElementById('desktop-title');
+                    if (desktopTitle) desktopTitle.innerText = siteConfig.site_name;
+                }
                 const headerTitle = document.getElementById('header-dashboard-title');
                 if (headerTitle) headerTitle.innerText = siteConfig.site_name;
             }

@@ -57,17 +57,29 @@ export function startWeatherAnimation(type) {
         }
         drawRain();
     } 
-    else if (type === 'snow') {
+    else if (type === 'snow' || type === 'holiday-christmas') {
+        // Clean, elegant ambient falling snow (matches weather snow)
         let particles = [];
-        for (let i = 0; i < 100; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 2.5 + 1, s: Math.random() * 1.5 + 0.8, a: Math.random() * Math.PI * 2 });
+        const count = type === 'snow' ? 100 : 60;
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 2.5 + 1,
+                s: Math.random() * 1.5 + 0.8,
+                a: Math.random() * Math.PI * 2
+            });
+        }
         function drawSnow() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
             ctx.beginPath();
             particles.forEach(p => {
                 ctx.moveTo(p.x, p.y);
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                p.y += p.s; p.x += Math.sin(p.a) * 0.6; p.a += 0.02;
+                p.y += p.s;
+                p.x += Math.sin(p.a) * 0.6;
+                p.a += 0.02;
                 if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
             });
             ctx.fill();
@@ -75,162 +87,86 @@ export function startWeatherAnimation(type) {
         }
         drawSnow();
     }
-    else if (type === 'holiday-christmas') {
-        // Intricate 6-point crystal snowflakes and soft drifting snow
-        let snowflakes = [];
-        for (let i = 0; i < 30; i++) {
-            snowflakes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 8 + 6,
-                speedY: Math.random() * 1.0 + 0.5,
-                speedX: Math.random() * 0.4 - 0.2,
-                rot: Math.random() * Math.PI * 2,
-                rotSpeed: (Math.random() - 0.5) * 0.02,
-                alpha: Math.random() * 0.5 + 0.35
-            });
-        }
-        function drawChristmas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            snowflakes.forEach(p => {
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rot);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${p.alpha})`;
-                ctx.lineWidth = 1.5;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-                ctx.shadowBlur = 4;
-                for (let arm = 0; arm < 6; arm++) {
-                    ctx.rotate(Math.PI / 3);
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(0, p.size);
-                    ctx.moveTo(0, p.size * 0.5);
-                    ctx.lineTo(p.size * 0.25, p.size * 0.75);
-                    ctx.moveTo(0, p.size * 0.5);
-                    ctx.lineTo(-p.size * 0.25, p.size * 0.75);
-                    ctx.stroke();
-                }
-                ctx.restore();
-                p.y += p.speedY;
-                p.x += p.speedX;
-                p.rot += p.rotSpeed;
-                if (p.y > canvas.height + 20) { p.y = -20; p.x = Math.random() * canvas.width; }
-            });
-            weatherAnimFrame = requestAnimationFrame(drawChristmas);
-        }
-        drawChristmas();
-    }
     else if (type === 'holiday-halloween') {
-        // Flying Bats & Floating Ghosts & Glowing Embers
-        let entities = [];
-        for (let i = 0; i < 8; i++) {
-            entities.push({
-                type: 'bat',
+        // Floating ghostly wisps, bats & glowing pumpkin embers
+        let particles = [];
+        for (let i = 0; i < 35; i++) {
+            particles.push({
                 x: Math.random() * canvas.width,
-                y: Math.random() * (canvas.height * 0.6),
-                size: Math.random() * 12 + 10,
-                speedX: Math.random() * 2 + 1.5,
-                flap: Math.random() * Math.PI * 2
+                y: Math.random() * canvas.height,
+                r: Math.random() * 3 + 1.5,
+                s: Math.random() * 0.9 + 0.4,
+                sway: Math.random() * Math.PI * 2,
+                color: Math.random() > 0.4 ? 'rgba(249, 115, 22, 0.75)' : 'rgba(192, 132, 252, 0.65)'
             });
         }
+        // A few subtle flying bat silhouettes
+        let bats = [];
         for (let i = 0; i < 4; i++) {
-            entities.push({
-                type: 'ghost',
+            bats.push({
                 x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 20 + 16,
-                speedY: Math.random() * 0.6 + 0.3,
-                sway: Math.random() * Math.PI * 2
-            });
-        }
-        for (let i = 0; i < 25; i++) {
-            entities.push({
-                type: 'ember',
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                r: Math.random() * 2.5 + 1,
-                speedY: Math.random() * 0.8 + 0.4,
-                color: Math.random() > 0.4 ? 'rgba(249, 115, 22, 0.7)' : 'rgba(192, 132, 252, 0.6)'
+                y: Math.random() * (canvas.height * 0.5),
+                size: Math.random() * 8 + 8,
+                s: Math.random() * 1.5 + 1.2,
+                flap: Math.random() * Math.PI * 2
             });
         }
 
         function drawHalloween() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            entities.forEach(p => {
-                if (p.type === 'bat') {
-                    p.flap += 0.15;
-                    p.x += p.speedX;
-                    if (p.x > canvas.width + 40) { p.x = -40; p.y = Math.random() * (canvas.height * 0.6); }
+            // Embers / Ghostly wisps
+            particles.forEach(p => {
+                p.sway += 0.03;
+                p.y -= p.s;
+                p.x += Math.sin(p.sway) * 0.8;
+                if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
 
-                    ctx.save();
-                    ctx.translate(p.x, p.y);
-                    ctx.fillStyle = 'rgba(20, 10, 25, 0.9)';
-                    ctx.shadowColor = 'rgba(168, 85, 247, 0.8)';
-                    ctx.shadowBlur = 6;
-                    // Bat body
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, p.size * 0.25, p.size * 0.45, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    // Bat wings
-                    const wingY = Math.sin(p.flap) * (p.size * 0.6);
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.quadraticCurveTo(p.size * 0.6, -wingY - p.size * 0.8, p.size * 1.5, -wingY);
-                    ctx.quadraticCurveTo(p.size * 0.7, -wingY * 0.2, 0, p.size * 0.3);
-                    ctx.quadraticCurveTo(-p.size * 0.7, -wingY * 0.2, -p.size * 1.5, -wingY);
-                    ctx.quadraticCurveTo(-p.size * 0.6, -wingY - p.size * 0.8, 0, 0);
-                    ctx.fill();
-                    ctx.restore();
-                } else if (p.type === 'ghost') {
-                    p.sway += 0.03;
-                    p.y -= p.speedY;
-                    if (p.y < -50) { p.y = canvas.height + 50; p.x = Math.random() * canvas.width; }
-
-                    ctx.save();
-                    ctx.translate(p.x + Math.sin(p.sway) * 20, p.y);
-                    ctx.fillStyle = 'rgba(192, 132, 252, 0.3)';
-                    ctx.shadowColor = 'rgba(192, 132, 252, 0.7)';
-                    ctx.shadowBlur = 15;
-                    ctx.beginPath();
-                    ctx.arc(0, -p.size * 0.4, p.size * 0.5, Math.PI, 0);
-                    ctx.lineTo(p.size * 0.5, p.size * 0.6);
-                    ctx.quadraticCurveTo(p.size * 0.25, p.size * 0.4 + Math.sin(p.sway * 2) * 5, 0, p.size * 0.6);
-                    ctx.quadraticCurveTo(-p.size * 0.25, p.size * 0.8 - Math.sin(p.sway * 2) * 5, -p.size * 0.5, p.size * 0.6);
-                    ctx.closePath();
-                    ctx.fill();
-                    // Ghost Eyes
-                    ctx.fillStyle = 'rgba(10, 5, 15, 0.85)';
-                    ctx.beginPath();
-                    ctx.arc(-p.size * 0.2, -p.size * 0.4, p.size * 0.08, 0, Math.PI * 2);
-                    ctx.arc(p.size * 0.2, -p.size * 0.4, p.size * 0.08, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                } else if (p.type === 'ember') {
-                    p.y -= p.speedY;
-                    if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
-                    ctx.beginPath();
-                    ctx.fillStyle = p.color;
-                    ctx.shadowColor = p.color;
-                    ctx.shadowBlur = 8;
-                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+                ctx.beginPath();
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
             });
+
+            // Bats
+            bats.forEach(b => {
+                b.flap += 0.15;
+                b.x += b.s;
+                if (b.x > canvas.width + 30) { b.x = -30; b.y = Math.random() * (canvas.height * 0.5); }
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.fillStyle = 'rgba(24, 12, 30, 0.85)';
+                ctx.shadowColor = 'rgba(168, 85, 247, 0.6)';
+                ctx.shadowBlur = 6;
+                const wingY = Math.sin(b.flap) * (b.size * 0.5);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, b.size * 0.3, b.size * 0.45, 0, 0, Math.PI * 2);
+                ctx.moveTo(0, 0);
+                ctx.quadraticCurveTo(b.size * 0.5, -wingY - b.size * 0.6, b.size * 1.3, -wingY);
+                ctx.quadraticCurveTo(b.size * 0.6, -wingY * 0.2, 0, b.size * 0.3);
+                ctx.quadraticCurveTo(-b.size * 0.6, -wingY * 0.2, -b.size * 1.3, -wingY);
+                ctx.quadraticCurveTo(-b.size * 0.5, -wingY - b.size * 0.6, 0, 0);
+                ctx.fill();
+                ctx.restore();
+            });
+
             weatherAnimFrame = requestAnimationFrame(drawHalloween);
         }
         drawHalloween();
     }
     else if (type === 'holiday-thanksgiving') {
-        // Detailed Falling Maple & Oak Leaves
+        // Floating autumn leaf flakes (golden amber, copper, and cranberry red)
         const leafColors = ['#eab308', '#d97706', '#dc2626', '#b45309', '#f97316'];
         let leaves = [];
-        for (let i = 0; i < 28; i++) {
+        for (let i = 0; i < 30; i++) {
             leaves.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 9 + 8,
-                speedY: Math.random() * 1.2 + 0.6,
+                w: Math.random() * 7 + 6,
+                h: Math.random() * 4 + 3,
+                speedY: Math.random() * 1.1 + 0.5,
                 rot: Math.random() * Math.PI * 2,
                 rotSpeed: (Math.random() - 0.5) * 0.03,
                 sway: Math.random() * Math.PI * 2,
@@ -244,8 +180,8 @@ export function startWeatherAnimation(type) {
                 p.sway += 0.03;
                 p.rot += p.rotSpeed;
                 p.y += p.speedY;
-                p.x += Math.sin(p.sway) * 1.5;
-                if (p.y > canvas.height + 25) { p.y = -25; p.x = Math.random() * canvas.width; }
+                p.x += Math.sin(p.sway) * 1.2;
+                if (p.y > canvas.height + 15) { p.y = -15; p.x = Math.random() * canvas.width; }
 
                 ctx.save();
                 ctx.translate(p.x, p.y);
@@ -253,26 +189,9 @@ export function startWeatherAnimation(type) {
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
                 ctx.shadowBlur = 6;
-                // 5-point maple leaf outline
-                const s = p.size;
+                // Elegant leaf petal shape
                 ctx.beginPath();
-                ctx.moveTo(0, -s);
-                ctx.lineTo(s * 0.3, -s * 0.5);
-                ctx.lineTo(s * 0.8, -s * 0.6);
-                ctx.lineTo(s * 0.5, -s * 0.1);
-                ctx.lineTo(s * 0.9, s * 0.2);
-                ctx.lineTo(s * 0.4, s * 0.4);
-                ctx.lineTo(s * 0.6, s * 0.8);
-                ctx.lineTo(s * 0.1, s * 0.6);
-                ctx.lineTo(0, s * 1.1); // Stem
-                ctx.lineTo(-s * 0.1, s * 0.6);
-                ctx.lineTo(-s * 0.6, s * 0.8);
-                ctx.lineTo(-s * 0.4, s * 0.4);
-                ctx.lineTo(-s * 0.9, s * 0.2);
-                ctx.lineTo(-s * 0.5, -s * 0.1);
-                ctx.lineTo(-s * 0.8, -s * 0.6);
-                ctx.lineTo(-s * 0.3, -s * 0.5);
-                ctx.closePath();
+                ctx.ellipse(0, 0, p.w, p.h, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             });
@@ -325,7 +244,7 @@ export function startWeatherAnimation(type) {
                     ctx.arc(0, 0, p.r, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
-                    // Bubble highlight
+                    // Specular bubble shine
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
                     ctx.beginPath();
                     ctx.arc(-p.r * 0.35, -p.r * 0.35, p.r * 0.25, 0, Math.PI * 2);
@@ -355,27 +274,27 @@ export function startWeatherAnimation(type) {
         drawNewYear();
     }
     else if (type === 'holiday-stpatricks') {
-        // Detailed 4-Leaf Clovers & Shiny Gold Coins
+        // Floating 4-Leaf Clovers & Gold Coin Tokens
         let items = [];
         for (let i = 0; i < 20; i++) {
             items.push({
                 type: 'clover',
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 8 + 7,
-                speedY: Math.random() * 0.9 + 0.4,
+                size: Math.random() * 7 + 6,
+                speedY: Math.random() * 0.8 + 0.4,
                 rot: Math.random() * Math.PI * 2,
                 rotSpeed: (Math.random() - 0.5) * 0.03,
                 sway: Math.random() * Math.PI * 2
             });
         }
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 12; i++) {
             items.push({
                 type: 'coin',
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                radius: Math.random() * 7 + 6,
-                speedY: Math.random() * 1.1 + 0.6,
+                radius: Math.random() * 6 + 5,
+                speedY: Math.random() * 1.0 + 0.5,
                 rot: Math.random() * Math.PI * 2,
                 rotSpeed: (Math.random() - 0.5) * 0.04
             });
@@ -386,11 +305,11 @@ export function startWeatherAnimation(type) {
             items.forEach(p => {
                 p.rot += p.rotSpeed;
                 p.y += p.speedY;
-                if (p.y > canvas.height + 25) { p.y = -25; p.x = Math.random() * canvas.width; }
+                if (p.y > canvas.height + 20) { p.y = -20; p.x = Math.random() * canvas.width; }
 
                 if (p.type === 'clover') {
                     p.sway += 0.03;
-                    p.x += Math.sin(p.sway) * 1.0;
+                    p.x += Math.sin(p.sway) * 0.9;
                     ctx.save();
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rot);
@@ -398,21 +317,21 @@ export function startWeatherAnimation(type) {
                     ctx.shadowColor = 'rgba(34, 197, 94, 0.8)';
                     ctx.shadowBlur = 8;
                     const s = p.size;
-                    // Draw 4 distinct heart petals
+                    // 4 petals
                     for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 2) {
                         ctx.save();
                         ctx.rotate(angle);
                         ctx.beginPath();
-                        ctx.arc(s * 0.4, -s * 0.2, s * 0.35, 0, Math.PI * 2);
-                        ctx.arc(s * 0.4, s * 0.2, s * 0.35, 0, Math.PI * 2);
+                        ctx.arc(s * 0.4, -s * 0.15, s * 0.3, 0, Math.PI * 2);
+                        ctx.arc(s * 0.4, s * 0.15, s * 0.3, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.restore();
                     }
-                    // Clover stem
+                    // Stem
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
-                    ctx.quadraticCurveTo(s * 0.4, s * 0.8, s * 0.6, s * 1.3);
-                    ctx.lineWidth = s * 0.25;
+                    ctx.quadraticCurveTo(s * 0.3, s * 0.7, s * 0.5, s * 1.1);
+                    ctx.lineWidth = s * 0.2;
                     ctx.strokeStyle = '#15803d';
                     ctx.stroke();
                     ctx.restore();
@@ -421,17 +340,13 @@ export function startWeatherAnimation(type) {
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rot);
                     ctx.fillStyle = '#fbbf24';
-                    ctx.shadowColor = 'rgba(251, 191, 36, 0.85)';
-                    ctx.shadowBlur = 10;
-                    // Outer coin body
+                    ctx.shadowColor = 'rgba(251, 191, 36, 0.8)';
+                    ctx.shadowBlur = 8;
                     ctx.beginPath();
                     ctx.ellipse(0, 0, p.radius, p.radius * 0.65, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    // Inner engraved border
                     ctx.strokeStyle = '#b45309';
-                    ctx.lineWidth = 1.2;
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, p.radius * 0.75, p.radius * 0.45, 0, 0, Math.PI * 2);
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.restore();
                 }
@@ -441,7 +356,7 @@ export function startWeatherAnimation(type) {
         drawStPatricks();
     }
     else if (type === 'holiday-july4') {
-        // Multi-Stage Patriotic Fireworks with Exploding Trails
+        // Multi-Stage Patriotic Fireworks with Gravity
         let fireworks = [];
         function createFirework() {
             const sx = Math.random() * canvas.width * 0.8 + canvas.width * 0.1;
@@ -452,10 +367,10 @@ export function startWeatherAnimation(type) {
                 ['#38bdf8', '#ef4444', '#ffffff']
             ];
             const palette = palettes[Math.floor(Math.random() * palettes.length)];
-            const sparkCount = 35;
+            const sparkCount = 30;
             for (let i = 0; i < sparkCount; i++) {
                 const angle = (Math.PI * 2 / sparkCount) * i + (Math.random() * 0.2);
-                const speed = Math.random() * 3.5 + 1.5;
+                const speed = Math.random() * 3 + 1.2;
                 fireworks.push({
                     x: sx,
                     y: sy,
@@ -473,7 +388,7 @@ export function startWeatherAnimation(type) {
         function drawJuly4() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             fireworkTimer++;
-            if (fireworkTimer % 75 === 0) createFirework();
+            if (fireworkTimer % 80 === 0) createFirework();
 
             for (let i = fireworks.length - 1; i >= 0; i--) {
                 const f = fireworks[i];
@@ -482,16 +397,16 @@ export function startWeatherAnimation(type) {
                 ctx.fillStyle = f.color;
                 ctx.globalAlpha = f.alpha;
                 ctx.shadowColor = f.color;
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 6;
                 ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
 
                 f.x += f.vx;
                 f.y += f.vy;
-                f.vy += 0.04; // Gravity
-                f.vx *= 0.98; // Drag
-                f.alpha -= 0.014; // Fade
+                f.vy += 0.04;
+                f.vx *= 0.98;
+                f.alpha -= 0.014;
                 if (f.alpha <= 0) fireworks.splice(i, 1);
             }
             weatherAnimFrame = requestAnimationFrame(drawJuly4);

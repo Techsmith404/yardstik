@@ -6,23 +6,17 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles-v2.css?v=2.2" id="theme-stylesheet">
-    <script>
-        (function() {
-            const today = new Date();
-            const month = today.getMonth(); // Oct = 9, Nov = 10
-            const date = today.getDate();
-            if ((month === 9 && date >= 17) || (month === 10 && date <= 2)) {
-                document.getElementById('theme-stylesheet').href = 'css/styles-v2-halloween.css';
-            }
-        })();
-    </script>
 </head>
 <body>
     <!-- Desktop Top Navigation Bar (Visible in Desktop Mode Only) -->
     <div id="desktop-nav-bar" class="desktop-nav-bar" style="display: none;">
         <div class="desktop-nav-brand">
             <span class="desktop-badge">DESKTOP PORTAL</span>
-            <h1 class="desktop-title" id="desktop-title">Operations Dashboard</h1>
+            <h1 class="desktop-title" id="desktop-title" style="display: flex; align-items: center; gap: 8px;">
+                <span id="theme-icon-desktop-left" class="theme-icon"></span>
+                <span id="desktop-title-text">Operations Dashboard</span>
+                <span id="theme-icon-desktop-right" class="theme-icon"></span>
+            </h1>
         </div>
         <div class="desktop-nav-links">
             <a href="#view-production" class="desktop-nav-btn"><i class="fa-solid fa-truck-ramp-box"></i> Equipment & Status</a>
