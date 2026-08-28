@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: Christmas & Winter Holidays (Dec 1 - Dec 26) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #0d1f18 0%, #08140f 50%, #030806 100%);
+    --card-bg: linear-gradient(145deg, rgba(20, 48, 36, 0.75) 0%, rgba(10, 25, 18, 0.9) 100%);
+    --card-border: rgba(239, 68, 68, 0.25);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #dcfce7;
+    --text-muted: #86efac;
+    
+    --brand-green: #10b981; /* Evergreen Emerald */
+    --brand-blue: #ef4444;  /* Holly Berry Red */
+    
+    --neon-cyan: #10b981;
+    --neon-purple: #ef4444;
+    --neon-green: #22c55e;
+    --neon-amber: #fbbf24;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(239, 68, 68, 0.35) !important;
+}

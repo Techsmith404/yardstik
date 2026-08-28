@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: 4th of July / Independence Day (Jul 1 - Jul 7) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #0f1d38 0%, #081020 50%, #03060d 100%);
+    --card-bg: linear-gradient(145deg, rgba(25, 45, 85, 0.75) 0%, rgba(12, 22, 42, 0.9) 100%);
+    --card-border: rgba(239, 68, 68, 0.3);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #e0e7ff;
+    --text-muted: #93c5fd;
+    
+    --brand-green: #3b82f6; /* Liberty Blue */
+    --brand-blue: #ef4444;  /* Patriot Red */
+    
+    --neon-cyan: #3b82f6;
+    --neon-purple: #ef4444;
+    --neon-green: #60a5fa;
+    --neon-amber: #fbbf24;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 25px rgba(239, 68, 68, 0.7) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(59, 130, 246, 0.4) !important;
+}

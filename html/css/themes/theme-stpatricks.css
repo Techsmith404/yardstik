@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: St. Patrick's Day (Mar 14 - Mar 18) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #0f291e 0%, #081711 50%, #030a07 100%);
+    --card-bg: linear-gradient(145deg, rgba(22, 60, 44, 0.75) 0%, rgba(11, 30, 22, 0.9) 100%);
+    --card-border: rgba(34, 197, 94, 0.3);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #dcfce7;
+    --text-muted: #86efac;
+    
+    --brand-green: #22c55e; /* Shamrock Green */
+    --brand-blue: #eab308;  /* Pot of Gold */
+    
+    --neon-cyan: #22c55e;
+    --neon-purple: #16a34a;
+    --neon-green: #22c55e;
+    --neon-amber: #eab308;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 25px rgba(34, 197, 94, 0.7) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(34, 197, 94, 0.4) !important;
+}

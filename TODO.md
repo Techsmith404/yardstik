@@ -33,8 +33,16 @@
 
 ---
 
-### 4. Holiday-Themed Stylesheets
-- [ ] Dynamic seasonal CSS overlays (Halloween, Thanksgiving, Christmas, New Year's, 4th of July) injected automatically by date range.
+### 4. Holiday-Themed Stylesheets ✅ (Completed)
+- [x] Dynamic seasonal CSS overlays injected automatically by calendar date range:
+  - 🎃 **Halloween:** Oct 15 - Oct 31 (`theme-halloween.css`)
+  - 🦃 **Thanksgiving / Autumn Harvest:** Nov 15 - Nov 30 (`theme-thanksgiving.css`)
+  - 🎄 **Christmas & Winter Holidays:** Dec 1 - Dec 26 (`theme-christmas.css`)
+  - 🍾 **New Year's:** Dec 27 - Jan 5 (`theme-newyear.css`)
+  - ☘️ **St. Patrick's Day:** Mar 14 - Mar 18 (`theme-stpatricks.css`)
+  - 🎆 **4th of July / Independence Day:** Jul 1 - Jul 7 (`theme-july4.css`)
+- [x] Developer manual testing override via URL parameter (e.g. `?theme=halloween`, `?theme=christmas`, `?theme=default`).
+- [x] Hourly automatic rollover listener in `modules/theme.js`.
 
 ---
 

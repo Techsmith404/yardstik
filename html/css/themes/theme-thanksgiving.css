@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: Thanksgiving & Autumn Harvest (Nov 15 - Nov 30) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #24140e 0%, #170d08 50%, #0a0503 100%);
+    --card-bg: linear-gradient(145deg, rgba(55, 32, 22, 0.75) 0%, rgba(28, 16, 11, 0.9) 100%);
+    --card-border: rgba(234, 179, 8, 0.25);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #fef08a;
+    --text-muted: #d97706;
+    
+    --brand-green: #d97706; /* Autumn Amber */
+    --brand-blue: #dc2626;  /* Cranberry / Maple Red */
+    
+    --neon-cyan: #eab308;
+    --neon-purple: #b45309;
+    --neon-green: #ca8a04;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 20px rgba(234, 179, 8, 0.5) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(217, 119, 6, 0.35) !important;
+}

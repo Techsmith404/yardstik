@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: Halloween (Oct 15 - Oct 31) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #1f1122 0%, #0d0812 50%, #050305 100%);
+    --card-bg: linear-gradient(145deg, rgba(45, 25, 45, 0.75) 0%, rgba(25, 15, 25, 0.9) 100%);
+    --card-border: rgba(249, 115, 22, 0.25);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #fed7aa;
+    --text-muted: #f97316;
+    
+    --brand-green: #f97316; /* Pumpkin Orange */
+    --brand-blue: #a855f7;  /* Witch Purple */
+    
+    --neon-cyan: #f97316;
+    --neon-purple: #a855f7;
+    --neon-green: #84cc16;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 20px rgba(249, 115, 22, 0.6) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+}

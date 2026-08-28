@@ -11,9 +11,11 @@ import { getAnniversaries } from './modules/anniversaries.js';
 import { fetchReminders, advanceReminderSlide } from './modules/reminders.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
+import { initSeasonalTheme } from './modules/theme.js';
 
-// 1. Initialize Device Modes & Layouts
+// 1. Initialize Device Modes, Themes & Layouts
 initMobileRedirect();
+initSeasonalTheme();
 setupDesktopLayout();
 
 // 2. Start Synchronized Digital Clock & Engine Loop

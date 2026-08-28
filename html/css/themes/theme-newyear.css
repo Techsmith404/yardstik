@@ -1,0 +1,27 @@
+/* YardStik Seasonal Theme: New Year's Celebration (Dec 27 - Jan 5) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #18181b 0%, #09090b 50%, #000000 100%);
+    --card-bg: linear-gradient(145deg, rgba(39, 39, 42, 0.75) 0%, rgba(24, 24, 27, 0.9) 100%);
+    --card-border: rgba(245, 158, 11, 0.3);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #fef3c7;
+    --text-muted: #d4d4d8;
+    
+    --brand-green: #f59e0b; /* Champagne Gold */
+    --brand-blue: #06b6d4;  /* Celebration Cyan */
+    
+    --neon-cyan: #06b6d4;
+    --neon-purple: #f59e0b;
+    --neon-green: #fbbf24;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+}
+
+.osha-number {
+    text-shadow: 0 0 25px rgba(245, 158, 11, 0.7) !important;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(245, 158, 11, 0.4) !important;
+}
