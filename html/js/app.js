@@ -263,7 +263,7 @@
 
                 const rawTrackerLabel = (data.production_tracker_label && data.production_tracker_label.trim())
                     ? data.production_tracker_label.trim()
-                    : 'Active Blend Recipe';
+                    : 'Active Blend Recipe #';
 
                 if (trackerVal !== undefined && trackerVal !== null && trackerVal !== '') {
                     let displayVal = trackerVal.toString().trim();
