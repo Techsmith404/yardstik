@@ -175,10 +175,19 @@ h2, h3 {
 .header-widget h2 {
     font-size: 2.4rem; /* Slightly larger */
     color: var(--text-primary);
+    text-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Lift the text off the background */
+}
+
+.header-widget h2 #header-dashboard-title {
     background: linear-gradient(135deg, #ffffff 30%, #a0aec0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Lift the text off the background */
+}
+
+.theme-icon {
+    -webkit-text-fill-color: initial !important;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* Digital clock design */

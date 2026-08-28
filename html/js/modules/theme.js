@@ -81,13 +81,14 @@ export function applyTheme(themeName) {
     const iconRight = document.getElementById('theme-icon-right');
     const dIconLeft = document.getElementById('theme-icon-desktop-left');
     const dIconRight = document.getElementById('theme-icon-desktop-right');
+    const sIconLeft = document.getElementById('theme-icon-slide-left');
+    const sIconRight = document.getElementById('theme-icon-slide-right');
+
+    const iconSlots = [iconLeft, iconRight, dIconLeft, dIconRight, sIconLeft, sIconRight];
 
     if (!themeName || themeName === 'default' || themeName === 'none') {
         if (themeLink) themeLink.remove();
-        if (iconLeft) iconLeft.innerHTML = '';
-        if (iconRight) iconRight.innerHTML = '';
-        if (dIconLeft) dIconLeft.innerHTML = '';
-        if (dIconRight) dIconRight.innerHTML = '';
+        iconSlots.forEach(el => { if (el) el.innerHTML = ''; });
         console.log('Active Theme: Default');
         startWeatherAnimation('none');
         return;
@@ -111,11 +112,10 @@ export function applyTheme(themeName) {
         if (iconRight) iconRight.innerHTML = themeIcons[themeName].right;
         if (dIconLeft) dIconLeft.innerHTML = themeIcons[themeName].left;
         if (dIconRight) dIconRight.innerHTML = themeIcons[themeName].right;
+        if (sIconLeft) sIconLeft.innerHTML = themeIcons[themeName].left;
+        if (sIconRight) sIconRight.innerHTML = themeIcons[themeName].right;
     } else {
-        if (iconLeft) iconLeft.innerHTML = '';
-        if (iconRight) iconRight.innerHTML = '';
-        if (dIconLeft) dIconLeft.innerHTML = '';
-        if (dIconRight) dIconRight.innerHTML = '';
+        iconSlots.forEach(el => { if (el) el.innerHTML = ''; });
     }
 
     startWeatherAnimation('none');

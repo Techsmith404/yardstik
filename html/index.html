@@ -115,7 +115,14 @@
 
     <div id="view-announcements" class="kiosk-view" data-duration="40000">
         <div class="widget announcement-slide">
-            <h3>Daily Toolbox Talk <span id="toolbox-slide-number" style="float: right; color: var(--text-secondary); font-size: 0.9em; opacity: 0.7;"></span></h3>
+            <h3 style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: inline-flex; align-items: center;">
+                    <span id="theme-icon-slide-left" class="theme-icon" style="margin-right: 8px;"></span>
+                    Daily Toolbox Talk
+                    <span id="theme-icon-slide-right" class="theme-icon" style="margin-left: 8px;"></span>
+                </span>
+                <span id="toolbox-slide-number" style="color: var(--text-secondary); font-size: 0.9em; opacity: 0.7;"></span>
+            </h3>
             <img id="slow-slide-img" src="" alt="Announcements" style="cursor: pointer; transition: filter 0.2s;" onclick="if(this.src) window.open(this.src, '_blank')" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
         </div>
         <div class="side-stats" style="display: flex; flex-direction: column; gap: 25px;">
