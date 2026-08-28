@@ -1,0 +1,24 @@
+{
+    "theme_mode": "auto",
+    "dedicated_theme": "default",
+    "shift_theme_dedication": false,
+    "shift_themes": {
+        "1": "default",
+        "2": "obsidian",
+        "3": "cyberpunk"
+    },
+    "features": {
+        "weather_fx": true,
+        "lightning_radar": true,
+        "osha_counter": true,
+        "production_tracker": true,
+        "equipment_status": true,
+        "scale_audit_badges": true,
+        "shift_tracker": true,
+        "toolbox_talk": true,
+        "reminders": true,
+        "anniversaries": true,
+        "safety_videos": true,
+        "mobile_qr": true
+    }
+}

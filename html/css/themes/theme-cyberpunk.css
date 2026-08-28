@@ -1,0 +1,29 @@
+/* YardStik Theme: Cyberpunk Neon (Electric Cyan & Hot Magenta) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #180924 0%, #0c0512 50%, #030105 100%);
+    --card-bg: linear-gradient(145deg, rgba(38, 14, 56, 0.75) 0%, rgba(18, 6, 28, 0.9) 100%);
+    --card-border: rgba(236, 72, 153, 0.3);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #fbcfe8;
+    --text-muted: #f472b6;
+    
+    --brand-green: #06b6d4; /* Electric Cyan */
+    --brand-blue: #ec4899;  /* Hot Magenta */
+    
+    --neon-cyan: #06b6d4;
+    --neon-purple: #d946ef;
+    --neon-green: #10b981;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(236, 72, 153, 0.5) !important;
+    box-shadow: 0 4px 25px rgba(236, 72, 153, 0.25) !important;
+}
+
+.widget {
+    border-color: rgba(6, 182, 212, 0.25) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(236, 72, 153, 0.2) !important;
+}

@@ -323,6 +323,42 @@ h2, h3 {
     gap: 25px;
 }
 
+/* Dynamic Adaptive Mosaic Rules for Feature Toggles */
+body.feature-no-sidebar #view-production {
+    grid-template-columns: 1fr !important;
+}
+
+body.feature-no-sidebar .side-stats {
+    display: none !important;
+}
+
+body.feature-no-sidebar #equipment-masonry {
+    column-count: 4 !important;
+}
+
+body.feature-no-toolbox #view-announcements {
+    grid-template-columns: 1.3fr 1fr !important;
+}
+
+body.feature-no-toolbox .announcement-slide {
+    display: none !important;
+}
+
+body.feature-no-toolbox #reminders-widget-container {
+    height: 100% !important;
+    flex: 1 !important;
+}
+
+body.feature-only-reminders #view-announcements {
+    grid-template-columns: 1fr !important;
+}
+
+body.feature-only-reminders #reminders-widget-container {
+    width: 100% !important;
+    height: 100% !important;
+    font-size: 1.2rem;
+}
+
 .announcement-slide {
     display: flex;
     flex-direction: column;

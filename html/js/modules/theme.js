@@ -43,6 +43,8 @@ export function getHolidayEquipmentIcon() {
     return holidayEquipmentIcons[currentTheme] || '';
 }
 
+import { cachedFeatures } from './features.js';
+
 export function getSeasonalTheme(date = new Date()) {
     const urlParams = new URLSearchParams(window.location.search);
     const mockTheme = (urlParams.get('holiday') || urlParams.get('theme') || '').toLowerCase().trim();
@@ -50,6 +52,25 @@ export function getSeasonalTheme(date = new Date()) {
     if (mockTheme) {
         if (mockTheme === 'none' || mockTheme === 'default' || mockTheme === 'false') return 'default';
         return mockTheme;
+    }
+
+    // Per-Shift Theme Dedication
+    if (cachedFeatures && cachedFeatures.shift_theme_dedication) {
+        const activeShiftName = (window.globalActiveShiftName || '').toLowerCase();
+        let shiftKey = "1";
+        if (activeShiftName.includes('2nd') || activeShiftName.includes('night') || activeShiftName.includes('swing')) {
+            shiftKey = "2";
+        } else if (activeShiftName.includes('3rd') || activeShiftName.includes('graveyard')) {
+            shiftKey = "3";
+        }
+        if (cachedFeatures.shift_themes && cachedFeatures.shift_themes[shiftKey]) {
+            return cachedFeatures.shift_themes[shiftKey];
+        }
+    }
+
+    // Dedicated Theme Mode
+    if (cachedFeatures && cachedFeatures.theme_mode === 'dedicated') {
+        return cachedFeatures.dedicated_theme || 'default';
     }
 
     const month = date.getMonth(); // 0-indexed (0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec)

@@ -31,6 +31,7 @@ export async function fetchEquipmentStatus() {
 }
 
 import { getHolidayEquipmentIcon } from './theme.js';
+import { cachedFeatures } from './features.js';
 
 export function renderEquipmentDashboard() {
     const container = document.getElementById('equipment-masonry');
@@ -102,11 +103,13 @@ export function renderEquipmentDashboard() {
                     scaleBadge.innerText = 'SCALE OK';
                     badgesContainer.appendChild(scaleBadge);
 
-                    const isAudited = !!item.blend_audit;
-                    const auditBadge = document.createElement('span');
-                    auditBadge.className = `badge-audit ${isAudited ? 'badge-audit-yes' : 'badge-audit-no'}`;
-                    auditBadge.innerHTML = `Audit: <i class="fa-solid ${isAudited ? 'fa-check' : 'fa-xmark'}"></i>`;
-                    badgesContainer.appendChild(auditBadge);
+                    if (cachedFeatures.features?.scale_audit_badges !== false) {
+                        const isAudited = !!item.blend_audit;
+                        const auditBadge = document.createElement('span');
+                        auditBadge.className = `badge-audit ${isAudited ? 'badge-audit-yes' : 'badge-audit-no'}`;
+                        auditBadge.innerHTML = `Audit: <i class="fa-solid ${isAudited ? 'fa-check' : 'fa-xmark'}"></i>`;
+                        badgesContainer.appendChild(auditBadge);
+                    }
                 } else if (item.scale === 'OS') {
                     const scaleBadge = document.createElement('span');
                     scaleBadge.className = 'badge-scale badge-scale-os';

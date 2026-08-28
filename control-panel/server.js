@@ -41,7 +41,7 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json'];
+        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json'];
 
         syncFiles.forEach(f => {
             const p = path.join('/data', f);
@@ -135,6 +135,54 @@ app.get('/api/trackers', (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Failed to read trackers file' });
+    }
+});
+
+// Features & Theme Toggles Endpoints
+const FEATURES_PATH = '/data/features.json';
+
+app.get('/api/features', (req, res) => {
+    try {
+        if (fs.existsSync(FEATURES_PATH)) {
+            const data = JSON.parse(fs.readFileSync(FEATURES_PATH, 'utf8'));
+            res.json(data);
+        } else {
+            res.json({
+                theme_mode: 'auto',
+                dedicated_theme: 'default',
+                shift_theme_dedication: false,
+                shift_themes: { "1": "default", "2": "obsidian", "3": "cyberpunk" },
+                features: {
+                    weather_fx: true,
+                    lightning_radar: true,
+                    osha_counter: true,
+                    production_tracker: true,
+                    equipment_status: true,
+                    scale_audit_badges: true,
+                    shift_tracker: true,
+                    toolbox_talk: true,
+                    reminders: true,
+                    anniversaries: true,
+                    safety_videos: true,
+                    mobile_qr: true
+                }
+            });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to read features configuration' });
+    }
+});
+
+app.post('/api/features', (req, res) => {
+    try {
+        const data = req.body;
+        fs.writeFileSync(FEATURES_PATH, JSON.stringify(data, null, 4), 'utf8');
+        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        syncToCloud();
+        res.json({ success: true, message: 'Features & theme configuration saved successfully.' });
+    } catch (err) {
+        console.error('Error saving features:', err);
+        res.status(500).json({ error: 'Failed to save features configuration' });
     }
 });
 

@@ -903,6 +903,109 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ── Extras & Feature Toggles Logic ──────────────────────────────────────────
+    const navExtrasBtn = document.getElementById('nav-extras');
+    if (navExtrasBtn) navExtrasBtn.setAttribute('data-script', 'extras');
+    const extrasView = document.getElementById('extras-view');
+    const btnSaveExtras = document.getElementById('btn-save-extras');
+    const extrasStatus = document.getElementById('extras-status');
+    const themeModeSelect = document.getElementById('theme-mode-select');
+    const dedicatedThemeSelect = document.getElementById('dedicated-theme-select');
+    const chkShiftThemeDedication = document.getElementById('chk-shift-theme-dedication');
+    const shift1Theme = document.getElementById('shift-1-theme');
+    const shift2Theme = document.getElementById('shift-2-theme');
+    const shift3Theme = document.getElementById('shift-3-theme');
+
+    const featureKeys = [
+        'weather_fx', 'lightning_radar', 'osha_counter', 'production_tracker',
+        'equipment_status', 'scale_audit_badges', 'shift_tracker', 'toolbox_talk',
+        'reminders', 'anniversaries', 'safety_videos', 'mobile_qr'
+    ];
+
+    if (navExtrasBtn) {
+        navExtrasBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navExtrasBtn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            if (extrasView) extrasView.classList.add('active');
+            currentScriptTitle.innerText = 'Extras & Themes';
+
+            fetch('/api/features')
+                .then(res => res.json())
+                .then(data => {
+                    if (themeModeSelect) themeModeSelect.value = data.theme_mode || 'auto';
+                    if (dedicatedThemeSelect) dedicatedThemeSelect.value = data.dedicated_theme || 'default';
+                    if (chkShiftThemeDedication) chkShiftThemeDedication.checked = !!data.shift_theme_dedication;
+                    if (data.shift_themes) {
+                        if (shift1Theme && data.shift_themes["1"]) shift1Theme.value = data.shift_themes["1"];
+                        if (shift2Theme && data.shift_themes["2"]) shift2Theme.value = data.shift_themes["2"];
+                        if (shift3Theme && data.shift_themes["3"]) shift3Theme.value = data.shift_themes["3"];
+                    }
+                    const feats = data.features || {};
+                    featureKeys.forEach(k => {
+                        const el = document.getElementById(`feat-${k}`);
+                        if (el) el.checked = feats[k] !== false;
+                    });
+                })
+                .catch(() => {
+                    if (extrasStatus) {
+                        extrasStatus.style.display = 'block';
+                        extrasStatus.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load features config.</span>';
+                    }
+                });
+        });
+    }
+
+    if (btnSaveExtras) {
+        btnSaveExtras.addEventListener('click', () => {
+            const feats = {};
+            featureKeys.forEach(k => {
+                const el = document.getElementById(`feat-${k}`);
+                feats[k] = el ? el.checked : true;
+            });
+
+            const payload = {
+                theme_mode: themeModeSelect ? themeModeSelect.value : 'auto',
+                dedicated_theme: dedicatedThemeSelect ? dedicatedThemeSelect.value : 'default',
+                shift_theme_dedication: chkShiftThemeDedication ? chkShiftThemeDedication.checked : false,
+                shift_themes: {
+                    "1": shift1Theme ? shift1Theme.value : 'default',
+                    "2": shift2Theme ? shift2Theme.value : 'obsidian',
+                    "3": shift3Theme ? shift3Theme.value : 'cyberpunk'
+                },
+                features: feats
+            };
+
+            fetch('/api/features', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (extrasStatus) extrasStatus.style.display = 'block';
+                if (data.success) {
+                    const orig = btnSaveExtras.innerHTML;
+                    btnSaveExtras.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
+                    btnSaveExtras.style.background = 'var(--success)';
+                    if (extrasStatus) extrasStatus.innerHTML = '<span style="color:var(--success)"><i class="fa-solid fa-check"></i> Feature & theme preferences saved. Kiosk is updating!</span>';
+                    setTimeout(() => {
+                        btnSaveExtras.innerHTML = orig;
+                        btnSaveExtras.style.background = '';
+                    }, 2500);
+                } else {
+                    if (extrasStatus) extrasStatus.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${data.error}</span>`;
+                }
+            })
+            .catch(() => {
+                if (extrasStatus) {
+                    extrasStatus.style.display = 'block';
+                    extrasStatus.innerHTML = '<span style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> Network error saving features.</span>';
+                }
+            });
+        });
+    }
+
     function renderSidebar() {
         const dynamicContainer = document.getElementById('dynamic-scripts');
         dynamicContainer.innerHTML = '';

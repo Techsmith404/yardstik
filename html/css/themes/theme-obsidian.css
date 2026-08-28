@@ -1,0 +1,29 @@
+/* YardStik Theme: Obsidian Midnight (Sleek Dark Obsidian & Ice Blue) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #090d14 0%, #04060a 50%, #010204 100%);
+    --card-bg: linear-gradient(145deg, rgba(16, 24, 38, 0.75) 0%, rgba(8, 12, 20, 0.9) 100%);
+    --card-border: rgba(56, 189, 248, 0.2);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    
+    --brand-green: #38bdf8; /* Ice Blue */
+    --brand-blue: #818cf8;  /* Indigo Violet */
+    
+    --neon-cyan: #38bdf8;
+    --neon-purple: #818cf8;
+    --neon-green: #34d399;
+    --neon-amber: #fbbf24;
+    --neon-red: #f87171;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(56, 189, 248, 0.3) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
+}
+
+.widget {
+    border-color: rgba(56, 189, 248, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}

@@ -24,6 +24,7 @@
                 <button id="nav-shifts" class="nav-item nav-special" data-script="shifts" style="margin-top: 8px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</button>
                 <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
                 <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
+                <button id="nav-extras" class="nav-item nav-special" data-script="extras" style="margin-top: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Themes</button>
                 <div class="nav-divider"></div>
                 <div id="dynamic-scripts" style="display: flex; flex-direction: column; gap: 8px;">
                     <!-- Dynamically populated script links -->
@@ -71,6 +72,10 @@
                             <div class="info-card" data-script="site-settings">
                                 <h5><i class="fa-solid fa-sliders"></i> Site Settings</h5>
                                 <p>Configure location-specific details (Site Name, Coordinates, Timezone, Vercel API URL) and manage admin security credentials.</p>
+                            </div>
+                            <div class="info-card" data-script="extras">
+                                <h5><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Themes</h5>
+                                <p>Select display themes, configure per-shift theme dedication, and toggle individual dashboard widgets and features on or off.</p>
                             </div>
                             <div class="info-card" data-script="update_blend">
                                 <h5><i class="fa-solid fa-industry"></i> Update Production Tracker</h5>
@@ -385,6 +390,195 @@
                     </div>
 
                     <div id="site-settings-status" style="margin-top: 15px; display: none;"></div>
+                </div>
+
+                <!-- Extras & Themes View -->
+                <div id="extras-view" class="view">
+                    <div class="editor-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.4rem; color: #fff;"><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Feature Toggles</h3>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                Customize kiosk visual themes, per-shift dedication, and enable/disable individual dashboard widgets.
+                            </p>
+                        </div>
+                        <button id="btn-save-extras" class="btn btn-primary" style="padding: 10px 24px; font-weight: 600;">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                        </button>
+                    </div>
+
+                    <!-- Theme Selection & Shift Dedication Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-palette"></i>
+                            <h4>Theme & Style Customization (Issue #12)</h4>
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label for="theme-mode-select">Theme Mode</label>
+                                <select id="theme-mode-select" class="form-control">
+                                    <option value="auto">🗓️ Auto (Seasonal Calendar Holiday Overlays)</option>
+                                    <option value="dedicated">🎨 Dedicated Custom Theme</option>
+                                </select>
+                                <span class="form-help">Auto dynamically loads holiday themes during seasonal windows.</span>
+                            </div>
+                            <div class="form-group" id="dedicated-theme-group">
+                                <label for="dedicated-theme-select">Active / Dedicated Theme</label>
+                                <select id="dedicated-theme-select" class="form-control">
+                                    <option value="default">🌿 Classic Corporate Sage (Default)</option>
+                                    <option value="obsidian">🌌 Obsidian Midnight (Deep Dark & Ice Blue)</option>
+                                    <option value="cyberpunk">⚡ Cyberpunk Neon (Cyan & Magenta)</option>
+                                    <option value="emerald">🌲 Emerald Forest (Lush Green & Gold)</option>
+                                    <option value="halloween">🎃 Halloween (Spooky Purple & Pumpkin Orange)</option>
+                                    <option value="thanksgiving">🦃 Thanksgiving (Autumn Amber & Maple)</option>
+                                    <option value="christmas">🎄 Christmas (Evergreen & Cranberry Red)</option>
+                                    <option value="newyear">🍾 New Year's (Champagne Gold & Sparkles)</option>
+                                    <option value="stpatricks">☘️ St. Patrick's (Shamrock Green & Gold)</option>
+                                    <option value="july4">🎆 4th of July (Patriotic Red, White & Blue)</option>
+                                </select>
+                                <span class="form-help">Primary visual aesthetic for the dashboard.</span>
+                            </div>
+                        </div>
+
+                        <!-- Shift Theme Dedication -->
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <label style="font-weight: 600; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 0;">
+                                    <input type="checkbox" id="chk-shift-theme-dedication" style="width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                    Enable Per-Shift Theme Dedication
+                                </label>
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">Automatically transitions theme when active work shift changes</span>
+                            </div>
+                            <div id="shift-themes-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
+                                <div class="form-group">
+                                    <label>Shift 1 Theme</label>
+                                    <select id="shift-1-theme" class="form-control shift-theme-select">
+                                        <option value="default">🌿 Classic Corporate Sage</option>
+                                        <option value="obsidian">🌌 Obsidian Midnight</option>
+                                        <option value="cyberpunk">⚡ Cyberpunk Neon</option>
+                                        <option value="emerald">🌲 Emerald Forest</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Shift 2 Theme</label>
+                                    <select id="shift-2-theme" class="form-control shift-theme-select">
+                                        <option value="obsidian">🌌 Obsidian Midnight</option>
+                                        <option value="default">🌿 Classic Corporate Sage</option>
+                                        <option value="cyberpunk">⚡ Cyberpunk Neon</option>
+                                        <option value="emerald">🌲 Emerald Forest</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Shift 3 Theme</label>
+                                    <select id="shift-3-theme" class="form-control shift-theme-select">
+                                        <option value="cyberpunk">⚡ Cyberpunk Neon</option>
+                                        <option value="default">🌿 Classic Corporate Sage</option>
+                                        <option value="obsidian">🌌 Obsidian Midnight</option>
+                                        <option value="emerald">🌲 Emerald Forest</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature Toggles Section -->
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <i class="fa-solid fa-toggle-on"></i>
+                            <h4>Dashboard Feature Toggles</h4>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 15px;">
+                            Toggle individual widgets on/off. Kiosk layouts automatically adapt into balanced mosaics when widgets are disabled.
+                        </p>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-weather_fx" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🌧️ Weather & Atmospheric FX</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Live rain, snow, fog, lightning and holiday particle simulations.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-lightning_radar" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">⚡ Lightning 10-Mile Radar Alert</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Strike detection matrix & 30-minute safety countdown.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-osha_counter" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🛡️ OSHA Days Safe Counter</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Displays days without a recordable safety incident.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-production_tracker" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🏭 Production / Blend Tracker</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Displays Active Blend Recipe #, Heat #, or Target.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-equipment_status" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🚜 Equipment Status Grid</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Locomotives, cranes, trucks & machinery Masonry grid.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-scale_audit_badges" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">📋 Weekly Scale Audit Badges</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Displays Audit OK / Audit X badges on mobile cranes.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-shift_tracker" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">⏱️ Live Shift Progress Bar</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Shift progress meter & remaining work countdown.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-toolbox_talk" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">📢 365-Day Daily Toolbox Talk</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Daily safety topic slides and custom daily overrides.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-reminders" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">📝 Reminders & Announcements</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Markdown slide cards & Magic Word reminders.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-anniversaries" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🎂 Milestone Anniversaries</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Years-of-service recognition & milestones.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-safety_videos" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">⚠️ Safety Videos Required</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Monthly video completion status tracker.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-mobile_qr" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">📱 Corner Mobile QR Code</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Bottom-corner QR badge for phone access.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="extras-status" style="margin-top: 15px; display: none;"></div>
                 </div>
             </div>
         </main>

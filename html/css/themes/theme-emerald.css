@@ -1,0 +1,29 @@
+/* YardStik Theme: Emerald Forest (Lush Evergreen & Warm Gold) */
+:root {
+    --bg-gradient: linear-gradient(135deg, #0a2118 0%, #05130e 50%, #020705 100%);
+    --card-bg: linear-gradient(145deg, rgba(16, 50, 36, 0.75) 0%, rgba(8, 25, 18, 0.9) 100%);
+    --card-border: rgba(16, 185, 129, 0.25);
+    
+    --text-primary: #ffffff;
+    --text-secondary: #d1fae5;
+    --text-muted: #6ee7b7;
+    
+    --brand-green: #10b981; /* Emerald */
+    --brand-blue: #eab308;  /* Gold */
+    
+    --neon-cyan: #10b981;
+    --neon-purple: #14b8a6;
+    --neon-green: #22c55e;
+    --neon-amber: #eab308;
+    --neon-red: #ef4444;
+}
+
+#header-bar {
+    border-bottom: 2px solid rgba(16, 185, 129, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
+}
+
+.widget {
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(234, 179, 8, 0.15) !important;
+}
