@@ -963,16 +963,29 @@ document.addEventListener('DOMContentLoaded', () => {
                             const group = document.createElement('div');
                             group.className = 'form-group';
                             group.style.background = 'rgba(0,0,0,0.2)';
-                            group.style.padding = '10px 12px';
+                            group.style.padding = '12px 14px';
                             group.style.borderRadius = '8px';
                             group.style.border = '1px solid rgba(255,255,255,0.06)';
 
+                            const days1 = (shift.days || []).join(', ');
+                            let schedText = `${days1} (${shift.start} - ${shift.end})`;
+                            if (shift.days2 && shift.days2.length > 0 && shift.start2 && shift.end2) {
+                                const days2 = shift.days2.join(', ');
+                                schedText += `<br><span style="color: var(--text-secondary); opacity: 0.85;">${days2} (${shift.start2} - ${shift.end2})</span>`;
+                            }
+
                             const label = document.createElement('label');
                             label.style.display = 'flex';
-                            label.style.justifyContent = 'space-between';
-                            label.style.alignItems = 'center';
-                            label.style.marginBottom = '6px';
-                            label.innerHTML = `<strong style="color: #fff;">${shift.name}</strong> <span style="font-size: 0.75rem; color: var(--text-secondary);">${shift.start} - ${shift.end}</span>`;
+                            label.style.flexDirection = 'column';
+                            label.style.gap = '4px';
+                            label.style.marginBottom = '8px';
+                            label.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="color: #fff; font-size: 0.95rem;">${shift.name}</strong>
+                                    <span style="font-size: 0.75rem; color: var(--brand-blue, #38bdf8); font-weight: bold; background: rgba(56, 189, 248, 0.1); padding: 2px 6px; border-radius: 4px;">${shift.start} - ${shift.end}</span>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.3;">${schedText}</div>
+                            `;
                             group.appendChild(label);
 
                             const select = document.createElement('select');
