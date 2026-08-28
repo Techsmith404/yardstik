@@ -67,6 +67,31 @@ module.exports = async (req, res) => {
 
     const client = getRedisClient();
 
+    if (req.query.inspect === 'keys' || req.query.inspect === 'status') {
+        const keyStatuses = [];
+        for (let i = 0; i < keyPairs.length; i++) {
+            const k = keyPairs[i];
+            const exhaustedKey = `xweather:exhausted:${k.id}`;
+            let isExhausted = false;
+            if (client) {
+                try {
+                    isExhausted = !!(await client.get(exhaustedKey));
+                } catch (e) {}
+            }
+            keyStatuses.push({
+                index: i + 1,
+                idMasked: `${k.id.substring(0, 4)}...${k.id.substring(Math.max(0, k.id.length - 2))}`,
+                status: isExhausted ? 'exhausted_blacklisted' : 'active'
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            totalKeysConfigured: keyPairs.length,
+            redisConnected: !!client,
+            keyStatuses
+        });
+    }
+
     // 2. Check Server-Side Redis Cache (2 minute TTL)
     if (client) {
         try {
