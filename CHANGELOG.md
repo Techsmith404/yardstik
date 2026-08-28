@@ -2,6 +2,22 @@
 
 This file tracks major deployments, features added/removed, and critical setup context to ensure project continuity across development sessions.
 
+## [v4.1.0] - Configurable Production Tracker & Monthly Window Training Engine
+
+### 🚀 Features Added
+- **Configurable Production Tracker:**
+  - Full facility customization for production metrics (`production_tracker_label` and `production_tracker_value` in `trackers.json`).
+  - Supports string and numerical formats (e.g. *Active Blend Recipe*, *Current Heat #*, *Production Target*, *Active Grade*).
+  - Smart `#` prefixing: when `#` is in the label configuration, it is automatically stripped from the displayed title and affixed to the value (e.g. `Active Blend Recipe:` with `#338`).
+  - Safe Python 3 JSON script runner in Control Panel (`update_blend.sh` & `update_blend.json`).
+- **Novara Monthly Window & Expiring Safety Engine:**
+  - Automated detection of active monthly window training modules (`scheduleType: "window"`) by current calendar month and day.
+  - Multi-language module equivalency mapping via `includedTrainings_id` (English / Spanish).
+  - Clean indicator badges: Amber Clock (`🕒 X`) for due-this-month/expiring and Red Warning (`⚠️ Y`) for overdue/incomplete.
+  - Dynamic panel summary header: `Action Required: Safety Videos (X This Month • Y Total)`.
+
+---
+
 ## [v4.0.0] - Unified Desktop Kiosk, Cloud Sync & Equipment Audit Engine
 
 ### 🚀 Features Added
