@@ -1,4 +1,5 @@
 // Dashboard Features & Layout Adaptation Module
+import { allocateSlots, activeAlertCount } from './weather.js';
 
 export let cachedFeatures = {
     theme_mode: "auto",
@@ -37,6 +38,7 @@ export async function fetchFeatures() {
 
 export function applyFeatureFlags() {
     const f = cachedFeatures.features || {};
+    const body = document.body;
 
     // 1. Weather FX
     const weatherCanvas = document.getElementById('weather-canvas');
@@ -44,47 +46,39 @@ export function applyFeatureFlags() {
         weatherCanvas.style.display = (f.weather_fx !== false) ? 'block' : 'none';
     }
 
-    // 2. OSHA Safe Days Counter
-    const oshaWidget = document.getElementById('osha-widget-container');
-    const headerOsha = document.getElementById('header-osha');
-    if (oshaWidget) oshaWidget.style.display = (f.osha_counter !== false) ? 'flex' : 'none';
-    if (headerOsha) headerOsha.style.display = (f.osha_counter !== false) ? 'flex' : 'none';
-
-    // 3. Production / Blend Tracker
-    const blendWidget = document.getElementById('blend-widget-container');
-    const headerBlend = document.getElementById('header-blend');
-    if (blendWidget) blendWidget.style.display = (f.production_tracker !== false) ? 'flex' : 'none';
-    if (headerBlend) headerBlend.style.display = (f.production_tracker !== false) ? 'flex' : 'none';
-
-    // 4. Equipment Status Grid
+    // 2. Equipment Status Grid
     const equipGrid = document.getElementById('equipment-masonry');
     if (equipGrid) equipGrid.style.display = (f.equipment_status !== false) ? 'block' : 'none';
 
-    // 5. Shift Tracker
-    const shiftWidget = document.getElementById('shift-widget');
-    if (shiftWidget) shiftWidget.style.display = (f.shift_tracker !== false) ? 'flex' : 'none';
+    // 3. 365-Day Daily Toolbox Talk Slide
+    const toolboxSlide = document.querySelector('.announcement-slide');
+    if (toolboxSlide) {
+        toolboxSlide.style.display = (f.toolbox_talk !== false) ? 'flex' : 'none';
+    }
 
-    // 6. 365-Day Daily Toolbox Talk
-    const toolboxImg = document.getElementById('slow-slide-img');
-    if (toolboxImg) toolboxImg.style.display = (f.toolbox_talk !== false) ? 'block' : 'none';
-
-    // 7. Reminders & Announcements
+    // 4. Reminders & Announcements
     const remindersWidget = document.getElementById('reminders-widget-container');
     if (remindersWidget) remindersWidget.style.display = (f.reminders !== false) ? 'flex' : 'none';
 
-    // 8. Rotating Panels (Anniversaries & Safety Videos)
+    // 5. Rotating Panels (Anniversaries & Safety Videos)
     const rotatingPanels = document.getElementById('rotating-panels-wrapper');
     const hasPanels = (f.anniversaries !== false) || (f.safety_videos !== false);
     if (rotatingPanels) rotatingPanels.style.display = hasPanels ? 'flex' : 'none';
 
-    // 9. Mobile QR Code
+    // 6. Mobile QR Code
+    if (f.mobile_qr === false) {
+        body.classList.add('feature-no-mobile-qr');
+    } else {
+        body.classList.remove('feature-no-mobile-qr');
+    }
     const mobileQr = document.getElementById('mobile-qr-img');
     if (mobileQr) mobileQr.style.display = (f.mobile_qr !== false) ? 'block' : 'none';
 
+    // 7. Recalculate OSHA, Blend & Shift slot allocations in weather sidebar & header
+    allocateSlots(activeAlertCount);
+
     // --- Adaptive Mosaic Classes ---
-    const body = document.body;
     const viewAnnouncements = document.getElementById('view-announcements');
-    const viewProduction = document.getElementById('view-production');
 
     // Check if View 1 Sidebar is completely empty
     const noSidebar = (f.osha_counter === false) && (f.production_tracker === false) && (f.shift_tracker === false);

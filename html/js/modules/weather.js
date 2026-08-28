@@ -3,6 +3,7 @@ import { siteConfig } from './config.js';
 import { cachedShifts, fetchShifts, updateShiftTracker } from './clock.js';
 import { startWeatherAnimation } from './fx.js';
 import { hasAllocatedLightningSlot } from './lightning.js';
+import { cachedFeatures } from './features.js';
 
 export let activeAlertCount = 0;
 export let currentWeatherCode = 0;
@@ -24,14 +25,36 @@ export function allocateSlots(alertCount) {
     const headerBlend = document.getElementById('header-blend');
     const fillerContainer = document.getElementById('filler-widgets-container');
 
+    const isOshaEnabled = cachedFeatures.features?.osha_counter !== false;
+    const isBlendEnabled = cachedFeatures.features?.production_tracker !== false;
+    const isShiftEnabled = cachedFeatures.features?.shift_tracker !== false;
+
     if (oshaWidget && headerOsha) {
-        if (slots >= 1) { oshaWidget.style.display = 'flex'; headerOsha.style.display = 'none'; slots--; } 
-        else { oshaWidget.style.display = 'none'; headerOsha.style.display = 'block'; }
+        if (!isOshaEnabled) {
+            oshaWidget.style.display = 'none';
+            headerOsha.style.display = 'none';
+        } else if (slots >= 1) {
+            oshaWidget.style.display = 'flex';
+            headerOsha.style.display = 'none';
+            slots--;
+        } else {
+            oshaWidget.style.display = 'none';
+            headerOsha.style.display = 'flex';
+        }
     }
 
     if (blendWidget && headerBlend) {
-        if (slots >= 1) { blendWidget.style.display = 'flex'; headerBlend.style.display = 'none'; slots--; } 
-        else { blendWidget.style.display = 'none'; headerBlend.style.display = 'block'; }
+        if (!isBlendEnabled) {
+            blendWidget.style.display = 'none';
+            headerBlend.style.display = 'none';
+        } else if (slots >= 1) {
+            blendWidget.style.display = 'flex';
+            headerBlend.style.display = 'none';
+            slots--;
+        } else {
+            blendWidget.style.display = 'none';
+            headerBlend.style.display = 'flex';
+        }
     }
 
     let showDaylight = false;
@@ -39,21 +62,21 @@ export function allocateSlots(alertCount) {
     
     if (slots >= 1) {
         if (slots === 1 && alertCount === 2 && hasAllocatedLightningSlot) {
-            showShift = true;
-            slots--;
+            if (isShiftEnabled) { showShift = true; slots--; }
+            else { showDaylight = true; slots--; }
         } else {
             showDaylight = true;
             slots--;
         }
     }
     
-    if (slots >= 1 && !showShift) {
+    if (slots >= 1 && !showShift && isShiftEnabled) {
         showShift = true;
         slots--;
     }
 
     if (daylightWidget) daylightWidget.style.display = showDaylight ? 'flex' : 'none';
-    if (shiftWidget) shiftWidget.style.display = showShift ? 'flex' : 'none';
+    if (shiftWidget) shiftWidget.style.display = (showShift && isShiftEnabled) ? 'flex' : 'none';
 
     if (fillerContainer && daylightWidget && shiftWidget) {
         fillerContainer.style.display = (daylightWidget.style.display !== 'none' || shiftWidget.style.display !== 'none') ? 'flex' : 'none';

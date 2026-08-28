@@ -337,26 +337,49 @@ body.feature-no-sidebar #equipment-masonry {
 }
 
 body.feature-no-toolbox #view-announcements {
-    grid-template-columns: 1.3fr 1fr !important;
+    grid-template-columns: 1fr !important;
 }
 
 body.feature-no-toolbox .announcement-slide {
     display: none !important;
 }
 
-body.feature-no-toolbox #reminders-widget-container {
+body.feature-no-toolbox #view-announcements .side-stats {
+    display: grid !important;
+    grid-template-columns: 1.25fr 1fr !important;
+    gap: 25px !important;
     height: 100% !important;
-    flex: 1 !important;
+    width: 100% !important;
 }
 
-body.feature-only-reminders #view-announcements {
-    grid-template-columns: 1fr !important;
+body.feature-no-toolbox #reminders-widget-container {
+    height: 100% !important;
+    flex: 1 1 0 !important;
+    margin: 0 !important;
+}
+
+body.feature-no-toolbox #rotating-panels-wrapper {
+    height: 100% !important;
+    flex: 1 1 0 !important;
+    margin: 0 !important;
+}
+
+/* When only Reminders is active on View 2 (Toolbox + Panels disabled) */
+body.feature-only-reminders #view-announcements .side-stats {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 body.feature-only-reminders #reminders-widget-container {
     width: 100% !important;
     height: 100% !important;
-    font-size: 1.2rem;
+    font-size: 1.25rem !important;
+}
+
+/* QR Code Toggle */
+body.feature-no-mobile-qr #mobile-qr-img {
+    display: none !important;
 }
 
 .announcement-slide {
