@@ -1,4 +1,4 @@
-// Weather Animation, Holiday Atmosphere & Particle FX Module
+// Weather Animation, Holiday Atmosphere & High-Performance Particle FX Module
 let weatherAnimFrame = null;
 let currentHolidayTheme = null;
 
@@ -10,7 +10,7 @@ export function startWeatherAnimation(type) {
     const canvas = document.getElementById('weather-canvas');
     const vignette = document.getElementById('vignette-overlay');
     if (!canvas || !vignette) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     if (!window.weatherResizeAttached) {
@@ -58,9 +58,9 @@ export function startWeatherAnimation(type) {
         drawRain();
     } 
     else if (type === 'snow' || type === 'holiday-christmas') {
-        // Clean, elegant ambient falling snow (matches weather snow)
+        // Clean, elegant ambient falling snow
         let particles = [];
-        const count = type === 'snow' ? 100 : 60;
+        const count = type === 'snow' ? 100 : 55;
         for (let i = 0; i < count; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
@@ -88,9 +88,9 @@ export function startWeatherAnimation(type) {
         drawSnow();
     }
     else if (type === 'holiday-halloween') {
-        // Floating ghostly wisps, bats & glowing pumpkin embers
+        // Floating ghostly wisps, bats & glowing pumpkin embers (high-perf GPU)
         let particles = [];
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 30; i++) {
             particles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
@@ -100,7 +100,6 @@ export function startWeatherAnimation(type) {
                 color: Math.random() > 0.4 ? 'rgba(249, 115, 22, 0.75)' : 'rgba(192, 132, 252, 0.65)'
             });
         }
-        // A few subtle flying bat silhouettes
         let bats = [];
         for (let i = 0; i < 4; i++) {
             bats.push({
@@ -114,7 +113,7 @@ export function startWeatherAnimation(type) {
 
         function drawHalloween() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Embers / Ghostly wisps
+            // Embers / Wisps
             particles.forEach(p => {
                 p.sway += 0.03;
                 p.y -= p.s;
@@ -123,8 +122,6 @@ export function startWeatherAnimation(type) {
 
                 ctx.beginPath();
                 ctx.fillStyle = p.color;
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 8;
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
                 ctx.fill();
             });
@@ -138,8 +135,6 @@ export function startWeatherAnimation(type) {
                 ctx.save();
                 ctx.translate(b.x, b.y);
                 ctx.fillStyle = 'rgba(24, 12, 30, 0.85)';
-                ctx.shadowColor = 'rgba(168, 85, 247, 0.6)';
-                ctx.shadowBlur = 6;
                 const wingY = Math.sin(b.flap) * (b.size * 0.5);
                 ctx.beginPath();
                 ctx.ellipse(0, 0, b.size * 0.3, b.size * 0.45, 0, 0, Math.PI * 2);
@@ -158,9 +153,9 @@ export function startWeatherAnimation(type) {
     }
     else if (type === 'holiday-thanksgiving') {
         // Floating autumn leaf flakes (golden amber, copper, and cranberry red)
-        const leafColors = ['#eab308', '#d97706', '#dc2626', '#b45309', '#f97316'];
+        const leafColors = ['rgba(234, 179, 8, 0.75)', 'rgba(217, 119, 6, 0.75)', 'rgba(220, 38, 38, 0.7)', 'rgba(180, 83, 9, 0.75)', 'rgba(249, 115, 22, 0.75)'];
         let leaves = [];
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 28; i++) {
             leaves.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
@@ -187,9 +182,6 @@ export function startWeatherAnimation(type) {
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rot);
                 ctx.fillStyle = p.color;
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 6;
-                // Elegant leaf petal shape
                 ctx.beginPath();
                 ctx.ellipse(0, 0, p.w, p.h, 0, 0, Math.PI * 2);
                 ctx.fill();
@@ -200,9 +192,9 @@ export function startWeatherAnimation(type) {
         drawThanksgiving();
     }
     else if (type === 'holiday-newyear') {
-        // Rising Champagne Bubbles with Specular Glint & Golden Sparkles
+        // Rising Champagne Bubbles & Golden Sparkles
         let particles = [];
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 30; i++) {
             particles.push({
                 type: 'bubble',
                 x: Math.random() * canvas.width,
@@ -212,15 +204,15 @@ export function startWeatherAnimation(type) {
                 sway: Math.random() * Math.PI * 2
             });
         }
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 20; i++) {
             particles.push({
                 type: 'sparkle',
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 7 + 4,
+                size: Math.random() * 6 + 3,
                 rot: Math.random() * Math.PI * 2,
                 rotSpeed: (Math.random() - 0.5) * 0.05,
-                color: Math.random() > 0.4 ? '#fbbf24' : '#38bdf8'
+                color: Math.random() > 0.4 ? 'rgba(251, 191, 36, 0.85)' : 'rgba(56, 189, 248, 0.8)'
             });
         }
 
@@ -238,14 +230,12 @@ export function startWeatherAnimation(type) {
                     ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
                     ctx.fillStyle = 'rgba(251, 191, 36, 0.15)';
                     ctx.lineWidth = 1.2;
-                    ctx.shadowColor = 'rgba(251, 191, 36, 0.8)';
-                    ctx.shadowBlur = 6;
                     ctx.beginPath();
                     ctx.arc(0, 0, p.r, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
-                    // Specular bubble shine
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    // Specular highlight
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.beginPath();
                     ctx.arc(-p.r * 0.35, -p.r * 0.35, p.r * 0.25, 0, Math.PI * 2);
                     ctx.fill();
@@ -256,8 +246,6 @@ export function startWeatherAnimation(type) {
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rot);
                     ctx.fillStyle = p.color;
-                    ctx.shadowColor = p.color;
-                    ctx.shadowBlur = 10;
                     ctx.beginPath();
                     const s = p.size;
                     ctx.moveTo(0, -s);
@@ -276,7 +264,7 @@ export function startWeatherAnimation(type) {
     else if (type === 'holiday-stpatricks') {
         // Floating 4-Leaf Clovers & Gold Coin Tokens
         let items = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 18; i++) {
             items.push({
                 type: 'clover',
                 x: Math.random() * canvas.width,
@@ -288,7 +276,7 @@ export function startWeatherAnimation(type) {
                 sway: Math.random() * Math.PI * 2
             });
         }
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 10; i++) {
             items.push({
                 type: 'coin',
                 x: Math.random() * canvas.width,
@@ -313,11 +301,8 @@ export function startWeatherAnimation(type) {
                     ctx.save();
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rot);
-                    ctx.fillStyle = '#22c55e';
-                    ctx.shadowColor = 'rgba(34, 197, 94, 0.8)';
-                    ctx.shadowBlur = 8;
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.85)';
                     const s = p.size;
-                    // 4 petals
                     for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 2) {
                         ctx.save();
                         ctx.rotate(angle);
@@ -327,25 +312,22 @@ export function startWeatherAnimation(type) {
                         ctx.fill();
                         ctx.restore();
                     }
-                    // Stem
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.quadraticCurveTo(s * 0.3, s * 0.7, s * 0.5, s * 1.1);
                     ctx.lineWidth = s * 0.2;
-                    ctx.strokeStyle = '#15803d';
+                    ctx.strokeStyle = 'rgba(21, 128, 61, 0.9)';
                     ctx.stroke();
                     ctx.restore();
                 } else if (p.type === 'coin') {
                     ctx.save();
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rot);
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.shadowColor = 'rgba(251, 191, 36, 0.8)';
-                    ctx.shadowBlur = 8;
+                    ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
                     ctx.beginPath();
                     ctx.ellipse(0, 0, p.radius, p.radius * 0.65, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.strokeStyle = '#b45309';
+                    ctx.strokeStyle = 'rgba(180, 83, 9, 0.85)';
                     ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.restore();
@@ -362,12 +344,12 @@ export function startWeatherAnimation(type) {
             const sx = Math.random() * canvas.width * 0.8 + canvas.width * 0.1;
             const sy = Math.random() * (canvas.height * 0.45) + canvas.height * 0.08;
             const palettes = [
-                ['#ef4444', '#ffffff', '#3b82f6'],
-                ['#fbbf24', '#ffffff', '#ef4444'],
-                ['#38bdf8', '#ef4444', '#ffffff']
+                ['rgba(239, 68, 68, 0.9)', 'rgba(255, 255, 255, 0.95)', 'rgba(59, 130, 246, 0.9)'],
+                ['rgba(251, 191, 36, 0.9)', 'rgba(255, 255, 255, 0.95)', 'rgba(239, 68, 68, 0.9)'],
+                ['rgba(56, 189, 248, 0.9)', 'rgba(239, 68, 68, 0.9)', 'rgba(255, 255, 255, 0.95)']
             ];
             const palette = palettes[Math.floor(Math.random() * palettes.length)];
-            const sparkCount = 30;
+            const sparkCount = 28;
             for (let i = 0; i < sparkCount; i++) {
                 const angle = (Math.PI * 2 / sparkCount) * i + (Math.random() * 0.2);
                 const speed = Math.random() * 3 + 1.2;
@@ -396,8 +378,6 @@ export function startWeatherAnimation(type) {
                 ctx.beginPath();
                 ctx.fillStyle = f.color;
                 ctx.globalAlpha = f.alpha;
-                ctx.shadowColor = f.color;
-                ctx.shadowBlur = 6;
                 ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();

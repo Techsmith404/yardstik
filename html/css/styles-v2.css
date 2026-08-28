@@ -43,6 +43,18 @@ body {
     animation: pixel-shift 300s infinite linear;
 }
 
+#weather-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none !important;
+    transform: translateZ(0);
+    will-change: transform;
+}
+
 blockquote {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-left: 4px solid var(--quote-border-color, rgba(128, 138, 148, 0.6));
