@@ -49,13 +49,15 @@ export async function getAnniversaries() {
         const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
         let data = null;
 
-        try {
-            const res = await fetch(`${apiBase}/api/novara?type=anniversaries&t=` + new Date().getTime());
-            if (res.ok) {
-                data = await res.json();
+        if (apiBase) {
+            try {
+                const res = await fetch(`${apiBase}/api/novara?type=anniversaries&t=` + new Date().getTime());
+                if (res.ok) {
+                    data = await res.json();
+                }
+            } catch (apiErr) {
+                console.warn('Novara API offline, checking local anniversaries.json fallback:', apiErr);
             }
-        } catch (apiErr) {
-            console.warn('Novara API offline, checking local anniversaries.json fallback:', apiErr);
         }
 
         if (!data || !data.employees) {

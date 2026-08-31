@@ -76,6 +76,11 @@ export async function fetchSafetyVideos() {
 
     try {
         const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+        if (!apiBase) {
+            list.innerHTML = '<li style="grid-column: 1 / -1; color: #4ade80; font-style: italic; padding: 15px; text-align: center;">All employees are 100% up to date! 🎉</li>';
+            if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">(0 This Month • 0 Total)</span>';
+            return;
+        }
         const res = await fetch(`${apiBase}/api/novara?t=` + new Date().getTime());
         if (!res.ok) throw new Error("Novara API not available");
         const data = await res.json();

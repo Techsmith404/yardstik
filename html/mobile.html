@@ -290,6 +290,11 @@
             const titleEl = document.getElementById('safety-title');
             try {
                 const vercelBase = siteConfig.vercel_api_url ? siteConfig.vercel_api_url.replace(/\/+$/, '') : '';
+                if (!vercelBase) {
+                    document.getElementById('safety-content').innerHTML = '<div style="color: #10b981; font-style: italic; text-align: center;">All employees are 100% up to date! 🎉</div>';
+                    if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="font-size: 0.85em; font-weight: normal; opacity: 0.8; color: #fca5a5;">(0 This Month • 0 Total)</span>';
+                    return;
+                }
                 const res = await fetch(`${vercelBase}/api/novara`);
                 const data = await res.json();
                 
@@ -607,15 +612,17 @@
                             dist = 4.2;
                             strikeTime = new Date(Date.now() - (5 * 60000)); // 5 mins ago
                         } else {
-                            const vercelBase = siteConfig.vercel_api_url || '';
-                            const lat = siteConfig.latitude || 41.6045;
-                            const lon = siteConfig.longitude || -87.1311;
-                            const lightningRes = await fetch(`${vercelBase}/api/lightning?lat=${lat}&lon=${lon}`);
-                            if (lightningRes.ok) {
-                                const lightningData = await lightningRes.json();
-                                if (lightningData && lightningData.success && lightningData.response && lightningData.response.length > 0) {
-                                    dist = lightningData.response[0].relativeTo.distanceMI;
-                                    strikeTime = new Date(lightningData.response[0].ob.dateTimeISO);
+                            const vercelBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+                            if (vercelBase) {
+                                const lat = siteConfig.latitude || 41.6045;
+                                const lon = siteConfig.longitude || -87.1311;
+                                const lightningRes = await fetch(`${vercelBase}/api/lightning?lat=${lat}&lon=${lon}`);
+                                if (lightningRes.ok) {
+                                    const lightningData = await lightningRes.json();
+                                    if (lightningData && lightningData.success && lightningData.response && lightningData.response.length > 0) {
+                                        dist = lightningData.response[0].relativeTo.distanceMI;
+                                        strikeTime = new Date(lightningData.response[0].ob.dateTimeISO);
+                                    }
                                 }
                             }
                         }
@@ -808,6 +815,22 @@
                 const reactions = msg.reactions || {};
                 const isPinned = !!msg.pinned;
 
+            let myReactions = {};
+            try {
+                myReactions = JSON.parse(localStorage.getItem('yardstik_mb_reactions') || '{}');
+            } catch (e) {}
+
+            list.innerHTML = messages.map(msg => {
+                const cat = catMap[msg.category_id] || { name: 'General', color: '#38bdf8', icon: 'fa-solid fa-comment' };
+                const timeStr = formatRelativeTime(msg.timestamp);
+                const reactions = msg.reactions || {};
+                const isPinned = !!msg.pinned;
+                const userReacts = myReactions[msg.id] || [];
+
+                const isThumbsActive = userReacts.includes('thumbsup');
+                const isHeartActive = userReacts.includes('heart');
+                const isFireActive = userReacts.includes('fire');
+
                 return `
                     <div style="background: ${isPinned ? 'linear-gradient(145deg, rgba(56, 189, 248, 0.1) 0%, rgba(20, 30, 45, 0.8) 100%)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isPinned ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.08)'}; border-left: 4px solid ${cat.color}; border-radius: 10px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -831,13 +854,13 @@
                             </div>
 
                             <div style="display: flex; gap: 6px;">
-                                <button class="btn-react" data-id="${msg.id}" data-reaction="thumbsup" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                <button class="btn-react ${isThumbsActive ? 'active' : ''}" data-id="${msg.id}" data-reaction="thumbsup" style="background: ${isThumbsActive ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isThumbsActive ? '#38bdf8' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer; transition: all 0.2s;">
                                     👍 ${reactions.thumbsup || 0}
                                 </button>
-                                <button class="btn-react" data-id="${msg.id}" data-reaction="heart" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                <button class="btn-react ${isHeartActive ? 'active' : ''}" data-id="${msg.id}" data-reaction="heart" style="background: ${isHeartActive ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isHeartActive ? '#ef4444' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer; transition: all 0.2s;">
                                     ❤️ ${reactions.heart || 0}
                                 </button>
-                                <button class="btn-react" data-id="${msg.id}" data-reaction="fire" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer;">
+                                <button class="btn-react ${isFireActive ? 'active' : ''}" data-id="${msg.id}" data-reaction="fire" style="background: ${isFireActive ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isFireActive ? '#f59e0b' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; padding: 3px 8px; font-size: 0.75rem; color: #fff; cursor: pointer; transition: all 0.2s;">
                                     🔥 ${reactions.fire || 0}
                                 </button>
                             </div>
@@ -850,11 +873,26 @@
                 btn.addEventListener('click', async () => {
                     const msgId = btn.getAttribute('data-id');
                     const reaction = btn.getAttribute('data-reaction');
+                    
+                    let stored = {};
+                    try { stored = JSON.parse(localStorage.getItem('yardstik_mb_reactions') || '{}'); } catch(e) {}
+                    if (!stored[msgId]) stored[msgId] = [];
+
+                    const hasReacted = stored[msgId].includes(reaction);
+                    const action = hasReacted ? 'remove' : 'add';
+
+                    if (hasReacted) {
+                        stored[msgId] = stored[msgId].filter(r => r !== reaction);
+                    } else {
+                        stored[msgId].push(reaction);
+                    }
+                    localStorage.setItem('yardstik_mb_reactions', JSON.stringify(stored));
+
                     try {
                         const res = await fetchMbApi('/api/message-board/react', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ message_id: msgId, reaction })
+                            body: JSON.stringify({ message_id: msgId, reaction, action })
                         });
                         if (res && res.ok) loadMobileMessageBoard();
                     } catch (e) {}

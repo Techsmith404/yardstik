@@ -2,11 +2,16 @@
 // Detects direct matches, leetspeak, spacing tricks, and offensive slur patterns
 
 const BANNED_PATTERNS = [
-    // Profanities & slurs (with flexible character boundaries)
-    /\bf+u+c+k+/i,
+    // Profanities & slurs (with flexible character boundaries & leetspeak)
+    /\bf+u+c*k+/i,
+    /\bf+u+k+/i,
+    /\bf+c+k+/i,
+    /\bp+h+u+c*k+/i,
+    /\bp+h+u+k+/i,
     /\bs+h+i+t+/i,
     /\bb+i+t+c+h+/i,
     /\ba+s+s+h+o+l+e+/i,
+    /\ba+s+s+\b/i,
     /\bd+i+c+k+/i,
     /\bc+u+n+t+/i,
     /\bp+u+s+s+y+/i,
@@ -24,11 +29,12 @@ const BANNED_PATTERNS = [
     /\bs+t+f+u\b/i
 ];
 
-// Normalize leetspeak and special character obfuscation
+// Normalize leetspeak, phonetic sounds, and special character obfuscation
 export function normalizeText(text) {
     if (!text) return '';
     return text
         .toLowerCase()
+        .replace(/ph/g, 'f') // Handles "phuck", "phuk", "phish"
         .replace(/0/g, 'o')
         .replace(/1|!|\|/g, 'i')
         .replace(/3/g, 'e')
@@ -36,7 +42,7 @@ export function normalizeText(text) {
         .replace(/5|\$/g, 's')
         .replace(/7/g, 't')
         .replace(/8/g, 'b')
-        .replace(/[^a-z0-9\s]/g, '') // remove symbols
+        .replace(/[^a-z0-9\s]/g, '') // remove symbols & punctuation
         .replace(/\s+/g, ' ')
         .trim();
 }

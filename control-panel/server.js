@@ -84,11 +84,12 @@ app.use((req, res, next) => {
     if (req.method === 'OPTIONS') return next();
     
     // Allow public API endpoints for the kiosk display and mobile message board
+    const cleanPath = req.path.replace(/\/+$/, '');
     const isPublicMessageBoard = (
-        (req.path === '/api/message-board' && req.method === 'GET' && req.query.admin !== '1') ||
-        (req.path === '/api/message-board/post' && req.method === 'POST') ||
-        (req.path === '/api/message-board/react' && req.method === 'POST') ||
-        (req.path === '/api/message-board/employees' && req.method === 'GET')
+        (cleanPath === '/api/message-board' && req.method === 'GET' && req.query.admin !== '1') ||
+        (cleanPath === '/api/message-board/post' && req.method === 'POST') ||
+        (cleanPath === '/api/message-board/react' && req.method === 'POST') ||
+        (cleanPath === '/api/message-board/employees' && req.method === 'GET')
     );
     if (isPublicMessageBoard) {
         return next();
@@ -102,8 +103,11 @@ app.use((req, res, next) => {
         return next();
     }
 
-    res.set('WWW-Authenticate', 'Basic realm="Kiosk Control Panel"');
-    res.status(401).send('Authentication required.');
+    // Do NOT send WWW-Authenticate on API endpoints so browsers never show a login modal
+    if (!req.path.startsWith('/api/')) {
+        res.set('WWW-Authenticate', 'Basic realm="Kiosk Control Panel"');
+    }
+    res.status(401).json({ error: 'Authentication required.' });
 });
 
 // Serve the frontend UI
@@ -204,7 +208,8 @@ const MESSAGE_BOARD_PATH = fs.existsSync('/data')
     : path.join(__dirname, '../html/assets/data/message_board.json');
 
 const MB_BANNED_PATTERNS = [
-    /\bf+u+c+k+/i, /\bs+h+i+t+/i, /\bb+i+t+c+h+/i, /\ba+s+s+h+o+l+e+/i,
+    /\bf+u+c*k+/i, /\bf+u+k+/i, /\bf+c+k+/i, /\bp+h+u+c*k+/i, /\bp+h+u+k+/i,
+    /\bs+h+i+t+/i, /\bb+i+t+c+h+/i, /\ba+s+s+h+o+l+e+/i, /\ba+s+s+\b/i,
     /\bd+i+c+k+/i, /\bc+u+n+t+/i, /\bp+u+s+s+y+/i, /\bb+a+s+t+a+r+d+/i,
     /\bw+h+o+r+e+/i, /\bs+l+u+t+/i, /\bf+a+g+/i, /\bn+i+g+g+/i,
     /\bn+i+g+a+/i, /\br+e+t+a+r+d+/i, /\bk+i+k+e+/i, /\bc+h+i+n+k+/i,
@@ -215,6 +220,7 @@ function checkMessageProfanity(text) {
     if (!text || typeof text !== 'string') return false;
     for (const p of MB_BANNED_PATTERNS) if (p.test(text)) return true;
     const norm = text.toLowerCase()
+        .replace(/ph/g, 'f')
         .replace(/0/g, 'o').replace(/1|!|\|/g, 'i').replace(/3/g, 'e')
         .replace(/4|@/g, 'a').replace(/5|\$/g, 's').replace(/7/g, 't')
         .replace(/8/g, 'b').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -386,14 +392,24 @@ app.post('/api/message-board/post', (req, res) => {
 
 app.post('/api/message-board/react', (req, res) => {
     try {
-        const { message_id, reaction } = req.body;
+        const { message_id, reaction, action } = req.body;
         const mb = loadMessageBoardData();
         const msg = (mb.messages || []).find(m => m.id === message_id);
         if (!msg) return res.status(404).json({ error: 'Message not found' });
 
         if (!msg.reactions) msg.reactions = {};
         const cleanType = ['thumbsup', 'heart', 'fire', 'bulb'].includes(reaction) ? reaction : 'thumbsup';
-        msg.reactions[cleanType] = (msg.reactions[cleanType] || 0) + 1;
+        
+        if (action === 'remove') {
+            const current = msg.reactions[cleanType] || 0;
+            if (current <= 1) {
+                delete msg.reactions[cleanType];
+            } else {
+                msg.reactions[cleanType] = current - 1;
+            }
+        } else {
+            msg.reactions[cleanType] = (msg.reactions[cleanType] || 0) + 1;
+        }
 
         saveMessageBoardData(mb);
         res.json({ success: true, reactions: msg.reactions });

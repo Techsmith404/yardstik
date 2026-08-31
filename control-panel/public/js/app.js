@@ -1102,9 +1102,12 @@ document.addEventListener('DOMContentLoaded', () => {
         mbPostsContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 30px;">Loading posts...</div>';
 
         fetch('/api/message-board?admin=1')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) return fetch('/api/message-board').then(r => r.json());
+                return res.json();
+            })
             .then(data => {
-                if (!data.success) return;
+                if (!data || !data.success) throw new Error((data && data.error) || 'Failed to load');
                 mbAdminData = data;
 
                 if (chkMbEnabled) chkMbEnabled.checked = data.settings.enabled !== false;
@@ -1114,7 +1117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderAdminPosts();
             })
             .catch(err => {
-                mbPostsContainer.innerHTML = '<div style="color: var(--danger); text-align: center; padding: 20px;">Failed to load message board data.</div>';
+                console.error('Error loading message board admin data:', err);
+                mbPostsContainer.innerHTML = '<div style="color: var(--danger); text-align: center; padding: 20px;">Failed to load message board data. Please ensure the kiosk service is running.</div>';
             });
     }
 

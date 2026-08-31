@@ -110,51 +110,54 @@ export function renderMessageBoard(page = 0) {
         const thumbsCount = reactions.thumbsup || 0;
         const heartCount = reactions.heart || 0;
         const fireCount = reactions.fire || 0;
+        const isShortText = msg.text.length < 85;
+        const textSize = isShortText ? 'clamp(1.15rem, 1.35vw, 1.45rem)' : 'clamp(0.95rem, 1.05vw, 1.15rem)';
+        const textWeight = isShortText ? '600' : '400';
 
         return `
             <div class="widget message-card ${isPinned ? 'message-pinned' : ''}" style="
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                padding: 20px 22px;
-                border-radius: 14px;
-                background: ${isPinned ? 'linear-gradient(145deg, rgba(56, 189, 248, 0.12) 0%, rgba(20, 30, 45, 0.85) 100%)' : 'var(--card-bg)'};
-                border: 1px solid ${isPinned ? 'rgba(56, 189, 248, 0.4)' : 'rgba(255,255,255,0.08)'};
+                padding: 22px 24px;
+                border-radius: 16px;
+                background: ${isPinned ? 'linear-gradient(145deg, rgba(56, 189, 248, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%)' : 'linear-gradient(165deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)'};
+                border: 1px solid ${isPinned ? 'rgba(56, 189, 248, 0.45)' : 'rgba(255,255,255,0.09)'};
                 border-left: 5px solid ${cat.color};
-                box-shadow: ${isPinned ? '0 0 25px rgba(56, 189, 248, 0.2), 0 8px 24px rgba(0,0,0,0.3)' : '0 6px 18px rgba(0,0,0,0.25)'};
+                box-shadow: ${isPinned ? '0 0 25px rgba(56, 189, 248, 0.22), 0 8px 24px rgba(0,0,0,0.35)' : '0 8px 20px rgba(0,0,0,0.25)'};
                 transition: transform 0.2s, box-shadow 0.2s;
                 position: relative;
                 overflow: hidden;
             ">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span style="background: ${cat.color}22; border: 1px solid ${cat.color}66; color: ${cat.color}; padding: 3px 9px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 5px;">
-                            <i class="${cat.icon}" style="font-size: 0.8rem;"></i> ${escapeHtml(cat.name)}
-                        </span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            ${isPinned ? '<span style="color: #38bdf8; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-thumbtack"></i> PINNED</span>' : ''}
-                            <span style="color: var(--text-secondary); font-size: 0.8rem; opacity: 0.8;">${timeAgo(msg.timestamp)}</span>
-                        </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <span style="background: ${cat.color}22; border: 1px solid ${cat.color}66; color: ${cat.color}; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                        <i class="${cat.icon}" style="font-size: 0.75rem;"></i> ${escapeHtml(cat.name)}
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        ${isPinned ? '<span style="color: #38bdf8; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); padding: 2px 7px; border-radius: 10px; white-space: nowrap;"><i class="fa-solid fa-thumbtack"></i> PINNED</span>' : ''}
+                        <span style="color: #94a3b8; font-size: 0.75rem; opacity: 0.85; white-space: nowrap;">${timeAgo(msg.timestamp)}</span>
                     </div>
+                </div>
 
-                    <p style="font-size: clamp(0.95rem, 1.1vw, 1.15rem); color: #ffffff; line-height: 1.45; margin: 0 0 16px 0; word-break: break-word;">
+                <div style="flex: 1; display: flex; align-items: center; margin: 14px 0 16px 0;">
+                    <p style="font-size: ${textSize}; font-weight: ${textWeight}; color: #f8fafc; line-height: 1.45; margin: 0; word-break: break-word; text-shadow: 0 1px 2px rgba(0,0,0,0.35);">
                         ${escapeHtml(msg.text)}
                     </p>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; margin-top: auto;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 26px; height: 26px; border-radius: 50%; background: ${msg.is_anonymous ? '#64748b' : 'var(--brand-blue, #38bdf8)'}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #fff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; margin-top: auto;">
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: ${msg.is_anonymous ? 'linear-gradient(135deg, #475569, #334155)' : 'linear-gradient(135deg, #0284c7, #38bdf8)'}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #fff; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
                             ${msg.is_anonymous ? '?' : authorDisplay.charAt(0).toUpperCase()}
                         </div>
-                        <span style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">${authorDisplay}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.75;">• ${shiftDisplay}</span>
+                        <span style="font-size: 0.88rem; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${authorDisplay}</span>
+                        <span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 0.72rem; padding: 2px 7px; border-radius: 10px; font-weight: 500; white-space: nowrap;">${shiftDisplay}</span>
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        ${thumbsCount > 0 ? `<span style="font-size: 0.8rem; background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 12px; color: #fff;">👍 ${thumbsCount}</span>` : ''}
-                        ${heartCount > 0 ? `<span style="font-size: 0.8rem; background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 12px; color: #fff;">❤️ ${heartCount}</span>` : ''}
-                        ${fireCount > 0 ? `<span style="font-size: 0.8rem; background: rgba(255,255,255,0.08); padding: 2px 7px; border-radius: 12px; color: #fff;">🔥 ${fireCount}</span>` : ''}
+                        ${thumbsCount > 0 ? `<span style="font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); padding: 3px 8px; border-radius: 12px; color: #f1f5f9; display: inline-flex; align-items: center; gap: 4px;">👍 ${thumbsCount}</span>` : ''}
+                        ${heartCount > 0 ? `<span style="font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); padding: 3px 8px; border-radius: 12px; color: #f1f5f9; display: inline-flex; align-items: center; gap: 4px;">❤️ ${heartCount}</span>` : ''}
+                        ${fireCount > 0 ? `<span style="font-size: 0.78rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); padding: 3px 8px; border-radius: 12px; color: #f1f5f9; display: inline-flex; align-items: center; gap: 4px;">🔥 ${fireCount}</span>` : ''}
                     </div>
                 </div>
             </div>

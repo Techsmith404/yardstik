@@ -35,6 +35,7 @@ export async function checkLightning() {
             }
         } else {
             const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+            if (!apiBase) return;
             const lat = siteConfig.latitude || 41.6045;
             const lon = siteConfig.longitude || -87.1311;
             const fetchRes = await fetch(`${apiBase}/api/lightning?lat=${lat}&lon=${lon}`);
