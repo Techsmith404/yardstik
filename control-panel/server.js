@@ -83,6 +83,17 @@ app.use((req, res, next) => {
     // Allow CORS preflight requests
     if (req.method === 'OPTIONS') return next();
     
+    // Allow public API endpoints for the kiosk display and mobile message board
+    const isPublicMessageBoard = (
+        (req.path === '/api/message-board' && req.method === 'GET' && req.query.admin !== '1') ||
+        (req.path === '/api/message-board/post' && req.method === 'POST') ||
+        (req.path === '/api/message-board/react' && req.method === 'POST') ||
+        (req.path === '/api/message-board/employees' && req.method === 'GET')
+    );
+    if (isPublicMessageBoard) {
+        return next();
+    }
+
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
     const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 

@@ -708,12 +708,40 @@
         let mobileMbData = { settings: {}, categories: [], messages: [] };
         let activeMobileMbCat = 'all';
 
+        async function fetchMbApi(endpoint, options = {}) {
+            // Try relative API path first
+            try {
+                const res = await fetch(endpoint, options);
+                if (res.ok || (res.status !== 404 && res.status !== 502 && res.status !== 504)) {
+                    return res;
+                }
+            } catch (e) {}
+
+            // Fallback to direct port 1337 if on local network / kiosk host
+            try {
+                const host = window.location.hostname || 'localhost';
+                const fallbackUrl = `http://${host}:1337${endpoint}`;
+                return await fetch(fallbackUrl, options);
+            } catch (e) {
+                return null;
+            }
+        }
+
         async function loadMobileMessageBoard() {
             try {
-                const res = await fetch('/api/message-board?t=' + Date.now());
-                if (!res.ok) return;
-                const data = await res.json();
-                if (!data.success) return;
+                let res = await fetchMbApi('/api/message-board?t=' + Date.now());
+                let data = null;
+                if (res && res.ok) {
+                    data = await res.json();
+                } else {
+                    // Fallback to reading static json file
+                    const staticRes = await fetch(getDataUrl('message_board.json')).catch(() => null);
+                    if (staticRes && staticRes.ok) {
+                        data = await staticRes.json();
+                    }
+                }
+
+                if (!data || !data.success) return;
                 mobileMbData = data;
 
                 const feed = document.getElementById('message-board-feed');
@@ -823,12 +851,12 @@
                     const msgId = btn.getAttribute('data-id');
                     const reaction = btn.getAttribute('data-reaction');
                     try {
-                        const res = await fetch('/api/message-board/react', {
+                        const res = await fetchMbApi('/api/message-board/react', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ message_id: msgId, reaction })
                         });
-                        if (res.ok) loadMobileMessageBoard();
+                        if (res && res.ok) loadMobileMessageBoard();
                     } catch (e) {}
                 });
             });
@@ -874,18 +902,32 @@
                 if (saved.pin && inputPin) inputPin.value = saved.pin;
             } catch (e) {}
 
-            // Populate employee autofill names from /api/message-board/employees
+            // Populate employee autofill names
             try {
-                const res = await fetch('/api/message-board/employees');
-                if (res.ok) {
+                let res = await fetchMbApi('/api/message-board/employees');
+                if (res && res.ok) {
                     const data = await res.json();
                     if (data.employees && datalist) {
                         datalist.innerHTML = data.employees.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
                     }
+                } else {
+                    // Fallback to seniority.json if available
+                    const sRes = await fetch(getDataUrl('seniority.json')).catch(() => null);
+                    if (sRes && sRes.ok) {
+                        const sData = await sRes.json();
+                        const names = (sData.employees || []).map(e => e.name).filter(Boolean);
+                        if (names.length && datalist) {
+                            datalist.innerHTML = names.map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+                        }
+                    }
                 }
             } catch (e) {}
 
-            if (openBtn && modal) openBtn.onclick = () => { modal.style.display = 'flex'; errorDiv.style.display = 'none'; };
+            if (openBtn && modal) openBtn.onclick = () => { 
+                modal.style.display = 'flex'; 
+                errorDiv.style.display = 'none'; 
+                renderMobileMbCategories(); // Re-ensure categories dropdown is populated
+            };
             if (closeBtn && modal) closeBtn.onclick = () => { modal.style.display = 'none'; };
             if (cancelBtn && modal) cancelBtn.onclick = () => { modal.style.display = 'none'; };
 
@@ -938,7 +980,7 @@
                     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Posting...';
 
                     try {
-                        const res = await fetch('/api/message-board/post', {
+                        const res = await fetchMbApi('/api/message-board/post', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -951,9 +993,16 @@
                             })
                         });
 
-                        const data = await res.json();
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = origBtnText;
+
+                        if (!res) {
+                            errorDiv.innerText = 'Network error: could not connect to message board server.';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+
+                        const data = await res.json();
 
                         if (!res.ok || !data.success) {
                             errorDiv.innerText = data.error || 'Failed to post message.';

@@ -12,6 +12,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       # 1. Base website files from the git repo
       - ./html:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
       # 2. Ephemeral data (reminders, metrics, site config, etc.) mounted over assets/data
       - /opt/kiosk-data/data:/usr/share/nginx/html/assets/data
       # 3. Safety slides: managed on-disk in /opt/kiosk-data/safety-slides

@@ -13,13 +13,18 @@ let rotationInterval = null;
 
 export async function fetchMessageBoard() {
     try {
-        const res = await fetch('/api/message-board?t=' + Date.now());
-        if (res.ok) {
+        let res = await fetch('/api/message-board?t=' + Date.now()).catch(() => null);
+        if (!res || !res.ok) {
+            const host = window.location.hostname || 'localhost';
+            res = await fetch(`http://${host}:1337/api/message-board?t=${Date.now()}`).catch(() => null);
+        }
+        if (!res || !res.ok) {
+            res = await fetch('assets/data/message_board.json?t=' + Date.now()).catch(() => null);
+        }
+        if (res && res.ok) {
             const data = await res.json();
-            if (data.success) {
-                cachedMessageBoard = data;
-                renderMessageBoard(currentPage);
-            }
+            cachedMessageBoard = data;
+            renderMessageBoard(currentPage);
         }
     } catch (e) {
         console.warn('Could not load message board:', e);
