@@ -83,10 +83,10 @@ app.use((req, res, next) => {
     // Allow CORS preflight requests
     if (req.method === 'OPTIONS') return next();
     
-    // Allow public API endpoints for the kiosk display and mobile message board
+    // Allow public API endpoints for the kiosk display, mobile message board, and control panel viewer
     const cleanPath = req.path.replace(/\/+$/, '');
     const isPublicMessageBoard = (
-        (cleanPath === '/api/message-board' && req.method === 'GET' && req.query.admin !== '1') ||
+        (cleanPath === '/api/message-board' && req.method === 'GET') ||
         (cleanPath === '/api/message-board/post' && req.method === 'POST') ||
         (cleanPath === '/api/message-board/react' && req.method === 'POST') ||
         (cleanPath === '/api/message-board/employees' && req.method === 'GET')

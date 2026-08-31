@@ -809,12 +809,6 @@
             const catMap = {};
             (mobileMbData.categories || []).forEach(c => catMap[c.id] = c);
 
-            list.innerHTML = messages.map(msg => {
-                const cat = catMap[msg.category_id] || { name: 'General', color: '#38bdf8', icon: 'fa-solid fa-comment' };
-                const timeStr = formatRelativeTime(msg.timestamp);
-                const reactions = msg.reactions || {};
-                const isPinned = !!msg.pinned;
-
             let myReactions = {};
             try {
                 myReactions = JSON.parse(localStorage.getItem('yardstik_mb_reactions') || '{}');
