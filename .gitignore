@@ -16,3 +16,10 @@ script-server/
 *.csv
 .~lock.*
 .DS_Store
+*.kate-swp
+YARDSTIK_COMMERCIALIZATION_GUIDE.md
+YARDSTIK_SOFTWARE_LICENSE_AND_SLA.md
+*AGREEMENT*.md
+*SLA*.md
+contracts/
+*.pdf
