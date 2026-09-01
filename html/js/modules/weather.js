@@ -179,20 +179,30 @@ export async function getWeather() {
         const lat = siteConfig.latitude || 41.600;
         const lon = siteConfig.longitude || -87.100;
 
-        // Request current stats + daily precipitation outlook blocks + hourly conditions + apparent temp + precipitation + snowfall + sunrise/sunset
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&t=` + new Date().getTime();
+        // Request current stats + daily precipitation outlook blocks + hourly conditions + apparent temp + precipitation + snowfall + weathercode + sunrise/sunset
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall,weathercode&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&t=` + new Date().getTime();
         const res = await fetch(url);
         const data = await res.json();
         
-        let currentTemp = Math.round(data.current_weather.temperature);
-        let currentWind = Math.round(data.current_weather.windspeed);
-        let weatherCode = data.current_weather.weathercode;
+        let currentTemp = Math.round(data.current_weather ? data.current_weather.temperature : (data.current ? data.current.temperature_2m : 70));
+        let currentWind = Math.round(data.current_weather ? data.current_weather.windspeed : (data.current ? data.current.wind_speed_10m : 0));
+        let weatherCode = data.current_weather ? data.current_weather.weathercode : (data.current ? data.current.weather_code : 0);
         
         const currentHourIdx = new Date().getHours();
         let apparentTemp = Math.round(data.hourly.apparent_temperature[currentHourIdx]);
         let precipProb = data.hourly.precipitation_probability.slice(currentHourIdx, currentHourIdx + 12);
         let precipAmount = data.hourly.precipitation.slice(currentHourIdx, currentHourIdx + 12);
         let snowAmount = data.hourly.snowfall.slice(currentHourIdx, currentHourIdx + 12);
+        let hourlyWeatherCodes = data.hourly.weathercode ? data.hourly.weathercode.slice(currentHourIdx, currentHourIdx + 12) : [];
+        
+        // If current hour has an active precipitation/storm WMO code, prioritize it over a generic overcast/cloudy code
+        if (hourlyWeatherCodes.length > 0) {
+            const curCode = hourlyWeatherCodes[0];
+            const isPrecipOrStorm = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99].includes(curCode);
+            if (isPrecipOrStorm && ![95, 96, 99].includes(weatherCode)) {
+                weatherCode = curCode;
+            }
+        }
         currentWeatherCode = weatherCode;
         currentPrecipProb = precipProb;
         
@@ -263,11 +273,18 @@ export async function getWeather() {
         }
         
         for (let i = 0; i < 12; i++) {
-            if (precipProb[i] > 20 && (precipAmount[i] > 0.001 || snowAmount[i] > 0)) {
+            const codeAtHour = hourlyWeatherCodes[i] || 0;
+            const isRainCode = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(codeAtHour);
+            const isSnowCode = [71, 73, 75, 77, 85, 86].includes(codeAtHour);
+            const hasPrecipAmt = (precipAmount[i] >= 0.003 || snowAmount[i] > 0);
+            const hasPrecipProb = (precipProb[i] >= 15 && (precipAmount[i] > 0 || snowAmount[i] > 0));
+            const highProb = (precipProb[i] >= 35);
+            
+            if (hasPrecipAmt || hasPrecipProb || highProb || isRainCode || isSnowCode) {
                 if (precipStartIdx === -1) precipStartIdx = i;
-                if (snowAmount[i] > 0) isSnow = true;
+                if (snowAmount[i] > 0 || isSnowCode) isSnow = true;
                 
-                let amt = snowAmount[i] > 0 ? snowAmount[i] : precipAmount[i];
+                let amt = (snowAmount[i] > 0 ? snowAmount[i] : precipAmount[i]) || (isRainCode ? 0.01 : 0);
                 if (i < h1) {
                     currentShiftPrecip += amt;
                 } else if (showNextShift && i < h1 + h2) {
@@ -303,11 +320,13 @@ export async function getWeather() {
             
             let timeSubtext = `Starts: ${startStr} | Ends: ${endStr}`;
             if (precipStartIdx === 0) {
-                timeSubtext = `Ends: ${endStr}`;
+                timeSubtext = `Active Now | Ends: ${endStr}`;
             }
             
             if (isSnow) {
                 addAlert('Snow Forecast', precipFormatted, timeSubtext, '#ffffff');
+            } else if ([95, 96, 99].includes(weatherCode)) {
+                addAlert('Thunderstorms', precipFormatted, timeSubtext, '#ffcc00');
             } else {
                 addAlert('Rain Forecast', precipFormatted, timeSubtext, '#4da6ff');
             }
@@ -434,8 +453,9 @@ export async function getWeather() {
         // Determine Weather Animation
         if (activeAnim === 'none') {
             if (severityAlert.includes('TORNADO')) activeAnim = 'tornado';
-            else if (severityAlert.includes('STORM')) activeAnim = 'storm';
-            else if (severityAlert.includes('WINTER') || severityAlert.includes('BLIZZARD')) activeAnim = 'snow';
+            else if (severityAlert.includes('STORM') || [95, 96, 99].includes(weatherCode)) activeAnim = 'storm';
+            else if (severityAlert.includes('WINTER') || severityAlert.includes('BLIZZARD') || [71, 73, 75, 77, 85, 86].includes(weatherCode)) activeAnim = 'snow';
+            else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(weatherCode) || (precipStartIdx === 0 && !isSnow)) activeAnim = 'rain';
             else if (precipStartIdx !== -1) activeAnim = isSnow ? 'snow' : 'rain';
         }
         
@@ -444,10 +464,19 @@ export async function getWeather() {
         // Render dynamic text output block for main header
         const weatherDisp = document.getElementById('weather-display');
         if (weatherDisp) {
+            let conditionText = 'No precipitation forecast.';
+            if ([95, 96, 99].includes(weatherCode)) {
+                conditionText = '⚡ Thunderstorms in area.';
+            } else if (precipStartIdx === 0) {
+                conditionText = isSnow ? '❄️ Snowing now.' : '🌧️ Raining now.';
+            } else if (precipStartIdx !== -1) {
+                conditionText = isSnow ? 'Snow expected today.' : 'Rain expected today.';
+            }
+            
             weatherDisp.innerHTML = `
                 <span style="font-weight: bold; font-size: 1.1rem; color: var(--neon-amber);">${severityAlert}</span>
                 <span style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">${currentTemp}°F</span> <span style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 5px;">| Wind: ${currentWind} mph</span><br>
-                <span style="color: var(--text-muted); font-size: 0.85rem;">${precipStartIdx !== -1 ? (isSnow ? 'Snow expected today.' : 'Rain expected today.') : 'No precipitation forecast.'}</span>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">${conditionText}</span>
             `;
         }
     } catch (e) { 

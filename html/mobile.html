@@ -442,9 +442,18 @@
                 }
                 
                 // Fetch basic precipitation forecast
-                const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${siteConfig.latitude}&longitude=${siteConfig.longitude}&current_weather=true&hourly=precipitation_probability,precipitation,snowfall&daily=precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`, { cache: 'no-store' });
+                const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${siteConfig.latitude}&longitude=${siteConfig.longitude}&current_weather=true&hourly=precipitation_probability,precipitation,snowfall,weathercode&daily=precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`, { cache: 'no-store' });
                 const wxData = await wxRes.json();
-                let code = wxData.current_weather.weathercode;
+                let code = wxData.current_weather ? wxData.current_weather.weathercode : 0;
+                
+                const currentHourIdx = new Date().getHours();
+                const hourlyWeatherCodes = wxData.hourly && wxData.hourly.weathercode ? wxData.hourly.weathercode.slice(currentHourIdx, currentHourIdx + 12) : [];
+                if (hourlyWeatherCodes.length > 0) {
+                    const curCode = hourlyWeatherCodes[0];
+                    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99].includes(curCode) && ![95, 96, 99].includes(code)) {
+                        code = curCode;
+                    }
+                }
                 
                 // Support ?mock= url parameters for testing
                 const mock = new URLSearchParams(window.location.search).get('mock');
@@ -468,6 +477,13 @@
                             <p style="font-size: 0.85rem; margin-bottom: 0;">Active thunderstorm or lightning detected in the immediate area. Follow standard outdoor safety protocols.</p>
                         </div>
                     `;
+                } else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
+                    alertHtml += `
+                        <div class="reminder-card" style="border: 1px solid #38bdf8; border-left: 6px solid #38bdf8; background: rgba(56, 189, 248, 0.1); cursor: pointer; text-align: center;" onclick="window.open('https://zoom.earth/maps/radar/#view=${siteConfig.latitude},${siteConfig.longitude},8z', '_blank')">
+                            <h3 style="color: #38bdf8; margin-bottom: 5px; text-transform: uppercase;">Rain / Showers Active</h3>
+                            <p style="font-size: 0.85rem; margin-bottom: 0;">Active rain or showers detected in the local area.</p>
+                        </div>
+                    `;
                 }
                 
                 // Precipitation calculations
@@ -476,16 +492,22 @@
                 let isSnow = false;
                 let next12hPrecip = 0;
                 
-                const currentHourIdx = new Date().getHours();
                 const precipProb = wxData.hourly.precipitation_probability.slice(currentHourIdx, currentHourIdx + 12);
                 const precipAmount = wxData.hourly.precipitation.slice(currentHourIdx, currentHourIdx + 12);
                 const snowAmount = wxData.hourly.snowfall.slice(currentHourIdx, currentHourIdx + 12);
                 
                 for (let i = 0; i < 12; i++) {
-                    if (precipProb[i] > 20 && (precipAmount[i] > 0.001 || snowAmount[i] > 0)) {
+                    const codeAtHour = hourlyWeatherCodes[i] || 0;
+                    const isRainCode = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(codeAtHour);
+                    const isSnowCode = [71, 73, 75, 77, 85, 86].includes(codeAtHour);
+                    const hasPrecipAmt = (precipAmount[i] >= 0.003 || snowAmount[i] > 0);
+                    const hasPrecipProb = (precipProb[i] >= 15 && (precipAmount[i] > 0 || snowAmount[i] > 0));
+                    const highProb = (precipProb[i] >= 35);
+                    
+                    if (hasPrecipAmt || hasPrecipProb || highProb || isRainCode || isSnowCode) {
                         if (precipStartIdx === -1) precipStartIdx = i;
-                        if (snowAmount[i] > 0) isSnow = true;
-                        next12hPrecip += isSnow ? snowAmount[i] : precipAmount[i];
+                        if (snowAmount[i] > 0 || isSnowCode) isSnow = true;
+                        next12hPrecip += (snowAmount[i] > 0 ? snowAmount[i] : precipAmount[i]) || (isRainCode ? 0.01 : 0);
                         precipEndIdx = i;
                     }
                 }
