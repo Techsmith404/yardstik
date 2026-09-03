@@ -114,7 +114,7 @@
   {
     "id": "28",
     "name": "Track 28",
-    "cars": 1,
+    "cars": 3,
     "capacity": 12,
     "commodity": "1 - UP SPEAR + 2 UP FLATS",
     "notes": "1 - UP SPEAR + 2 UP FLATS",
@@ -162,7 +162,7 @@
   {
     "id": "33",
     "name": "Track 33",
-    "cars": 3,
+    "cars": 4,
     "capacity": 14,
     "commodity": "3 - HEAVY & 1 LIGHT TRIM",
     "notes": "3 - HEAVY & 1 LIGHT TRIM",

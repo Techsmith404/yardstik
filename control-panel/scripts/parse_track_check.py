@@ -2,7 +2,8 @@
 """
 YardStik Universal Track Check Parser Engine
 Parses standard CSV/Excel (.xlsx, .xls, .csv) templates, tabular sheets, and multi-column grid layouts.
-Integrates vector SVG track capacities and handles locomotive engine tallies and parenthetical breakdowns.
+Integrates vector SVG track capacities and handles locomotive engine tallies, parenthetical breakdowns,
+and flexible multi-item conductor syntax.
 Outputs normalized JSON array to /data/tracks.json (or local assets).
 """
 
@@ -148,6 +149,29 @@ def parse_matrix(rows, svg_caps=None):
     # Multi-column grid / legacy track layout parser
     return parse_grid_layout(rows, svg_caps)
 
+def extract_cars_from_text(track_id, raw_text):
+    if not raw_text or raw_text.upper() in ["CLEAR", "EMPTY"]:
+        return 0
+    engine_nums = re.findall(r"#(\d+)", raw_text)
+    if track_id in ["Y", "RO"] and engine_nums:
+        return len(engine_nums)
+
+    text = re.sub(r"\(.*?\)", "", raw_text).strip()
+    text = re.sub(r" (?:FROM|DATED?)\s+\d{1,2}/\d{1,2}(?:\s*(?:&|AND|,)\s*\d{1,2}/\d{1,2})*", "", text, flags=re.I)
+    text = re.sub(r"#\d+", "", text)
+    text = re.sub(r" \d+/\d+ ", "", text)
+    text = re.sub(r" \d+in ", "", text, flags=re.I)
+
+    pattern = r"(\d+)\s*[-–]\s*|(?:\bAND\b|[&+,\n])\s*(\d+)\s+(?![0-9/])|[^\w](\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DL|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b|^(\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DL|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b"
+    matches = re.findall(pattern, " " + text + " ", re.I)
+    nums = []
+    for m in matches:
+        for val in m:
+            if val:
+                nums.append(int(val))
+                break
+    return sum(nums) if nums else 1
+
 def parse_standard_table(rows, header_row_idx, header, svg_caps):
     track_col = next(i for i, h in enumerate(header) if 'track' in h)
     car_col = next((i for i, h in enumerate(header) if 'car' in h or 'count' in h or 'qty' in h), None)
@@ -189,7 +213,7 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
         date_val = row[date_col] if (date_col is not None and len(row) > date_col) else None
 
         is_clear = (cars == 0) or (comm.upper() in ['CLEAR', 'EMPTY']) or (notes.upper() in ['CLEAR', 'EMPTY'])
-        is_bad_order = bool(re.search(r"(B\\.O|BAD ORDER|O\.S\.?)", f"{comm} {notes}", re.I))
+        is_bad_order = bool(re.search(r"(B\\.O|BAD ORDER|O\.S\.?)", f"{comm} {notes}", re.I)) and (track_id != "22")
         is_blend = bool(re.search(r"BLEND", f"{comm} {notes}", re.I))
 
         dwell_days = 0
@@ -290,27 +314,7 @@ def parse_grid_layout(rows, svg_caps):
             is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", raw_text, re.I)) and (tp["id"] != "22")
             is_blend = bool(re.search(r"\bBLEND\b", raw_text, re.I))
 
-            total_cars = 0
-            if not is_clear:
-                # Check for Locomotive / Engine tracking on Y or with #
-                engine_nums = re.findall(r"#(\d+)", raw_text)
-                if tp["id"] in ["Y", "RO"] and engine_nums:
-                    total_cars = len(engine_nums)
-                else:
-                    # Strip parenthetical breakdowns so "13 - DL (7 P&S, 6 SHRED)" -> "13 - DL"
-                    text_without_parens = re.sub(r"\(.*?\)", "", raw_text).strip()
-                    num_matches = re.findall(r"(\d+)\s*[-–]\s*|(\d+)\s*(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COIL|HBI|DL|SMS|MSA)", text_without_parens, re.I)
-                    counts = [int(m[0] or m[1]) for m in num_matches if (m[0] or m[1])]
-                    if counts:
-                        total_cars = sum(counts)
-                    else:
-                        num_matches = re.findall(r"(\d+)\s*[-–]\s*|(\d+)\s*(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COIL|HBI|DL|SMS|MSA)", raw_text, re.I)
-                        counts = [int(m[0] or m[1]) for m in num_matches if (m[0] or m[1])]
-                        if counts:
-                            total_cars = sum(counts)
-                        else:
-                            lead = re.match(r"^(\d+)", raw_text)
-                            total_cars = int(lead.group(1)) if lead else 1
+            total_cars = extract_cars_from_text(tp["id"], raw_text)
 
             dwell_days = 0
             dwell_warning = False
