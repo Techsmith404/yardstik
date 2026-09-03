@@ -1274,11 +1274,25 @@ body.desktop-mode .desktop-reminder-header {
 }
 
 .yard-switch-point {
-    transition: r 0.2s ease, filter 0.2s ease;
+    transition: r 0.2s ease, filter 0.2s ease, fill 0.3s ease;
     cursor: pointer;
 }
 .yard-switch-point:hover {
     filter: drop-shadow(0 0 8px #f59e0b);
+}
+.switch-out-of-service {
+    fill: #ef4444 !important;
+    stroke: #ffffff !important;
+    stroke-width: 1.5px !important;
+    filter: drop-shadow(0 0 8px #ef4444) !important;
+}
+.switch-os-marker {
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+.switch-os-marker:hover {
+    filter: drop-shadow(0 0 12px #ef4444) !important;
 }
 
 /* SVG Buildings & Structures (Dark Industrial Theme) */

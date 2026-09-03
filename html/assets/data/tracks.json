@@ -1,5 +1,22 @@
 [
   {
+    "id": "2",
+    "name": "Track 2",
+    "cars": 0,
+    "capacity": 20,
+    "commodity": "Empty",
+    "notes": "",
+    "status": "clear",
+    "is_clear": true,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 0,
+    "dwell_warning": false,
+    "oldest_inbound_date": null,
+    "os_switches": [],
+    "updated_at": "2026-09-02T00:00:00"
+  },
+  {
     "id": "21",
     "name": "Track 21",
     "cars": 7,
@@ -13,6 +30,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -29,6 +47,16 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [
+      {
+        "tracks": [
+          "21",
+          "22"
+        ],
+        "dir": "S",
+        "raw": "O.S AT 21/22 S"
+      }
+    ],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -45,6 +73,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -61,6 +90,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -77,6 +107,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -93,6 +124,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -109,6 +141,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -125,6 +158,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -141,6 +175,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -157,6 +192,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -173,6 +209,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -189,6 +226,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -205,6 +243,7 @@
     "dwell_days": 3,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-30",
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -221,6 +260,7 @@
     "dwell_days": 2,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-31",
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -237,6 +277,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -253,6 +294,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -269,6 +311,16 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [
+      {
+        "tracks": [
+          "45",
+          "70"
+        ],
+        "dir": "E",
+        "raw": "45/70 E/END O.S"
+      }
+    ],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -285,6 +337,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -301,6 +354,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -317,6 +371,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -333,6 +388,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -349,6 +405,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -365,6 +422,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -381,6 +439,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -397,6 +456,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -413,6 +473,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -429,6 +490,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -445,6 +507,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -461,6 +524,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -477,6 +541,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -493,6 +558,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -509,6 +575,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -525,6 +592,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -541,6 +609,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
+    "os_switches": [],
     "updated_at": "2026-09-02T00:00:00"
   }
 ]

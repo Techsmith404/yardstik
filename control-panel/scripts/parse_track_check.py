@@ -2,8 +2,8 @@
 """
 YardStik Universal Track Check Parser Engine
 Parses standard CSV/Excel (.xlsx, .xls, .csv) templates, tabular sheets, and multi-column grid layouts.
-Integrates vector SVG track capacities and handles locomotive engine tallies, parenthetical breakdowns,
-and flexible multi-line conductor notes (e.g. FRESH, AUDIT).
+Integrates vector SVG track capacities, locomotive engine tallies, parenthetical breakdowns,
+flexible multi-line conductor notes (e.g. FRESH, AUDIT), and Out-of-Service (O.S.) switch point detection.
 Outputs normalized JSON array to /data/tracks.json (or local assets).
 """
 
@@ -12,6 +12,34 @@ import os
 import json
 import re
 from datetime import datetime
+
+EXCLUDE_WORDS = {"N", "S", "E", "W", "END", "CLEAR", "EMPTY", "BO", "OS", "SWITCH"}
+
+def extract_switch_os(track_id, text):
+    found = []
+    # Pattern 1: 45/70 E/END O.S. or 21/22 SWITCH O.S.
+    for m in re.finditer(r"([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?.*?\b(O\.S\.?|OUT OF SERVICE)\b", text, re.I):
+        t1, t2, dir_opt = m.group(1).upper(), m.group(2).upper(), (m.group(3) or "").upper()
+        if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
+            found.append({"tracks": [t1, t2], "dir": dir_opt, "raw": m.group(0).strip()})
+
+    # Pattern 2: O.S AT 21/22 SWITCH
+    for m in re.finditer(r"\b(O\.S\.?|OUT OF SERVICE)\b.*?(?:AT|ON)\s+([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?", text, re.I):
+        t1, t2, dir_opt = m.group(2).upper(), m.group(3).upper(), (m.group(4) or "").upper()
+        if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
+            if not any(f["tracks"] == [t1, t2] for f in found):
+                found.append({"tracks": [t1, t2], "dir": dir_opt, "raw": m.group(0).strip()})
+
+    # Pattern 3: SWITCH OS AT S/END or SWITCH O.S. AT N/END
+    for m in re.finditer(r"\bSWITCH\s+(?:O\.S\.?|OUT OF SERVICE)\s+(?:AT|ON)\s+([NSEW])(?:/END|\s+END)?", text, re.I):
+        dir_opt = m.group(1).upper()
+        found.append({"tracks": [track_id], "dir": dir_opt, "raw": m.group(0).strip()})
+
+    for m in re.finditer(r"\b(?:O\.S\.?|OUT OF SERVICE)\s+(?:AT|ON)\s+([NSEW])(?:/END|\s+END)?\s+SWITCH", text, re.I):
+        dir_opt = m.group(1).upper()
+        found.append({"tracks": [track_id], "dir": dir_opt, "raw": m.group(0).strip()})
+
+    return found
 
 def extract_svg_capacities():
     """Reads SVG drawings and extracts data-capacity values for all track IDs."""
@@ -240,6 +268,8 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
 
         status = "clear" if is_clear else ("bad_order" if is_bad_order else ("warning" if dwell_warning else ("blend" if is_blend else "occupied")))
 
+        os_sw = extract_switch_os(track_id, f"{comm} {notes}")
+
         tracks.append({
             "id": track_id,
             "name": f"Track {track_id}",
@@ -254,6 +284,7 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
             "dwell_days": dwell_days,
             "dwell_warning": dwell_warning,
             "oldest_inbound_date": oldest_date_str,
+            "os_switches": os_sw,
             "updated_at": now.strftime('%Y-%m-%dT%H:%M:%S')
         })
 
@@ -268,7 +299,6 @@ def parse_grid_layout(rows, svg_caps):
                 shift_date = cell
                 break
 
-    # 1. Map all bracketed track IDs: {23}, {45}, {Y}, etc.
     track_positions = []
     for r_idx, row in enumerate(rows[:100]):
         for c_idx, cell in enumerate(row[:15]):
@@ -282,7 +312,6 @@ def parse_grid_layout(rows, svg_caps):
     if not track_positions:
         return []
 
-    # Group tracks by column position
     by_col = {}
     for tp in track_positions:
         by_col.setdefault(tp["col"], []).append(tp)
@@ -303,7 +332,6 @@ def parse_grid_layout(rows, svg_caps):
 
             for r in range(start_r, min(end_r, len(rows))):
                 row = rows[r]
-                # Check for non-track section boundary
                 c0_val = str(row[c_idx] or "").strip().upper()
                 if r > start_r and any(c0_val.startswith(s) for s in stop_sections):
                     break
@@ -355,6 +383,7 @@ def parse_grid_layout(rows, svg_caps):
             status = "clear" if is_clear else ("bad_order" if is_bad_order else ("warning" if dwell_warning else ("blend" if is_blend else "occupied")))
 
             cap = svg_caps.get(tp["id"], 20)
+            os_sw = extract_switch_os(tp["id"], full_text)
 
             tracks.append({
                 "id": tp["id"],
@@ -370,6 +399,7 @@ def parse_grid_layout(rows, svg_caps):
                 "dwell_days": dwell_days,
                 "dwell_warning": dwell_warning,
                 "oldest_inbound_date": oldest_date_str,
+                "os_switches": os_sw,
                 "updated_at": shift_date.strftime("%Y-%m-%dT%H:%M:%S")
             })
 

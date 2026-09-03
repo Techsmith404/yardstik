@@ -46,7 +46,7 @@ function formatSwitchTitle(idStr) {
     }
     const parts = clean.split(/[-_]/);
     if (parts.length >= 2) {
-        return `Switch: Track ${parts[0]} ⇄ Track ${parts[1]}${dir ? " (" + dir + ")" : ""}`;
+        return `Switch: Track ${parts[0]} / Track ${parts[1]}${dir ? " (" + dir + ")" : ""}`;
     }
     return `Switch: ${clean}${dir ? " (" + dir + ")" : ""}`;
 }
@@ -348,16 +348,106 @@ function bindSvgInteractivity(container, isTheater = false) {
         }
     });
 
-    // 3. Hook Switch Points (e.g. switch-23-24-n, switch-2-90, etc.)
-    const switchElements = svg.querySelectorAll("[id^='switch-'], [id^='switch_'], circle.switch-point");
+    // Collect all O.S. switches across all tracks
+    const allOsSwitches = [];
+    cachedTracks.forEach(t => {
+        if (Array.isArray(t.os_switches)) {
+            allOsSwitches.push(...t.os_switches);
+        }
+    });
+
+    // 3. Hook Switch Points (e.g. switch-23-24-n, switch-45-70-e, etc.)
+    const switchElements = svg.querySelectorAll("[id^='switch-'], [id^='switch_'], circle.switch-point, path.switch-point");
     switchElements.forEach(sw => {
-        const idAttr = sw.getAttribute("id") || "";
+        const idAttr = (sw.getAttribute("id") || "").toLowerCase();
         sw.classList.add("yard-switch-point");
         const title = formatSwitchTitle(idAttr);
         sw.setAttribute("title", title);
-        sw.onmouseenter = (e) => {
-            showSimpleTooltip(e, `🔀 <strong>${title}</strong>`);
-        };
+
+        const clean = idAttr.replace(/^switch[-_]/i, "");
+        let dir = "";
+        let cleanBase = clean;
+        if (/[-_][nsew]$/i.test(clean)) {
+            dir = clean.slice(-1).toUpperCase();
+            cleanBase = clean.slice(0, -2);
+        }
+        const switchTokens = cleanBase.split(/[-_]/).map(s => s.toUpperCase());
+
+        const osMatch = allOsSwitches.find(rule => {
+            const rTracks = (rule.tracks || []).map(x => x.toUpperCase());
+            const rDir = (rule.dir || "").toUpperCase();
+
+            if (rDir && dir && rDir !== dir) {
+                return false;
+            }
+
+            if (rTracks.length >= 2) {
+                const hasT1 = switchTokens.includes(rTracks[0]);
+                const hasT2 = switchTokens.includes(rTracks[1]) || (rTracks[1] === "22" && (switchTokens.includes("Y") || switchTokens.includes("22")));
+                return hasT1 && hasT2;
+            } else if (rTracks.length === 1) {
+                return switchTokens.includes(rTracks[0]) && (!rDir || rDir === dir);
+            }
+            return false;
+        });
+
+        if (osMatch) {
+            sw.classList.add("switch-out-of-service");
+            sw.style.setProperty("fill", "#ef4444", "important");
+            sw.style.setProperty("stroke", "#ffffff", "important");
+            sw.style.setProperty("filter", "drop-shadow(0 0 10px #ef4444)", "important");
+
+            const parent = sw.parentNode;
+            const marker = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            marker.classList.add("switch-os-marker");
+            
+            const transformAttr = sw.getAttribute("transform");
+            if (transformAttr) {
+                marker.setAttribute("transform", transformAttr);
+                marker.innerHTML = `
+                    <circle cx="12" cy="12" r="14" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-width="2.5"/>
+                    <line x1="5" y1="5" x2="19" y2="19" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="19" y1="5" x2="5" y2="19" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                `;
+            } else {
+                const cx = parseFloat(sw.getAttribute("cx") || 0);
+                const cy = parseFloat(sw.getAttribute("cy") || 0);
+                const r = parseFloat(sw.getAttribute("r") || 6);
+                marker.innerHTML = `
+                    <circle cx="${cx}" cy="${cy}" r="${r * 1.7}" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-width="2.5"/>
+                    <line x1="${cx - r}" y1="${cy - r}" x2="${cx + r}" y2="${cy + r}" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="${cx + r}" y1="${cy - r}" x2="${cx - r}" y2="${cy + r}" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                `;
+            }
+
+            marker.style.cursor = "pointer";
+            marker.onmouseenter = (e) => {
+                showSimpleTooltip(e, `🔀 <strong>${title}</strong><br><span style="color: #ef4444; font-weight: bold;">⛔ OUT OF SERVICE (O.S.)</span><br><span style="color: #94a3b8; font-size: 0.75rem;">📝 ${osMatch.raw}</span>`);
+            };
+            marker.onmouseleave = hideTrackHoverTooltip;
+            marker.onclick = (e) => {
+                e.stopPropagation();
+                showSwitchOsModal(title, osMatch.raw);
+            };
+
+            parent.appendChild(marker);
+
+            sw.onmouseenter = (e) => {
+                showSimpleTooltip(e, `🔀 <strong>${title}</strong><br><span style="color: #ef4444; font-weight: bold;">⛔ OUT OF SERVICE (O.S.)</span><br><span style="color: #94a3b8; font-size: 0.75rem;">📝 ${osMatch.raw}</span>`);
+            };
+            sw.onclick = (e) => {
+                e.stopPropagation();
+                showSwitchOsModal(title, osMatch.raw);
+            };
+        } else {
+            sw.onmouseenter = (e) => {
+                showSimpleTooltip(e, `🔀 <strong>${title}</strong>`);
+            };
+            sw.onclick = (e) => {
+                e.stopPropagation();
+                showSimpleTooltip(e, `🔀 <strong>${title}</strong><br><span style="color: #10b981;">In Service</span>`);
+            };
+        }
         sw.onmouseleave = hideTrackHoverTooltip;
     });
 }
@@ -467,6 +557,45 @@ export function showTrackModal(track) {
                     <span class="modal-detail-label">Oldest Inbound:</span>
                     <span class="modal-detail-val" style="color: #f59e0b;">${track.oldest_inbound_date} (${track.dwell_days} Days Dwell)</span>
                 </div>` : ""}
+            </div>
+        </div>
+    `;
+    modal.style.display = "flex";
+}
+
+export function showSwitchOsModal(switchTitle, note) {
+    let modal = document.getElementById("track-detail-modal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "track-detail-modal";
+        modal.className = "track-modal-backdrop";
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.style.display = "none";
+        };
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="track-modal-card" style="border: 2px solid #ef4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4);">
+            <div class="track-modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.4);">
+                <h3 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> ${switchTitle}</h3>
+                <button class="track-modal-close" onclick="document.getElementById('track-detail-modal').style.display='none'">&times;</button>
+            </div>
+            <div class="track-modal-body">
+                <div style="margin-bottom: 15px;">
+                    <span class="modal-status-badge status-bo">⛔ SWITCH OUT OF SERVICE (O.S.)</span>
+                </div>
+                <div class="modal-detail-row">
+                    <span class="modal-detail-label">Status:</span>
+                    <span class="modal-detail-val" style="color: #ef4444; font-weight: bold;">Out of Service / Bad Order</span>
+                </div>
+                <div class="modal-detail-row">
+                    <span class="modal-detail-label">Conductor Shift Note:</span>
+                    <span class="modal-detail-val" style="color: #fca5a5; font-weight: 600;">📝 ${note}</span>
+                </div>
+                <div style="margin-top: 15px; padding: 10px 12px; background: rgba(239, 68, 68, 0.12); border-left: 3px solid #ef4444; border-radius: 4px; font-size: 0.85rem; color: #fecaca;">
+                    ⚠️ <strong>Warning:</strong> Do not line switch points for movement across this turnout.
+                </div>
             </div>
         </div>
     `;
