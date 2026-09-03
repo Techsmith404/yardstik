@@ -12,7 +12,8 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 20
   },
   {
     "id": "21",
@@ -27,7 +28,8 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 17
   },
   {
     "id": "23",
@@ -42,7 +44,8 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 12
   },
   {
     "id": "24",
@@ -57,7 +60,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 13
   },
   {
     "id": "25",
@@ -72,7 +76,8 @@
     "dwell_days": 2,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-31",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 23
   },
   {
     "id": "26",
@@ -87,7 +92,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 15
   },
   {
     "id": "27",
@@ -102,7 +108,8 @@
     "dwell_days": 2,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-31",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "28",
@@ -117,7 +124,8 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 12
   },
   {
     "id": "29",
@@ -132,7 +140,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 28
   },
   {
     "id": "32",
@@ -147,7 +156,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 30
   },
   {
     "id": "33",
@@ -162,7 +172,8 @@
     "dwell_days": 3,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-30",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 14
   },
   {
     "id": "34",
@@ -177,7 +188,8 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 14
   },
   {
     "id": "35",
@@ -192,7 +204,8 @@
     "dwell_days": 3,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-30",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "36",
@@ -207,7 +220,8 @@
     "dwell_days": 2,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-31",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "37",
@@ -222,7 +236,8 @@
     "dwell_days": 4,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-29",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 19
   },
   {
     "id": "38",
@@ -237,7 +252,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 12
   },
   {
     "id": "45",
@@ -252,7 +268,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 14
   },
   {
     "id": "46",
@@ -267,7 +284,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 22
   },
   {
     "id": "47",
@@ -282,7 +300,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 19
   },
   {
     "id": "48",
@@ -297,7 +316,8 @@
     "dwell_days": 14,
     "dwell_warning": true,
     "oldest_inbound_date": "2026-08-19",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "49",
@@ -312,7 +332,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "68",
@@ -327,7 +348,8 @@
     "dwell_days": 5,
     "dwell_warning": true,
     "oldest_inbound_date": "2026-08-28",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 18
   },
   {
     "id": "69",
@@ -342,7 +364,8 @@
     "dwell_days": 6,
     "dwell_warning": true,
     "oldest_inbound_date": "2026-08-27",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 19
   },
   {
     "id": "70",
@@ -357,7 +380,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 14
   },
   {
     "id": "82",
@@ -372,7 +396,8 @@
     "dwell_days": 2,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-08-31",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 12
   },
   {
     "id": "83",
@@ -387,7 +412,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 5
   },
   {
     "id": "90",
@@ -402,7 +428,8 @@
     "dwell_days": 1,
     "dwell_warning": false,
     "oldest_inbound_date": "2026-09-01",
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 12
   },
   {
     "id": "Y",
@@ -417,6 +444,7 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "updated_at": "2026-09-02T12:00:00"
+    "updated_at": "2026-09-02T12:00:00",
+    "capacity": 4
   }
 ]

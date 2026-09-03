@@ -1268,7 +1268,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" class="form-control form-control-sm track-input-id" value="${t.id}" style="font-weight: bold; width: 75px; text-align: center;">
                 </td>
                 <td style="padding: 8px 10px;">
-                    <input type="number" class="form-control form-control-sm track-input-cars" value="${t.cars || 0}" min="0" style="width: 75px; text-align: center; color: #38bdf8; font-weight: bold;">
+                    <input type="number" class="form-control form-control-sm track-input-cars" value="${t.cars || 0}" min="0" style="width: 70px; text-align: center; color: #38bdf8; font-weight: bold;">
+                </td>
+                <td style="padding: 8px 10px;">
+                    <input type="number" class="form-control form-control-sm track-input-cap" value="${t.capacity || 20}" min="1" style="width: 70px; text-align: center; color: #a78bfa; font-weight: bold;">
                 </td>
                 <td style="padding: 8px 10px;">
                     <input type="text" class="form-control form-control-sm track-input-comm" value="${t.commodity || ''}" placeholder="Contents / Notes..." style="width: 100%;">
@@ -1303,6 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr.querySelector('.track-input-status').value = 'clear';
                 }
             };
+            tr.querySelector('.track-input-cap').onchange = (e) => { t.capacity = parseInt(e.target.value, 10) || 20; };
             tr.querySelector('.track-input-comm').onchange = (e) => { t.commodity = e.target.value; t.notes = e.target.value; };
             tr.querySelector('.track-input-date').onchange = (e) => { t.oldest_inbound_date = e.target.value; };
             tr.querySelector('.track-input-status').onchange = (e) => {

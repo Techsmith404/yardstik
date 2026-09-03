@@ -4,12 +4,56 @@ import { cachedFeatures } from "./features.js";
 export let cachedTracks = [];
 export let trackStats = {
     totalCars: 0,
+    totalCapacity: 0,
     badOrderCars: 0,
     blendCars: 0,
     clearTracksCount: 0,
-    dwellWarningCount: 0,
-    totalCapacity: 0
+    dwellWarningCount: 0
 };
+
+function extractTrackIdFromElement(el) {
+    if (!el) return null;
+    const idAttr = el.getAttribute("id") || "";
+    if (idAttr) {
+        let clean = idAttr.trim();
+        // Handle curves: ncurve-25, scurve-27, ecurve-45, wcurve-23
+        clean = clean.replace(/^[nsew]curve[-_]/i, "");
+        // Handle track lines: track-23, track_23
+        clean = clean.replace(/^track[-_]/i, "");
+        // Handle labels: label-21, label-21-2, label_21_2
+        clean = clean.replace(/^label[-_]/i, "");
+        // Handle duplicate labels like label-21-2 -> 21
+        clean = clean.replace(/[-_]\\d+$/, "");
+        return clean.toUpperCase();
+    }
+    // Fallback: check data-track attribute
+    const dataTrack = el.getAttribute("data-track");
+    if (dataTrack) return dataTrack.trim().toUpperCase();
+
+    // Fallback: check text content
+    const txt = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
+    if (txt) {
+        const raw = txt.textContent.trim().replace(/\\s*\\(.*\\)/, "").toUpperCase();
+        return raw;
+    }
+    return null;
+}
+
+function formatSwitchTitle(idStr) {
+    if (!idStr) return "Switch Turnout";
+    let clean = idStr.replace(/^switch[-_]/i, "");
+    let dir = "";
+    if (/[-_][nsew]$/i.test(clean)) {
+        const d = clean.slice(-1).toUpperCase();
+        dir = d === "N" ? "North" : (d === "S" ? "South" : (d === "E" ? "East" : "West"));
+        clean = clean.slice(0, -2);
+    }
+    const parts = clean.split(/[-_]/);
+    if (parts.length >= 2) {
+        return `Switch: Track ${parts[0]} ⇄ Track ${parts[1]}${dir ? " (" + dir + ")" : ""}`;
+    }
+    return `Switch: ${clean}${dir ? " (" + dir + ")" : ""}`;
+}
 
 export async function fetchTracks() {
     try {
@@ -28,9 +72,10 @@ export async function fetchTracks() {
 }
 
 function calculateTrackStats() {
-    let total = 0, bo = 0, blend = 0, clear = 0, dwell = 0;
+    let total = 0, bo = 0, blend = 0, clear = 0, dwell = 0, cap = 0;
     cachedTracks.forEach(t => {
         total += (t.cars || 0);
+        cap += (t.capacity || 0);
         if (t.is_bad_order) bo += (t.cars || 0);
         if (t.is_blend) blend += (t.cars || 0);
         if (t.is_clear) clear++;
@@ -38,11 +83,11 @@ function calculateTrackStats() {
     });
     trackStats = {
         totalCars: total,
+        totalCapacity: cap,
         badOrderCars: bo,
         blendCars: blend,
         clearTracksCount: clear,
-        dwellWarningCount: dwell,
-        totalCapacity: 0
+        dwellWarningCount: dwell
     };
     updateHeaderStats();
 }
@@ -50,8 +95,9 @@ function calculateTrackStats() {
 function updateHeaderStats() {
     const statsEl = document.getElementById("trackmap-stats-summary");
     if (statsEl) {
+        const capText = trackStats.totalCapacity > 0 ? ` / ${trackStats.totalCapacity}` : "";
         statsEl.innerHTML = `
-            <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}</strong> Cars</span>
+            <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}${capText}</strong> Cars</span>
             <span class="track-stat-pill pill-clear">🟢 <strong>${trackStats.clearTracksCount}</strong> Clear</span>
             ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
             ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
@@ -84,7 +130,7 @@ export async function renderTrackMap() {
 
     container.classList.add("clickable-trackmap");
     container.onclick = (e) => {
-        if (!e.target.closest("[id*='track'], [id*='label'], g[data-track]")) {
+        if (!e.target.closest("[id*='track'], [id*='label'], [id*='curve']")) {
             openExpandedTrackMap();
         }
     };
@@ -123,17 +169,17 @@ function bindSvgInteractivity(container, isTheater = false) {
         trackMap[t.id.toUpperCase()] = t;
     });
 
-    // 1. Hook Track Lines (IDs like track-23, track_23, or class track)
-    const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], path.track, polyline.track, line.track");
+    // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, etc.)
+    const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], [id*='curve-'], [id*='curve_'], path.track, polyline.track, line.track");
     trackLineElements.forEach(el => {
-        const idAttr = el.getAttribute("id") || "";
-        const rawId = idAttr.replace(/^track[-_]/i, "").toUpperCase();
+        const rawId = extractTrackIdFromElement(el);
+        if (!rawId) return;
         const data = trackMap[rawId];
-        
-        // Read data-capacity if provided in SVG
-        const capacityAttr = el.getAttribute("data-capacity") || el.dataset?.capacity;
-        if (capacityAttr && data) {
-            data.capacity = parseInt(capacityAttr, 10);
+
+        // Merge SVG capacity into track data if not set
+        const capAttr = el.getAttribute("data-capacity") || el.dataset?.capacity;
+        if (capAttr && data && !data.capacity) {
+            data.capacity = parseInt(capAttr, 10);
         }
 
         if (data) {
@@ -153,31 +199,22 @@ function bindSvgInteractivity(container, isTheater = false) {
         }
     });
 
-    // 2. Hook Labels / Badges (IDs like label-23, label_23, or data-track, or text content)
+    // 2. Hook Labels / Badges (e.g. label-21, label-21-2, label-68, etc.)
     const labelElements = svg.querySelectorAll("[id^='label-'], [id^='label_'], g[data-track], g[transform]");
     labelElements.forEach(el => {
-        const idAttr = el.getAttribute("id") || "";
-        let trackId = idAttr ? idAttr.replace(/^label[-_]/i, "").toUpperCase() : el.getAttribute("data-track");
-        
-        if (!trackId) {
-            const txt = el.querySelector("text") || (el.tagName.toLowerCase() === "text" ? el : null);
-            if (txt) {
-                const clean = txt.textContent.trim().replace(/\s*\(.*\)/, "").toUpperCase();
-                if (trackMap[clean]) trackId = clean;
-            }
-        }
-        if (!trackId) return;
+        const rawId = extractTrackIdFromElement(el);
+        if (!rawId) return;
+        const data = trackMap[rawId];
 
-        const data = trackMap[trackId.toUpperCase()];
         if (data) {
             if (data.is_clear) el.classList.add("badge-clear");
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
             else if (data.is_blend) el.classList.add("badge-blend");
             else if (data.dwell_warning) el.classList.add("badge-dwell");
 
-            const textEl = el.querySelector("text") || (el.tagName.toLowerCase() === "text" ? el : null);
+            const textEl = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
             if (textEl && data.cars > 0) {
-                textEl.textContent = `${trackId} (${data.cars})`;
+                textEl.textContent = `${rawId} (${data.cars})`;
                 const rect = el.querySelector("rect");
                 if (rect) {
                     rect.setAttribute("width", "36");
@@ -195,14 +232,17 @@ function bindSvgInteractivity(container, isTheater = false) {
         }
     });
 
-    // 3. Hook Switch Points (IDs like switch-23-24)
+    // 3. Hook Switch Points (e.g. switch-23-24-n, switch-2-90, etc.)
     const switchElements = svg.querySelectorAll("[id^='switch-'], [id^='switch_'], circle.switch-point");
     switchElements.forEach(sw => {
         const idAttr = sw.getAttribute("id") || "";
         sw.classList.add("yard-switch-point");
-        if (idAttr) {
-            sw.setAttribute("title", `Switch: ${idAttr.replace(/^switch[-_]/i, "").replace("-", " ⇄ ")}`);
-        }
+        const title = formatSwitchTitle(idAttr);
+        sw.setAttribute("title", title);
+        sw.onmouseenter = (e) => {
+            showSimpleTooltip(e, `🔀 <strong>${title}</strong>`);
+        };
+        sw.onmouseleave = hideTrackHoverTooltip;
     });
 }
 
@@ -215,11 +255,12 @@ function renderFallbackCardGrid(container) {
     let html = `<div class="track-card-grid">`;
     cachedTracks.forEach(t => {
         const badgeClass = t.is_clear ? "badge-clear" : (t.is_bad_order ? "badge-bo" : (t.is_blend ? "badge-blend" : (t.dwell_warning ? "badge-dwell" : "badge-occ")));
+        const capText = t.capacity ? ` / ${t.capacity} cap` : "";
         html += `
             <div class="track-card ${badgeClass}" onclick="window.showTrackModalById('${t.id}')">
                 <div class="track-card-header">
                     <span class="track-card-id">${t.name}</span>
-                    <span class="track-card-cars">${t.is_clear ? "CLEAR" : t.cars + " 🚂"}</span>
+                    <span class="track-card-cars">${t.is_clear ? "CLEAR" : t.cars + capText + " 🚂"}</span>
                 </div>
                 <div class="track-card-commodity">${t.commodity || "Empty"}</div>
                 ${t.dwell_warning ? `<div class="track-card-dwell">⚠️ ${t.dwell_days} Days Dwell</div>` : ""}
@@ -333,6 +374,18 @@ function showTrackHoverTooltip(e, track) {
     hoverTooltipEl.style.display = "block";
 }
 
+function showSimpleTooltip(e, html) {
+    if (!hoverTooltipEl) {
+        hoverTooltipEl = document.createElement("div");
+        hoverTooltipEl.className = "track-hover-tooltip";
+        document.body.appendChild(hoverTooltipEl);
+    }
+    hoverTooltipEl.innerHTML = html;
+    hoverTooltipEl.style.left = (e.pageX + 12) + "px";
+    hoverTooltipEl.style.top = (e.pageY + 12) + "px";
+    hoverTooltipEl.style.display = "block";
+}
+
 function hideTrackHoverTooltip() {
     if (hoverTooltipEl) {
         hoverTooltipEl.style.display = "none";
@@ -373,13 +426,15 @@ export async function openExpandedTrackMap() {
         }
     }
 
+    const capText = trackStats.totalCapacity > 0 ? ` / ${trackStats.totalCapacity}` : "";
+
     theater.innerHTML = `
         <div class="track-theater-container">
             <div class="track-theater-header">
                 <div class="theater-title-group">
                     <i class="fa-solid fa-train-subway" style="color: #38bdf8; font-size: 1.3rem;"></i>
                     <h2 style="margin: 0; font-size: 1.25rem; color: #fff;">Yard Track Map & Dispatch Console</h2>
-                    <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}</strong> Cars</span>
+                    <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}${capText}</strong> Cars</span>
                     <span class="track-stat-pill pill-clear">🟢 <strong>${trackStats.clearTracksCount}</strong> Clear</span>
                     ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
                     ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
@@ -443,7 +498,7 @@ export async function openExpandedTrackMap() {
         };
 
         viewport.onmousedown = (e) => {
-            if (e.target.closest("[id*='track'], [id*='label'], button")) return;
+            if (e.target.closest("[id*='track'], [id*='label'], [id*='curve'], button")) return;
             isPanning = true;
             startPanX = e.clientX - theaterPanX;
             startPanY = e.clientY - theaterPanY;
@@ -493,7 +548,7 @@ function applyBuildingVisibility() {
     if (!svgWrapper) return;
     const buildings = svgWrapper.querySelectorAll("[id*='building'], .building, [class*='yard-building'], rect[style*='fill:']:not(.badge-rect)");
     buildings.forEach(b => {
-        if (!b.closest("[id*='track']") && !b.closest("[id*='label']")) {
+        if (!b.closest("[id*='track']") && !b.closest("[id*='label']") && !b.closest("[id*='curve']")) {
             b.style.display = showBuildings ? "" : "none";
         }
     });
