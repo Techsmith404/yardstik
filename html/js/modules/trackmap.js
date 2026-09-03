@@ -51,6 +51,28 @@ function formatSwitchTitle(idStr) {
     return `Switch: ${clean}${dir ? " (" + dir + ")" : ""}`;
 }
 
+export function getCarColor(cars, capacity, isBadOrder = false) {
+    if (isBadOrder) return "#ef4444"; // Bad order is always red
+    if (!capacity || capacity <= 0) capacity = 20;
+    const pct = (cars / capacity) * 100;
+    if (pct <= 25) return "#38bdf8";      // Blue
+    if (pct <= 50) return "#22c55e";      // Green
+    if (pct <= 75) return "#eab308";      // Yellow
+    if (pct <= 90) return "#f97316";      // Orange
+    return "#ef4444";                     // Red (>90%)
+}
+
+export function getCarDasharray(cars, capacity) {
+    if (!cars || cars <= 0) return "none";
+    const cap = capacity || 20;
+    const dashes = [];
+    for (let i = 0; i < cars - 1; i++) {
+        dashes.push("0.76", "0.24");
+    }
+    dashes.push("0.76", "1000");
+    return dashes.join(" ");
+}
+
 export async function fetchTracks() {
     try {
         const res = await fetch("assets/data/tracks.json?t=" + new Date().getTime());
@@ -126,7 +148,7 @@ export async function renderTrackMap() {
 
     container.classList.add("clickable-trackmap");
     container.onclick = (e) => {
-        if (!e.target.closest("[id*='track'], [id*='label'], [id*='curve']")) {
+        if (!e.target.closest("[id*='track'], [id*='label'], [id*='curve'], .train-car-overlay")) {
             openExpandedTrackMap();
         }
     };
@@ -169,6 +191,9 @@ function bindSvgInteractivity(container, isTheater = false) {
     svg.style.maxHeight = "100%";
     svg.style.display = "block";
 
+    // Clean up old overlay paths if re-binding
+    svg.querySelectorAll(".train-car-overlay").forEach(o => o.remove());
+
     const trackMap = {};
     cachedTracks.forEach(t => {
         trackMap[t.id.toUpperCase()] = t;
@@ -188,13 +213,39 @@ function bindSvgInteractivity(container, isTheater = false) {
 
         if (data) {
             el.classList.add("yard-track-line");
-            if (data.is_clear) el.classList.add("track-line-clear");
-            else if (data.is_bad_order) el.classList.add("track-line-bo");
-            else if (data.is_blend) el.classList.add("track-line-blend");
-            else if (data.dwell_warning) el.classList.add("track-line-dwell");
-            else el.classList.add("track-line-occ");
-
             el.style.cursor = "pointer";
+
+            // If track is occupied with cars, create overlay path with exact car count dashes
+            if (data.cars > 0 && !data.is_clear) {
+                const overlay = el.cloneNode(true);
+                overlay.removeAttribute("id");
+                overlay.classList.add("train-car-overlay");
+
+                const cap = data.capacity || 20;
+                const carColor = getCarColor(data.cars, cap, data.is_bad_order);
+                const dashPattern = getCarDasharray(data.cars, cap);
+
+                overlay.setAttribute("pathLength", cap.toString());
+                overlay.style.stroke = carColor;
+                overlay.style.strokeWidth = "3.5px";
+                overlay.style.strokeDasharray = dashPattern;
+                overlay.style.strokeLinecap = "round";
+                overlay.style.fill = "none";
+                overlay.style.pointerEvents = "auto";
+                overlay.style.cursor = "pointer";
+                overlay.style.filter = `drop-shadow(0 0 4px ${carColor})`;
+
+                overlay.onclick = (e) => {
+                    if (hasDraggedMap) return;
+                    e.stopPropagation();
+                    showTrackModal(data);
+                };
+                overlay.onmouseenter = (e) => showTrackHoverTooltip(e, data);
+                overlay.onmouseleave = hideTrackHoverTooltip;
+
+                el.parentNode.insertBefore(overlay, el.nextSibling);
+            }
+
             el.onclick = (e) => {
                 if (hasDraggedMap) return;
                 e.stopPropagation();
@@ -213,6 +264,9 @@ function bindSvgInteractivity(container, isTheater = false) {
         const data = trackMap[rawId];
 
         if (data) {
+            const cap = data.capacity || 20;
+            const badgeColor = data.is_clear ? "#10b981" : getCarColor(data.cars, cap, data.is_bad_order);
+
             if (data.is_clear) el.classList.add("badge-clear");
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
             else if (data.is_blend) el.classList.add("badge-blend");
@@ -239,6 +293,12 @@ function bindSvgInteractivity(container, isTheater = false) {
                 const newWidth = data.cars > 0 ? Math.max(origW, 36) : origW;
                 rect.setAttribute("width", newWidth);
                 rect.setAttribute("x", centerX - (newWidth / 2));
+
+                if (!data.is_clear && !data.is_bad_order && !data.is_blend && !data.dwell_warning) {
+                    rect.style.stroke = badgeColor;
+                    rect.style.fill = `rgba(${hexToRgb(badgeColor)}, 0.25)`;
+                    textEl.style.fill = badgeColor;
+                }
             }
 
             el.style.cursor = "pointer";
@@ -264,6 +324,15 @@ function bindSvgInteractivity(container, isTheater = false) {
         };
         sw.onmouseleave = hideTrackHoverTooltip;
     });
+}
+
+function hexToRgb(hex) {
+    const c = hex.replace("#", "");
+    const bigint = parseInt(c, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `${r}, ${g}, ${b}`;
 }
 
 function renderFallbackCardGrid(container) {
@@ -321,7 +390,7 @@ export function showTrackModal(track) {
     let capacityInfo = "";
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
-        const barColor = pct > 90 ? "#ef4444" : (pct > 75 ? "#f59e0b" : "#38bdf8");
+        const barColor = getCarColor(track.cars, track.capacity, track.is_bad_order);
         capacityInfo = `
             <div class="modal-detail-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
@@ -381,7 +450,8 @@ function showTrackHoverTooltip(e, track) {
     let capText = "";
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
-        capText = `<br><span style="color: #38bdf8; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
+        const col = getCarColor(track.cars, track.capacity, track.is_bad_order);
+        capText = `<br><span style="color: ${col}; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
     }
 
     hoverTooltipEl.innerHTML = `
