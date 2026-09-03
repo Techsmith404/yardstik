@@ -1403,15 +1403,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (dropzoneTracks && inputTrackFile) {
         dropzoneTracks.onclick = () => inputTrackFile.click();
-        dropzoneTracks.ondragover = (e) => { e.preventDefault(); dropzoneTracks.style.borderColor = '#38bdf8'; };
-        dropzoneTracks.ondragleave = () => { dropzoneTracks.style.borderColor = 'rgba(56, 189, 248, 0.4)'; };
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneTracks.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneTracks.style.borderColor = '#38bdf8';
+                dropzoneTracks.style.background = 'rgba(56, 189, 248, 0.1)';
+            });
+        });
+        ['dragleave', 'dragend'].forEach(eventName => {
+            dropzoneTracks.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneTracks.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                dropzoneTracks.style.background = 'rgba(56, 189, 248, 0.03)';
+            });
+        });
         dropzoneTracks.ondrop = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropzoneTracks.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-            if (e.dataTransfer.files.length) uploadTrackCheckFile(e.dataTransfer.files[0]);
+            dropzoneTracks.style.background = 'rgba(56, 189, 248, 0.03)';
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                uploadTrackCheckFile(e.dataTransfer.files[0]);
+            }
         };
         inputTrackFile.onchange = (e) => {
-            if (e.target.files.length) uploadTrackCheckFile(e.target.files[0]);
+            if (e.target.files && e.target.files.length) {
+                uploadTrackCheckFile(e.target.files[0]);
+                inputTrackFile.value = '';
+            }
         };
     }
 
@@ -1442,15 +1463,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (dropzoneMap && inputMapFile) {
         dropzoneMap.onclick = () => inputMapFile.click();
-        dropzoneMap.ondragover = (e) => { e.preventDefault(); dropzoneMap.style.borderColor = '#a78bfa'; };
-        dropzoneMap.ondragleave = () => { dropzoneMap.style.borderColor = 'rgba(139, 92, 246, 0.4)'; };
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneMap.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneMap.style.borderColor = '#a78bfa';
+                dropzoneMap.style.background = 'rgba(139, 92, 246, 0.1)';
+            });
+        });
+        ['dragleave', 'dragend'].forEach(eventName => {
+            dropzoneMap.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneMap.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                dropzoneMap.style.background = 'rgba(139, 92, 246, 0.03)';
+            });
+        });
         dropzoneMap.ondrop = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropzoneMap.style.borderColor = 'rgba(139, 92, 246, 0.4)';
-            if (e.dataTransfer.files.length) uploadMapSvgFile(e.dataTransfer.files[0]);
+            dropzoneMap.style.background = 'rgba(139, 92, 246, 0.03)';
+            if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                uploadMapSvgFile(e.dataTransfer.files[0]);
+            }
         };
         inputMapFile.onchange = (e) => {
-            if (e.target.files.length) uploadMapSvgFile(e.target.files[0]);
+            if (e.target.files && e.target.files.length) {
+                uploadMapSvgFile(e.target.files[0]);
+                inputMapFile.value = '';
+            }
         };
     }
 
@@ -1473,7 +1515,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(err => {
-            mapUploadStatus.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Network error: ${err.message}</span>`;
         });
     }
 

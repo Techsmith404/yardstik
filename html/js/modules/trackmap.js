@@ -135,9 +135,18 @@ export async function renderTrackMap() {
 
     try {
         if (!svgTemplateCache) {
-            const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
-            if (res.ok) {
-                svgTemplateCache = await res.text();
+            try {
+                const resData = await fetch("assets/data/track-map.svg?t=" + new Date().getTime());
+                if (resData.ok) {
+                    svgTemplateCache = await resData.text();
+                }
+            } catch {}
+
+            if (!svgTemplateCache) {
+                const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
+                if (res.ok) {
+                    svgTemplateCache = await res.text();
+                }
             }
         }
 

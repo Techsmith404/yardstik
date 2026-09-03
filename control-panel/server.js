@@ -41,7 +41,7 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json'];
+        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json', 'track-map.svg'];
 
         syncFiles.forEach(f => {
             const p = path.join('/data', f);
@@ -601,6 +601,14 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
             return res.status(400).json({ error: 'File is not a valid SVG drawing' });
         }
         fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
+        const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');
+        if (fs.existsSync(path.dirname(localImgPath))) {
+            try { fs.writeFileSync(localImgPath, content, 'utf8'); } catch {}
+        }
+        const localDataPath = path.join(__dirname, '../html/assets/data/track-map.svg');
+        if (fs.existsSync(path.dirname(localDataPath))) {
+            try { fs.writeFileSync(localDataPath, content, 'utf8'); } catch {}
+        }
         try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
         fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
         syncToCloud();
