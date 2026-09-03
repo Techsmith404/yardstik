@@ -1070,3 +1070,186 @@ body.desktop-mode .desktop-reminder-header {
     align-items: center;
     gap: 8px;
 }
+
+/* Track Map Widget & Module Styles */
+#widget-trackmap {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+#trackmap-viewport {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #070b14;
+    border-radius: 12px;
+    border: 1px solid rgba(56, 189, 248, 0.15);
+}
+
+#trackmap-viewport svg {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Header summary pills */
+.track-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 6px;
+}
+.pill-total { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.pill-clear { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.pill-bo { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.pill-dwell { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+/* Track Hover Tooltip */
+.track-hover-tooltip {
+    position: absolute;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #38bdf8;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 0.85rem;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+    display: none;
+    max-width: 250px;
+    line-height: 1.3;
+}
+
+/* Modal Popup */
+.track-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.track-modal-card {
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 0 35px rgba(56, 189, 248, 0.2);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 480px;
+    padding: 24px;
+    color: #ffffff;
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+.track-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+.track-modal-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #38bdf8;
+}
+.track-modal-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.track-modal-close:hover { color: #ffffff; }
+.modal-status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.status-clear { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+.status-bo { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+.status-blend { background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid #00f0ff; }
+.status-dwell { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+.status-occ { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+.modal-detail-row {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.modal-detail-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+.modal-detail-val {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+/* Fallback Card Grid */
+.track-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 100%;
+    width: 100%;
+}
+.track-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+}
+.track-card:hover {
+    transform: translateY(-2px);
+    border-color: #38bdf8;
+}
+.track-card.badge-clear { border-left: 4px solid #10b981; }
+.track-card.badge-bo { border-left: 4px solid #ef4444; }
+.track-card.badge-blend { border-left: 4px solid #00f0ff; }
+.track-card.badge-dwell { border-left: 4px solid #f59e0b; }
+.track-card.badge-occ { border-left: 4px solid #38bdf8; }
+.track-card-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.track-card-id { color: #ffffff; }
+.track-card-cars { color: #38bdf8; }
+.track-card-commodity { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-card-dwell { font-size: 0.75rem; color: #f59e0b; margin-top: 4px; font-weight: 600; }
+

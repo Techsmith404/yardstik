@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const featureKeys = [
         'weather_fx', 'lightning_radar', 'osha_counter', 'production_tracker',
         'equipment_status', 'scale_audit_badges', 'shift_tracker', 'toolbox_talk',
-        'reminders', 'anniversaries', 'safety_videos', 'mobile_qr'
+        'track_map', 'reminders', 'anniversaries', 'safety_videos', 'mobile_qr'
     ];
 
     const themeOptionsList = [
@@ -1226,6 +1226,251 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             formInputs.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No parameters required for this script.</p>';
         }
+    }
+
+    // ── Track Management Logic ──────────────────────────────────────────────────
+    const navTracksBtn = document.getElementById('nav-tracks');
+    if (navTracksBtn) navTracksBtn.setAttribute('data-script', 'tracks');
+    const tracksView = document.getElementById('tracks-view');
+    const btnSaveTracks = document.getElementById('btn-save-tracks');
+    const btnAddTrack = document.getElementById('btn-add-track');
+    const trackSearchInput = document.getElementById('track-search-input');
+    const tracksTableBody = document.getElementById('tracks-table-body');
+    
+    const dropzoneTracks = document.getElementById('dropzone-tracks');
+    const inputTrackFile = document.getElementById('input-track-file');
+    const trackUploadStatus = document.getElementById('track-upload-status');
+    
+    const dropzoneMap = document.getElementById('dropzone-map');
+    const inputMapFile = document.getElementById('input-map-file');
+    const mapUploadStatus = document.getElementById('map-upload-status');
+
+    let currentTracksList = [];
+
+    function renderTracksTable(filter = '') {
+        if (!tracksTableBody) return;
+        tracksTableBody.innerHTML = '';
+        const search = filter.toLowerCase().trim();
+        const filtered = currentTracksList.filter(t => 
+            !search || t.id.toLowerCase().includes(search) || (t.commodity && t.commodity.toLowerCase().includes(search)) || (t.notes && t.notes.toLowerCase().includes(search))
+        );
+
+        if (filtered.length === 0) {
+            tracksTableBody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No tracks found.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach((t) => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            tr.innerHTML = `
+                <td style="padding: 8px 10px;">
+                    <input type="text" class="form-control form-control-sm track-input-id" value="${t.id}" style="font-weight: bold; width: 75px; text-align: center;">
+                </td>
+                <td style="padding: 8px 10px;">
+                    <input type="number" class="form-control form-control-sm track-input-cars" value="${t.cars || 0}" min="0" style="width: 75px; text-align: center; color: #38bdf8; font-weight: bold;">
+                </td>
+                <td style="padding: 8px 10px;">
+                    <input type="text" class="form-control form-control-sm track-input-comm" value="${t.commodity || ''}" placeholder="Contents / Notes..." style="width: 100%;">
+                </td>
+                <td style="padding: 8px 10px;">
+                    <input type="date" class="form-control form-control-sm track-input-date" value="${t.oldest_inbound_date || ''}" style="width: 130px; font-size: 0.8rem;">
+                </td>
+                <td style="padding: 8px 10px;">
+                    <select class="form-control form-control-sm track-input-status" style="width: 120px;">
+                        <option value="clear" ${t.is_clear ? 'selected' : ''}>🟢 Clear</option>
+                        <option value="occupied" ${!t.is_clear && !t.is_bad_order && !t.is_blend && !t.dwell_warning ? 'selected' : ''}>⚪ Occupied</option>
+                        <option value="bad_order" ${t.is_bad_order ? 'selected' : ''}>🔴 Bad Order</option>
+                        <option value="blend" ${t.is_blend ? 'selected' : ''}>🔵 Active Blend</option>
+                        <option value="warning" ${t.dwell_warning ? 'selected' : ''}>⚠️ Dwell Warning</option>
+                    </select>
+                </td>
+                <td style="padding: 8px 10px; text-align: center;">
+                    <button class="btn btn-sm btn-danger btn-del-track" style="padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;" title="Delete Track"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+
+            tr.querySelector('.btn-del-track').onclick = () => {
+                currentTracksList = currentTracksList.filter(item => item !== t);
+                renderTracksTable(trackSearchInput ? trackSearchInput.value : '');
+            };
+
+            tr.querySelector('.track-input-id').onchange = (e) => { t.id = e.target.value.trim().toUpperCase(); t.name = `Track ${t.id}`; };
+            tr.querySelector('.track-input-cars').onchange = (e) => { 
+                t.cars = parseInt(e.target.value, 10) || 0; 
+                if (t.cars === 0) {
+                    t.is_clear = true;
+                    tr.querySelector('.track-input-status').value = 'clear';
+                }
+            };
+            tr.querySelector('.track-input-comm').onchange = (e) => { t.commodity = e.target.value; t.notes = e.target.value; };
+            tr.querySelector('.track-input-date').onchange = (e) => { t.oldest_inbound_date = e.target.value; };
+            tr.querySelector('.track-input-status').onchange = (e) => {
+                const val = e.target.value;
+                t.status = val;
+                t.is_clear = (val === 'clear');
+                t.is_bad_order = (val === 'bad_order');
+                t.is_blend = (val === 'blend');
+                t.dwell_warning = (val === 'warning');
+                if (t.is_clear) {
+                    t.cars = 0;
+                    tr.querySelector('.track-input-cars').value = 0;
+                }
+            };
+
+            tracksTableBody.appendChild(tr);
+        });
+    }
+
+    function loadTracksData() {
+        fetch('/api/tracks')
+            .then(r => r.json())
+            .then(data => {
+                currentTracksList = Array.isArray(data) ? data : [];
+                renderTracksTable();
+            })
+            .catch(err => console.error("Could not fetch tracks:", err));
+    }
+
+    if (navTracksBtn) {
+        navTracksBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navTracksBtn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            if (tracksView) tracksView.classList.add('active');
+            currentScriptTitle.innerText = 'Yard Track Management';
+            loadTracksData();
+        });
+    }
+
+    if (btnAddTrack) {
+        btnAddTrack.addEventListener('click', () => {
+            const nextId = prompt("Enter new Track ID (e.g. 50, 95, North-1):");
+            if (nextId && nextId.trim()) {
+                const cleanId = nextId.trim().toUpperCase();
+                currentTracksList.push({
+                    id: cleanId,
+                    name: `Track ${cleanId}`,
+                    cars: 0,
+                    commodity: "Empty",
+                    notes: "CLEAR",
+                    status: "clear",
+                    is_clear: true,
+                    is_bad_order: false,
+                    is_blend: false,
+                    dwell_days: 0,
+                    dwell_warning: false,
+                    oldest_inbound_date: null,
+                    updated_at: new Date().toISOString()
+                });
+                renderTracksTable(trackSearchInput ? trackSearchInput.value : '');
+            }
+        });
+    }
+
+    if (trackSearchInput) {
+        trackSearchInput.addEventListener('input', (e) => {
+            renderTracksTable(e.target.value);
+        });
+    }
+
+    if (btnSaveTracks) {
+        btnSaveTracks.addEventListener('click', () => {
+            btnSaveTracks.disabled = true;
+            btnSaveTracks.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            fetch('/api/tracks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentTracksList)
+            })
+            .then(r => r.json())
+            .then(data => {
+                btnSaveTracks.disabled = false;
+                btnSaveTracks.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
+                setTimeout(() => { btnSaveTracks.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes'; }, 2000);
+            })
+            .catch(err => {
+                btnSaveTracks.disabled = false;
+                btnSaveTracks.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+                alert('Failed to save tracks: ' + err.message);
+            });
+        });
+    }
+
+    if (dropzoneTracks && inputTrackFile) {
+        dropzoneTracks.onclick = () => inputTrackFile.click();
+        dropzoneTracks.ondragover = (e) => { e.preventDefault(); dropzoneTracks.style.borderColor = '#38bdf8'; };
+        dropzoneTracks.ondragleave = () => { dropzoneTracks.style.borderColor = 'rgba(56, 189, 248, 0.4)'; };
+        dropzoneTracks.ondrop = (e) => {
+            e.preventDefault();
+            dropzoneTracks.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+            if (e.dataTransfer.files.length) uploadTrackCheckFile(e.dataTransfer.files[0]);
+        };
+        inputTrackFile.onchange = (e) => {
+            if (e.target.files.length) uploadTrackCheckFile(e.target.files[0]);
+        };
+    }
+
+    function uploadTrackCheckFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        trackUploadStatus.style.display = 'block';
+        trackUploadStatus.innerHTML = '<span style="color: #38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> Parsing spreadsheet...</span>';
+        
+        fetch('/api/tracks/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.tracks)) {
+                trackUploadStatus.innerHTML = `<span style="color: var(--success);"><i class="fa-solid fa-check"></i> Successfully parsed & updated ${data.count} tracks!</span>`;
+                currentTracksList = data.tracks;
+                renderTracksTable();
+            } else {
+                trackUploadStatus.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Failed to parse file'}</span>`;
+            }
+        })
+        .catch(err => {
+            trackUploadStatus.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Network error: ${err.message}</span>`;
+        });
+    }
+
+    if (dropzoneMap && inputMapFile) {
+        dropzoneMap.onclick = () => inputMapFile.click();
+        dropzoneMap.ondragover = (e) => { e.preventDefault(); dropzoneMap.style.borderColor = '#a78bfa'; };
+        dropzoneMap.ondragleave = () => { dropzoneMap.style.borderColor = 'rgba(139, 92, 246, 0.4)'; };
+        dropzoneMap.ondrop = (e) => {
+            e.preventDefault();
+            dropzoneMap.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+            if (e.dataTransfer.files.length) uploadMapSvgFile(e.dataTransfer.files[0]);
+        };
+        inputMapFile.onchange = (e) => {
+            if (e.target.files.length) uploadMapSvgFile(e.target.files[0]);
+        };
+    }
+
+    function uploadMapSvgFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        mapUploadStatus.style.display = 'block';
+        mapUploadStatus.innerHTML = '<span style="color: #a78bfa;"><i class="fa-solid fa-spinner fa-spin"></i> Uploading vector map...</span>';
+
+        fetch('/api/track-map/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                mapUploadStatus.innerHTML = `<span style="color: var(--success);"><i class="fa-solid fa-check"></i> SVG Vector Map uploaded and live!</span>`;
+            } else {
+                mapUploadStatus.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Failed to upload SVG'}</span>`;
+            }
+        })
+        .catch(err => {
+            mapUploadStatus.innerHTML = `<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Network error: ${err.message}</span>`;
+        });
     }
 
     scriptForm.addEventListener('submit', (e) => {

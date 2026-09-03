@@ -110,6 +110,15 @@
         <div id="equipment-content">Loading...</div>
     </div>
 
+    <!-- Yard Track Check (Mobile) -->
+    <div class="widget" id="tracks-feed">
+        <h2>
+            <span>Yard Track Check</span>
+            <span id="mobile-track-stats" style="font-size: 0.85rem; color: var(--brand-blue); font-weight: normal;"></span>
+        </h2>
+        <div id="tracks-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">Loading tracks...</div>
+    </div>
+
     <script>
         let siteConfig = {
             site_name: "Operations Dashboard",
@@ -627,6 +636,44 @@
             }
         }
 
+        // Load Tracks Check (Mobile)
+        async function loadTracks() {
+            try {
+                const res = await fetch(getDataUrl('tracks.json'));
+                if (res.ok) {
+                    const tracks = await res.json();
+                    const container = document.getElementById('tracks-content');
+                    const statsEl = document.getElementById('mobile-track-stats');
+                    if (!tracks || !tracks.length) {
+                        container.innerHTML = '<div style="color: #94a3b8; grid-column: span 2; text-align: center;">No tracks found.</div>';
+                        return;
+                    }
+                    let total = 0;
+                    let clear = 0;
+                    let html = '';
+                    tracks.forEach(t => {
+                        total += (t.cars || 0);
+                        if (t.is_clear) clear++;
+                        const border = t.is_clear ? '#10b981' : (t.is_bad_order ? '#ef4444' : (t.is_blend ? '#00f0ff' : (t.dwell_warning ? '#f59e0b' : '#3b82f6')));
+                        html += `
+                            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${border}; border-radius: 8px; padding: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px;">
+                                    <span>${t.name}</span>
+                                    <span style="color: ${border}; font-size: 0.85rem;">${t.is_clear ? 'CLEAR' : t.cars + ' Cars'}</span>
+                                </div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.commodity || 'Empty'}</div>
+                                ${t.dwell_warning ? `<div style="font-size: 0.7rem; color: #f59e0b; margin-top: 2px;">⚠️ ${t.dwell_days}d Dwell</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    if (statsEl) statsEl.textContent = `${total} Cars | ${clear} Clear`;
+                }
+            } catch (e) {
+                console.warn("Could not fetch mobile tracks:", e);
+            }
+        }
+
         // Initialize All
         async function initializeAll() {
             await fetchSiteConfig();
@@ -634,7 +681,8 @@
                 loadReminders(),
                 loadSafety(),
                 loadEquipment(),
-                loadSpecial()
+                loadSpecial(),
+                loadTracks()
             ]);
             // Trackers depends on Reminders being loaded to prepend
             await loadTrackers();

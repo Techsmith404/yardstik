@@ -41,7 +41,7 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json'];
+        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json'];
 
         syncFiles.forEach(f => {
             const p = path.join('/data', f);
@@ -514,6 +514,107 @@ app.delete('/api/special-event', (req, res) => {
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
+});
+
+// ── Track Management & Track Check API ──────────────────────────────────────
+const TRACKS_PATH = '/data/tracks.json';
+const TRACK_MAP_PATH = '/data/track-map.svg';
+
+const trackStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dest = '/tmp';
+        if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+        cb(null, dest);
+    },
+    filename: (req, file, cb) => {
+        cb(null, 'track_upload_' + Date.now() + path.extname(file.originalname));
+    }
+});
+const uploadTrack = multer({ storage: trackStorage });
+
+app.get('/api/tracks', (req, res) => {
+    try {
+        if (fs.existsSync(TRACKS_PATH)) {
+            const data = JSON.parse(fs.readFileSync(TRACKS_PATH, 'utf8'));
+            res.json(data);
+        } else {
+            res.json([]);
+        }
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to read tracks: ' + e.message });
+    }
+});
+
+app.post('/api/tracks', express.json(), (req, res) => {
+    try {
+        const tracks = req.body;
+        if (!Array.isArray(tracks)) {
+            return res.status(400).json({ error: 'Expected array of tracks' });
+        }
+        fs.writeFileSync(TRACKS_PATH, JSON.stringify(tracks, null, 2), 'utf8');
+        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        syncToCloud();
+        res.json({ success: true, count: tracks.length });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save tracks: ' + e.message });
+    }
+});
+
+app.post('/api/tracks/upload', uploadTrack.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const uploadedPath = req.file.path;
+        const parserScript = path.join(__dirname, '../scripts/parse_track_check.py');
+        const fallbackScript = path.join(__dirname, 'scripts/parse_track_check.py');
+        const scriptToUse = fs.existsSync(parserScript) ? parserScript : fallbackScript;
+
+        const py = spawn('python3', [scriptToUse, uploadedPath, TRACKS_PATH]);
+        let stderr = '';
+        py.stderr.on('data', (d) => stderr += d.toString());
+        py.on('close', (code) => {
+            try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
+            if (code === 0) {
+                fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+                syncToCloud();
+                const parsed = JSON.parse(fs.readFileSync(TRACKS_PATH, 'utf8'));
+                res.json({ success: true, count: parsed.length, tracks: parsed });
+            } else {
+                res.status(500).json({ error: 'Parser failed: ' + (stderr || 'Exit code ' + code) });
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Upload processing failed: ' + e.message });
+    }
+});
+
+app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const uploadedPath = req.file.path;
+        const content = fs.readFileSync(uploadedPath, 'utf8');
+        if (!content.includes('<svg') && !content.includes('</svg>')) {
+            fs.unlinkSync(uploadedPath);
+            return res.status(400).json({ error: 'File is not a valid SVG drawing' });
+        }
+        fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
+        try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
+        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        syncToCloud();
+        res.json({ success: true, message: 'Track map SVG uploaded successfully.' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to upload track map: ' + e.message });
+    }
+});
+
+app.get('/api/tracks/template', (req, res) => {
+    const csvContent = 'Track ID,Track Name,Car Count,Commodity / Contents,Inbound Date (YYYY-MM-DD),Notes\n23,Track 23,0,Empty,,CLEAR\n24,Track 24,4,1 - DL Bale, 3 - Shred S/End,2026-09-01,1 - DL BALE, 3 - SHRED S/END\n48,Track 48,13,DLs (7 - P&S, 6 - Bales),2026-08-19,P&S FROM 8/19\n';
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="standard_track_check_template.csv"');
+    res.send(csvContent);
 });
 
 // ── Site Settings API ──────────────────────────────────────────────────────

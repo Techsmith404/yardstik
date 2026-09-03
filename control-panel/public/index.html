@@ -21,6 +21,7 @@
             <nav id="script-nav" class="nav-menu">
                 <button id="nav-editor" class="nav-item nav-special" data-script="editor"><i class="fa-solid fa-pen-to-square"></i> Reminder Editor</button>
                 <button id="nav-equipment" class="nav-item nav-special" data-script="equipment" style="margin-top: 8px;"><i class="fa-solid fa-clipboard-list"></i> Equipment Editor</button>
+                <button id="nav-tracks" class="nav-item nav-special" data-script="tracks" style="margin-top: 8px;"><i class="fa-solid fa-train"></i> Track Management</button>
                 <button id="nav-shifts" class="nav-item nav-special" data-script="shifts" style="margin-top: 8px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</button>
                 <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
                 <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
@@ -308,8 +309,8 @@
                         </div>
                         <div class="form-grid-2">
                             <div class="form-group form-grid-full">
-                                <label for="cfg-site-name">Site Name</label>
-                                <input type="text" id="cfg-site-name" class="form-control" placeholder="e.g. Midwest Operations — Plant #1">
+                                <label for="cfg-site-name">Company / Facility Name</label>
+                                <input type="text" id="cfg-site-name" class="form-control" placeholder="e.g. OmniSource — Burns Harbor">
                                 <span class="form-help">Displayed in the browser title and Control Panel header.</span>
                             </div>
                             <div class="form-group form-grid-full">
@@ -556,6 +557,13 @@
                                 </div>
                             </label>
                             <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
+                                <input type="checkbox" id="feat-track_map" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                                <div>
+                                    <strong style="color: #fff; display: block;">🗺️ Interactive Track Map</strong>
+                                    <p style="margin: 3px 0 0 0; color: var(--text-secondary); font-size: 0.8rem;">Live railway yard track map & car count visualization.</p>
+                                </div>
+                            </label>
+                            <label class="feature-toggle-card" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; cursor: pointer;">
                                 <input type="checkbox" id="feat-mobile_qr" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--brand-blue);">
                                 <div>
                                     <strong style="color: #fff; display: block;">📱 Corner Mobile QR Code</strong>
@@ -566,6 +574,84 @@
                     </div>
 
                     <div id="extras-status" style="margin-top: 15px; display: none;"></div>
+                </div>
+
+                <!-- Track Management View -->
+                <div id="tracks-view" class="view">
+                    <div class="editor-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.4rem; color: #fff;"><i class="fa-solid fa-train"></i> Yard Track Management</h3>
+                            <p style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Upload daily track check spreadsheets, custom SVG track drawings, or edit car counts live.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <a href="/api/tracks/template" class="btn btn-secondary" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Standard Template</a>
+                            <button id="btn-save-tracks" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Zones -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <!-- Track Check Upload -->
+                        <div class="settings-section" style="margin-bottom: 0;">
+                            <div class="settings-section-header">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <h4>Upload Track Check (.xlsx / .csv)</h4>
+                            </div>
+                            <div id="dropzone-tracks" style="border: 2px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 20px; text-align: center; background: rgba(56, 189, 248, 0.03); cursor: pointer; transition: all 0.2s;">
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: #38bdf8; margin-bottom: 8px;"></i>
+                                <div style="font-weight: 600; color: #fff;">Drag & drop Track Check file here</div>
+                                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px;">or click to browse (.xlsx, .xls, .csv)</div>
+                                <input type="file" id="input-track-file" accept=".xlsx,.xls,.csv" style="display: none;">
+                            </div>
+                            <div id="track-upload-status" style="margin-top: 10px; font-size: 0.85rem; display: none;"></div>
+                        </div>
+
+                        <!-- SVG Map Upload -->
+                        <div class="settings-section" style="margin-bottom: 0;">
+                            <div class="settings-section-header">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <h4>Upload Custom Vector Map (.svg)</h4>
+                            </div>
+                            <div id="dropzone-map" style="border: 2px dashed rgba(139, 92, 246, 0.4); border-radius: 10px; padding: 20px; text-align: center; background: rgba(139, 92, 246, 0.03); cursor: pointer; transition: all 0.2s;">
+                                <i class="fa-solid fa-bezier-curve" style="font-size: 2rem; color: #a78bfa; margin-bottom: 8px;"></i>
+                                <div style="font-weight: 600; color: #fff;">Drag & drop Track Map SVG here</div>
+                                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px;">or click to browse (.svg vector drawings)</div>
+                                <input type="file" id="input-map-file" accept=".svg" style="display: none;">
+                            </div>
+                            <div id="map-upload-status" style="margin-top: 10px; font-size: 0.85rem; display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Live Editable Table -->
+                    <div class="settings-section">
+                        <div class="settings-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-table-list"></i>
+                                <h4>Active Tracks & Railcars</h4>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="track-search-input" class="form-control" placeholder="Search track or commodity..." style="width: 220px; padding: 6px 12px; font-size: 0.85rem;">
+                                <button id="btn-add-track" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;"><i class="fa-solid fa-plus"></i> Add Track</button>
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto; max-height: 500px;">
+                            <table class="data-table" id="tracks-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); text-align: left;">
+                                        <th style="padding: 10px; width: 90px;">Track ID</th>
+                                        <th style="padding: 10px; width: 90px;">Cars</th>
+                                        <th style="padding: 10px;">Commodity / Contents</th>
+                                        <th style="padding: 10px; width: 120px;">Oldest Date</th>
+                                        <th style="padding: 10px; width: 130px;">Status</th>
+                                        <th style="padding: 10px; width: 60px; text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tracks-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

@@ -13,6 +13,7 @@ import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
 import { initSeasonalTheme, applyTheme, getSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures } from './modules/features.js';
+import { fetchTracks } from './modules/trackmap.js';
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 initMobileRedirect();
@@ -38,6 +39,9 @@ setInterval(updateTrackers, 600000); // 10 mins
 
 getWeather();
 setInterval(getWeather, 600000); // 10 mins
+
+fetchTracks();
+setInterval(fetchTracks, 60000); // 1 min
 
 updateSafetySlide();
 setInterval(updateSafetySlide, 60000); // 1 min (rolls over at 11 PM)

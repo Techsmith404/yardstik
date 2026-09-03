@@ -20,7 +20,7 @@
         </div>
         <div class="desktop-nav-links">
             <a href="#view-production" class="desktop-nav-btn"><i class="fa-solid fa-truck-ramp-box"></i> Equipment & Status</a>
-            <a href="#view-announcements" class="desktop-nav-btn"><i class="fa-solid fa-bullhorn"></i> Toolbox Talk & Reminders</a>
+            <a href="#view-announcements" class="desktop-nav-btn"><i class="fa-solid fa-train"></i> Track Map & Reminders</a>
             <a href="#panel-anniversaries" class="desktop-nav-btn"><i class="fa-solid fa-cake-candles"></i> Milestones</a>
             <a href="#panel-safety" class="desktop-nav-btn"><i class="fa-solid fa-triangle-exclamation"></i> Safety Videos</a>
         </div>
@@ -114,16 +114,18 @@
     </div>
 
     <div id="view-announcements" class="kiosk-view" data-duration="40000">
-        <div class="widget announcement-slide">
+        <div class="widget" id="widget-trackmap" style="flex: 1 1 65%; display: flex; flex-direction: column; overflow: hidden; margin: 0; min-height: 0;">
             <h3 style="display: flex; align-items: center; justify-content: space-between;">
                 <span style="display: inline-flex; align-items: center;">
                     <span id="theme-icon-slide-left" class="theme-icon" style="margin-right: 8px;"></span>
-                    Daily Toolbox Talk
+                    Yard Track Map
                     <span id="theme-icon-slide-right" class="theme-icon" style="margin-left: 8px;"></span>
                 </span>
-                <span id="toolbox-slide-number" style="color: var(--text-secondary); font-size: 0.9em; opacity: 0.7;"></span>
+                <span id="trackmap-stats-summary" style="display: inline-flex; align-items: center;"></span>
             </h3>
-            <img id="slow-slide-img" src="" alt="Announcements" style="cursor: pointer; transition: filter 0.2s;" onclick="if(this.src) window.open(this.src, '_blank')" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+            <div id="trackmap-viewport" style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
+                <!-- Dynamically rendered SVG Track Map or Card Grid -->
+            </div>
         </div>
         <div class="side-stats" style="display: flex; flex-direction: column; gap: 25px;">
             <div id="reminders-widget-container" class="widget" style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">

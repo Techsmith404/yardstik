@@ -32,17 +32,17 @@ export function setupDesktopLayout() {
         if (navBar) navBar.style.display = 'flex';
 
         const setupDesktopColumns = () => {
-            const annSlide = document.querySelector('.announcement-slide');
+            const trackWidget = document.getElementById('widget-trackmap') || document.querySelector('.announcement-slide');
             const panelAnn = document.getElementById('panel-anniversaries');
             const viewAnn = document.getElementById('view-announcements');
-            if (annSlide && panelAnn && viewAnn) {
+            if (trackWidget && panelAnn && viewAnn) {
                 let leftCol = document.getElementById('announcements-col-left');
                 if (!leftCol) {
                     leftCol = document.createElement('div');
                     leftCol.id = 'announcements-col-left';
                     viewAnn.insertBefore(leftCol, viewAnn.firstChild);
                 }
-                leftCol.appendChild(annSlide);
+                leftCol.appendChild(trackWidget);
                 leftCol.appendChild(panelAnn);
             }
         };
