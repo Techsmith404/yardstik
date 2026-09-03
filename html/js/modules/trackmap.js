@@ -11,18 +11,16 @@ export let trackStats = {
     dwellWarningCount: 0
 };
 
+let hasDraggedMap = false;
+
 function extractTrackIdFromElement(el) {
     if (!el) return null;
     const idAttr = el.getAttribute("id") || "";
     if (idAttr) {
         let clean = idAttr.trim();
-        // Handle curves: ncurve-25, scurve-27, ecurve-45, wcurve-23
         clean = clean.replace(/^[nsew]curve[-_]/i, "");
-        // Handle track lines: track-23, track_23
         clean = clean.replace(/^track[-_]/i, "");
-        // Handle labels: label-21, label-21-2, label_21_2
         clean = clean.replace(/^label[-_]/i, "");
-        // Handle duplicate labels like label-21-2 -> 21
         clean = clean.replace(/[-_]\\d+$/, "");
         return clean.toUpperCase();
     }
@@ -197,6 +195,7 @@ function bindSvgInteractivity(container, isTheater = false) {
 
             el.style.cursor = "pointer";
             el.onclick = (e) => {
+                if (hasDraggedMap) return;
                 e.stopPropagation();
                 showTrackModal(data);
             };
@@ -222,14 +221,12 @@ function bindSvgInteractivity(container, isTheater = false) {
             const rect = el.querySelector("rect");
 
             if (textEl && rect) {
-                // Keep original text clean or append car count centered around original position
                 if (data.cars > 0) {
                     textEl.textContent = `${rawId} (${data.cars})`;
                 } else {
                     textEl.textContent = `${rawId}`;
                 }
 
-                // Adjust width symmetrically without moving the rectangle away from its origin
                 const origX = parseFloat(rect.getAttribute("data-orig-x") || rect.getAttribute("x"));
                 const origW = parseFloat(rect.getAttribute("data-orig-w") || rect.getAttribute("width"));
                 if (!rect.hasAttribute("data-orig-x")) {
@@ -244,6 +241,7 @@ function bindSvgInteractivity(container, isTheater = false) {
 
             el.style.cursor = "pointer";
             el.onclick = (e) => {
+                if (hasDraggedMap) return;
                 e.stopPropagation();
                 showTrackModal(data);
             };
@@ -371,6 +369,7 @@ export function showTrackModal(track) {
 let hoverTooltipEl = null;
 
 function showTrackHoverTooltip(e, track) {
+    if (hasDraggedMap) return;
     if (!hoverTooltipEl) {
         hoverTooltipEl = document.createElement("div");
         hoverTooltipEl.className = "track-hover-tooltip";
@@ -395,6 +394,7 @@ function showTrackHoverTooltip(e, track) {
 }
 
 function showSimpleTooltip(e, html) {
+    if (hasDraggedMap) return;
     if (!hoverTooltipEl) {
         hoverTooltipEl = document.createElement("div");
         hoverTooltipEl.className = "track-hover-tooltip";
@@ -417,9 +417,6 @@ let isTheaterOpen = false;
 let theaterZoom = 1;
 let theaterPanX = 0;
 let theaterPanY = 0;
-let isPanning = false;
-let startPanX = 0;
-let startPanY = 0;
 let showBuildings = true;
 
 export async function openExpandedTrackMap() {
@@ -439,10 +436,16 @@ export async function openExpandedTrackMap() {
 
     if (!svgTemplateCache) {
         try {
-            const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
-            if (res.ok) svgTemplateCache = await res.text();
-        } catch (e) {
-            console.warn("Could not load SVG for theater mode:", e);
+            const resData = await fetch("assets/data/track-map.svg?t=" + new Date().getTime());
+            if (resData.ok) svgTemplateCache = await resData.text();
+        } catch {}
+        if (!svgTemplateCache) {
+            try {
+                const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
+                if (res.ok) svgTemplateCache = await res.text();
+            } catch (e) {
+                console.warn("Could not load SVG for theater mode:", e);
+            }
         }
     }
 
@@ -476,7 +479,7 @@ export async function openExpandedTrackMap() {
                     ${svgTemplateCache || "<div style='color:#fff;padding:40px;'>No vector track map available.</div>"}
                 </div>
                 <div class="theater-hint-bar">
-                    <span><i class="fa-solid fa-computer-mouse"></i> Scroll to Zoom | Drag to Pan | Click Track for Details</span>
+                    <span><i class="fa-solid fa-computer-mouse"></i> Scroll to Zoom | Drag anywhere to Pan | Click Track for Details</span>
                 </div>
             </div>
         </div>
@@ -487,6 +490,7 @@ export async function openExpandedTrackMap() {
     theaterZoom = 1;
     theaterPanX = 0;
     theaterPanY = 0;
+    hasDraggedMap = false;
 
     const viewport = document.getElementById("theater-viewport");
     const svgWrapper = document.getElementById("theater-svg-wrapper");
@@ -517,24 +521,46 @@ export async function openExpandedTrackMap() {
             applyTheaterTransform();
         };
 
+        let isMouseDown = false;
+        let startX = 0;
+        let startY = 0;
+        let initialPanX = 0;
+        let initialPanY = 0;
+
         viewport.onmousedown = (e) => {
-            if (e.target.closest("[id*='track'], [id*='label'], [id*='curve'], button")) return;
-            isPanning = true;
-            startPanX = e.clientX - theaterPanX;
-            startPanY = e.clientY - theaterPanY;
-            viewport.style.cursor = "grabbing";
+            if (e.target.closest("button, .theater-btn")) return;
+            isMouseDown = true;
+            hasDraggedMap = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialPanX = theaterPanX;
+            initialPanY = theaterPanY;
+            svgWrapper.style.transition = "none";
         };
 
         window.onmousemove = (e) => {
-            if (!isPanning) return;
-            theaterPanX = e.clientX - startPanX;
-            theaterPanY = e.clientY - startPanY;
+            if (!isMouseDown) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasDraggedMap = true;
+                viewport.style.cursor = "grabbing";
+                hideTrackHoverTooltip();
+            }
+
+            theaterPanX = initialPanX + dx;
+            theaterPanY = initialPanY + dy;
             applyTheaterTransform();
         };
 
-        window.onmouseup = () => {
-            isPanning = false;
-            if (viewport) viewport.style.cursor = "grab";
+        window.onmouseup = (e) => {
+            if (isMouseDown) {
+                isMouseDown = false;
+                if (viewport) viewport.style.cursor = "grab";
+                if (svgWrapper) svgWrapper.style.transition = "transform 0.05s ease-out";
+                setTimeout(() => { hasDraggedMap = false; }, 50);
+            }
         };
     }
 }
@@ -560,6 +586,8 @@ function resetTheaterTransform() {
     theaterZoom = 1;
     theaterPanX = 0;
     theaterPanY = 0;
+    const svgWrapper = document.getElementById("theater-svg-wrapper");
+    if (svgWrapper) svgWrapper.style.transition = "transform 0.25s ease";
     applyTheaterTransform();
 }
 
