@@ -11,7 +11,107 @@ export let trackStats = {
     dwellWarningCount: 0
 };
 
-let hasDraggedMap = false;
+export let commodityRules = {
+    categories: [
+        {
+            id: "bad_order",
+            name: "Bad Order / O.S.",
+            color: "#ef4444",
+            keywords: ["B.O", "BAD ORDER", "O.S", "O.S.", "OS", "DEFECT", "REPAIR"],
+            description: "Bad order cars and out of service track turnouts."
+        },
+        {
+            id: "blend_bof",
+            name: "Blend / BOF",
+            color: "#00f0ff",
+            keywords: ["BLEND", "BOF", "MH82", "MH81", "MH97", "SMS", "MSA"],
+            description: "Active blend loading, BOF heats, and mill charges."
+        },
+        {
+            id: "up",
+            name: "UP (Hot Rail / Plate)",
+            color: "#f97316",
+            keywords: ["UP", "HOT RAIL", "SLAB", "SLABS", "ONE CUT", "ONE CUTS", "PLATE", "COBBLE", "HEAVY TRIM", "LIGHT TRIM", "TRIM", "SMASH", "COIL", "COILS", "SCALE", "NOTICE", "MILL SCALE", "SPEAR"],
+            description: "Hot rail slabs, plate, cobble, coils, smash, and steel trim products."
+        },
+        {
+            id: "dl",
+            name: "DL (Direct Load / Scrap)",
+            color: "#c084fc",
+            keywords: ["DL", "DL'S", "DLS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            description: "Direct load scrap, slitter, sheets, baler scrap, P&S, and shred."
+        },
+        {
+            id: "ob_empty",
+            name: "OB / Empty",
+            color: "#22c55e",
+            keywords: ["EMPTY", "CLEAR", "MTY", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
+            description: "Outbound loads, empty flats, and cleared tracks."
+        },
+        {
+            id: "raw_materials",
+            name: "Raw Materials / HBI",
+            color: "#38bdf8",
+            keywords: ["HBI", "ORE", "PELLETS", "COAL", "COKE", "LIMESTONE"],
+            description: "Raw charge materials, HBI, pellets, and flux."
+        }
+    ],
+    default_color: "#38bdf8"
+};
+
+export async function fetchCommodityRules() {
+    try {
+        const res = await fetch("assets/data/commodity_rules.json?t=" + new Date().getTime());
+        if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.categories)) {
+                commodityRules = data;
+            }
+        }
+    } catch (e) {
+        console.warn("Using default commodity rules:", e);
+    }
+}
+
+export function getCommodityCategory(track) {
+    if (!track) return { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+    if (track.is_bad_order) {
+        const boCat = commodityRules.categories.find(c => c.id === "bad_order");
+        return boCat || { id: "bad_order", name: "Bad Order", color: "#ef4444" };
+    }
+    if (track.is_clear || !track.cars || track.cars === 0) {
+        const obCat = commodityRules.categories.find(c => c.id === "ob_empty");
+        return obCat || { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+    }
+
+    const text = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+
+    for (const cat of commodityRules.categories) {
+        if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
+        for (const kw of cat.keywords) {
+            const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+            const reg = new RegExp(`\\b${escaped}\\b`, "i");
+            if (reg.test(text)) {
+                return cat;
+            }
+        }
+    }
+
+    return { id: "default", name: "Other / General", color: commodityRules.default_color || "#38bdf8" };
+}
+
+export function getCapacityBedColor(cars, capacity, isBadOrder = false) {
+    if (isBadOrder) return "rgba(239, 68, 68, 0.55)";
+    if (!cars || cars <= 0) return "rgba(148, 163, 184, 0.22)"; // subtle slate for clear
+    if (!capacity || capacity <= 0) capacity = 20;
+    const pct = (cars / capacity) * 100;
+    if (pct <= 25) return "rgba(56, 189, 248, 0.42)";  // subtle blue
+    if (pct <= 50) return "rgba(34, 197, 94, 0.42)";   // subtle green
+    if (pct <= 75) return "rgba(234, 179, 8, 0.48)";   // subtle yellow
+    if (pct <= 90) return "rgba(249, 115, 22, 0.52)";  // subtle orange
+    return "rgba(239, 68, 68, 0.6)";                   // subtle red
+}
+
 
 function extractTrackIdFromElement(el) {
     if (!el) return null;
@@ -21,7 +121,7 @@ function extractTrackIdFromElement(el) {
         clean = clean.replace(/^[nsew]curve[-_]/i, "");
         clean = clean.replace(/^track[-_]/i, "");
         clean = clean.replace(/^label[-_]/i, "");
-        clean = clean.replace(/[-_]\\d+$/, "");
+        clean = clean.replace(/[-_]\d+$/, "");
         return clean.toUpperCase();
     }
     const dataTrack = el.getAttribute("data-track");
@@ -29,7 +129,7 @@ function extractTrackIdFromElement(el) {
 
     const txt = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
     if (txt) {
-        const raw = txt.textContent.trim().replace(/\\s*\\(.*\\)/, "").toUpperCase();
+        const raw = txt.textContent.trim().replace(/\s*\(.*\)/, "").toUpperCase();
         return raw;
     }
     return null;
@@ -49,17 +149,6 @@ function formatSwitchTitle(idStr) {
         return `Switch: Track ${parts[0]} / Track ${parts[1]}${dir ? " (" + dir + ")" : ""}`;
     }
     return `Switch: ${clean}${dir ? " (" + dir + ")" : ""}`;
-}
-
-export function getCarColor(cars, capacity, isBadOrder = false) {
-    if (isBadOrder) return "#ef4444"; // Bad order is always red
-    if (!capacity || capacity <= 0) capacity = 20;
-    const pct = (cars / capacity) * 100;
-    if (pct <= 25) return "#38bdf8";      // Blue
-    if (pct <= 50) return "#22c55e";      // Green
-    if (pct <= 75) return "#eab308";      // Yellow
-    if (pct <= 90) return "#f97316";      // Orange
-    return "#ef4444";                     // Red (>90%)
 }
 
 function getElementExactLength(el) {
@@ -110,6 +199,7 @@ export function getCarDasharray(el, cars, capacity) {
 
 export async function fetchTracks() {
     try {
+        await fetchCommodityRules();
         const res = await fetch("assets/data/tracks.json?t=" + new Date().getTime());
         if (res.ok) {
             cachedTracks = await res.json();
@@ -250,6 +340,11 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.classList.add("yard-track-line");
             el.style.cursor = "pointer";
 
+            const cap = data.capacity || 20;
+            const bedColor = getCapacityBedColor(data.cars, cap, data.is_bad_order);
+            el.style.setProperty("stroke", bedColor, "important");
+            el.style.setProperty("stroke-width", "2.8px", "important");
+
             // If track is occupied with cars, create overlay path with exact car count dashes
             const isMainTrack = (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""));
             if (isMainTrack && data.cars > 0 && !data.is_clear) {
@@ -258,18 +353,18 @@ function bindSvgInteractivity(container, isTheater = false) {
                 overlay.classList.remove("yard-track-line");
                 overlay.classList.add("train-car-overlay");
 
-                const cap = data.capacity || 20;
-                const carColor = getCarColor(data.cars, cap, data.is_bad_order);
+                const commCat = getCommodityCategory(data);
+                const carColor = commCat.color;
                 const dashPattern = getCarDasharray(el, data.cars, cap);
 
                 overlay.style.setProperty("stroke", carColor, "important");
-                overlay.style.setProperty("stroke-width", "4.5px", "important");
+                overlay.style.setProperty("stroke-width", "4.8px", "important");
                 overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
                 overlay.style.setProperty("stroke-linecap", "butt", "important");
                 overlay.style.setProperty("fill", "none", "important");
                 overlay.style.pointerEvents = "auto";
                 overlay.style.cursor = "pointer";
-                overlay.style.filter = `drop-shadow(0 0 4px ${carColor})`;
+                overlay.style.filter = `drop-shadow(0 0 5px ${carColor})`;
 
                 overlay.onclick = (e) => {
                     if (hasDraggedMap) return;
@@ -301,7 +396,8 @@ function bindSvgInteractivity(container, isTheater = false) {
 
         if (data) {
             const cap = data.capacity || 20;
-            const badgeColor = data.is_clear ? "#10b981" : getCarColor(data.cars, cap, data.is_bad_order);
+            const commCat = getCommodityCategory(data);
+            const badgeColor = data.is_clear ? "#22c55e" : (data.is_bad_order ? "#ef4444" : commCat.color);
 
             if (data.is_clear) el.classList.add("badge-clear");
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
@@ -611,16 +707,16 @@ function showTrackHoverTooltip(e, track) {
         document.body.appendChild(hoverTooltipEl);
     }
     
+    const commCat = getCommodityCategory(track);
     let capText = "";
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
-        const col = getCarColor(track.cars, track.capacity, track.is_bad_order);
-        capText = `<br><span style="color: ${col}; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
+        capText = `<br><span style="color: ${commCat.color}; font-weight: 600; font-size: 0.75rem;">📦 ${commCat.name}</span> &bull; <span style="color: #94a3b8; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
     }
 
     hoverTooltipEl.innerHTML = `
         <strong>${track.name}</strong>: ${track.is_clear ? "CLEAR" : track.cars + " Cars"}<br>
-        <span style="color: #94a3b8; font-size: 0.8rem;">${track.commodity || "Empty"}</span>
+        <span style="color: #cbd5e1; font-size: 0.8rem;">${track.commodity || "Empty"}</span>
         ${capText}
         ${track.dwell_warning ? `<br><span style="color: #f59e0b; font-size: 0.75rem;">⚠️ ${track.dwell_days}d Dwell</span>` : ""}
     `;
@@ -654,6 +750,7 @@ let theaterZoom = 1;
 let theaterPanX = 0;
 let theaterPanY = 0;
 let showBuildings = true;
+let hasDraggedMap = false;
 
 export async function openExpandedTrackMap() {
     let theater = document.getElementById("trackmap-theater-modal");
@@ -699,6 +796,9 @@ export async function openExpandedTrackMap() {
                     ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
                 </div>
                 <div class="theater-controls-group">
+                    <button id="btn-toggle-legend" class="theater-btn" title="Toggle Commodity & Capacity Legend">
+                        <i class="fa-solid fa-palette"></i> Legend
+                    </button>
                     <button id="btn-toggle-bld" class="theater-btn ${showBuildings ? "active" : ""}" title="Toggle Building Outlines">
                         <i class="fa-solid fa-building"></i> Buildings
                     </button>
@@ -711,6 +811,34 @@ export async function openExpandedTrackMap() {
                 </div>
             </div>
             <div class="track-theater-viewport" id="theater-viewport">
+                <div id="theater-legend-panel" class="theater-legend-panel" style="display: none;">
+                    <div class="legend-header">
+                        <h4><i class="fa-solid fa-palette"></i> Commodity & Bed Legend</h4>
+                        <button id="btn-close-legend-panel">&times;</button>
+                    </div>
+                    <div class="legend-section">
+                        <div class="legend-section-title">Train Railcars (Dashes)</div>
+                        <div class="legend-grid">
+                            ${commodityRules.categories.map(c => `
+                                <div class="legend-item">
+                                    <span class="legend-swatch" style="background: ${c.color}; color: ${c.color};"></span>
+                                    <strong>${c.name}</strong>
+                                    <span class="desc">${(c.keywords || []).slice(0, 3).join(", ")}</span>
+                                </div>
+                            `).join("")}
+                        </div>
+                    </div>
+                    <div class="legend-section">
+                        <div class="legend-section-title">Track Bed Rail (Capacity Used)</div>
+                        <div class="legend-ramp">
+                            <div class="legend-ramp-step" style="background: rgba(56, 189, 248, 0.4); color: #38bdf8;">0-25%</div>
+                            <div class="legend-ramp-step" style="background: rgba(34, 197, 94, 0.4); color: #22c55e;">26-50%</div>
+                            <div class="legend-ramp-step" style="background: rgba(234, 179, 8, 0.45); color: #eab308;">51-75%</div>
+                            <div class="legend-ramp-step" style="background: rgba(249, 115, 22, 0.5); color: #f97316;">76-90%</div>
+                            <div class="legend-ramp-step" style="background: rgba(239, 68, 68, 0.6); color: #ef4444;">&gt;90% / BO</div>
+                        </div>
+                    </div>
+                </div>
                 <div id="theater-svg-wrapper" class="theater-svg-wrapper">
                     ${svgTemplateCache || "<div style='color:#fff;padding:40px;'>No vector track map available.</div>"}
                 </div>
@@ -733,6 +861,23 @@ export async function openExpandedTrackMap() {
     const btnClose = document.getElementById("btn-close-theater");
     const btnReset = document.getElementById("btn-reset-zoom");
     const btnToggleBld = document.getElementById("btn-toggle-bld");
+    const btnToggleLegend = document.getElementById("btn-toggle-legend");
+    const legendPanel = document.getElementById("theater-legend-panel");
+    const btnCloseLegend = document.getElementById("btn-close-legend-panel");
+
+    if (btnToggleLegend && legendPanel) {
+        btnToggleLegend.onclick = () => {
+            const isHidden = legendPanel.style.display === "none";
+            legendPanel.style.display = isHidden ? "block" : "none";
+            btnToggleLegend.classList.toggle("active", isHidden);
+        };
+    }
+    if (btnCloseLegend && legendPanel && btnToggleLegend) {
+        btnCloseLegend.onclick = () => {
+            legendPanel.style.display = "none";
+            btnToggleLegend.classList.remove("active");
+        };
+    }
 
     if (btnClose) btnClose.onclick = closeExpandedTrackMap;
     if (btnReset) btnReset.onclick = resetTheaterTransform;

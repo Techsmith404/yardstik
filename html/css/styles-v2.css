@@ -1255,14 +1255,14 @@ body.desktop-mode .desktop-reminder-header {
 
 /* Yard Track Vector Lines & Train Car Dashes */
 .yard-track-line {
-    stroke: rgba(148, 163, 184, 0.22) !important;
-    stroke-width: 2px !important;
-    stroke-dasharray: none !important;
+    stroke: rgba(148, 163, 184, 0.22);
+    stroke-width: 2px;
+    stroke-dasharray: none;
     transition: stroke 0.3s ease, stroke-width 0.2s ease, filter 0.2s ease;
 }
 .yard-track-line:hover {
-    stroke: rgba(148, 163, 184, 0.65) !important;
-    stroke-width: 3.5px !important;
+    stroke-width: 3.5px;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
 }
 
 .train-car-overlay {
@@ -1327,8 +1327,8 @@ g.badge-rect, .badge-rect {
 .badge-dwell .badge-rect { fill: rgba(245, 158, 11, 0.3) !important; stroke: #f59e0b !important; }
 .badge-dwell .badge-text { fill: #f59e0b !important; }
 
-.badge-occ .badge-rect { fill: rgba(56, 189, 248, 0.25) !important; stroke: #38bdf8 !important; }
-.badge-occ .badge-text { fill: #38bdf8 !important; }
+.badge-occ .badge-rect { fill: rgba(56, 189, 248, 0.25); stroke: #38bdf8; }
+.badge-occ .badge-text { fill: #38bdf8; }
 
 /* Track Map Fullscreen Theater Mode */
 .clickable-trackmap {
@@ -1502,6 +1502,126 @@ g.badge-rect, .badge-rect {
     color: #94a3b8;
     font-size: 0.8rem;
     pointer-events: none;
+}
+
+/* Floating Commodity & Capacity Legend */
+.theater-legend-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.2);
+    backdrop-filter: blur(12px);
+    padding: 16px;
+    z-index: 100;
+    animation: fadeInLegend 0.2s ease-out;
+}
+
+@keyframes fadeInLegend {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.legend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+.legend-header h4 {
+    margin: 0;
+    color: #38bdf8;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-header button {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.legend-header button:hover {
+    color: #ef4444;
+}
+
+.legend-section {
+    margin-bottom: 14px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.legend-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: #cbd5e1;
+}
+
+.legend-item strong {
+    color: #fff;
+    min-width: 100px;
+}
+
+.legend-item span.desc {
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.legend-swatch {
+    width: 16px;
+    height: 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.legend-ramp {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 18px;
+    background: #1e293b;
+    margin-top: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.legend-ramp-step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
 }
 
 
