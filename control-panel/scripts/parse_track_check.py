@@ -3,7 +3,7 @@
 YardStik Universal Track Check Parser Engine
 Parses standard CSV/Excel (.xlsx, .xls, .csv) templates, tabular sheets, and multi-column grid layouts.
 Integrates vector SVG track capacities and handles locomotive engine tallies, parenthetical breakdowns,
-and flexible multi-item conductor syntax.
+and flexible multi-line conductor notes (e.g. FRESH, AUDIT).
 Outputs normalized JSON array to /data/tracks.json (or local assets).
 """
 
@@ -288,37 +288,53 @@ def parse_grid_layout(rows, svg_caps):
         by_col.setdefault(tp["col"], []).append(tp)
 
     tracks = []
+    stop_sections = ["BOF", "O.S.", "RO:", "SUPERVISOR", "SHIFT", "COMPANY", "SITE", "STATE"]
 
     for c_idx, tps in by_col.items():
         content_cols = [c_idx + 1] if c_idx == 0 else [c for c in range(c_idx + 1, c_idx + 6)]
 
         for i, tp in enumerate(tps):
             start_r = tp["row"]
-            end_r = tps[i+1]["row"] if (i + 1 < len(tps)) else (start_r + 5)
+            end_r = tps[i+1]["row"] if (i + 1 < len(tps)) else (start_r + 6)
 
-            text_lines = []
+            raw_lines = []
             if tp["extra"]:
-                text_lines.append(tp["extra"])
+                raw_lines.append(tp["extra"])
 
             for r in range(start_r, min(end_r, len(rows))):
                 row = rows[r]
+                # Check for non-track section boundary
+                c0_val = str(row[c_idx] or "").strip().upper()
+                if r > start_r and any(c0_val.startswith(s) for s in stop_sections):
+                    break
+
                 for cc in content_cols:
                     if cc < len(row):
                         v = str(row[cc] or "").strip()
-                        if v and v not in ["None", "AUDIT", "."]:
-                            text_lines.append(v)
+                        if v and v not in ["None", "."]:
+                            raw_lines.append(v)
 
-            raw_text = " ".join(text_lines).strip()
+            if not raw_lines:
+                comm = "Empty"
+                notes = ""
+            elif len(raw_lines) == 1:
+                comm = raw_lines[0]
+                notes = raw_lines[0]
+            else:
+                comm = raw_lines[0]
+                notes = ", ".join(raw_lines[1:])
 
-            is_clear = not raw_text or raw_text.upper() in ["CLEAR", "EMPTY"]
-            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", raw_text, re.I)) and (tp["id"] != "22")
-            is_blend = bool(re.search(r"\bBLEND\b", raw_text, re.I))
+            full_text = " ".join(raw_lines).strip()
 
-            total_cars = extract_cars_from_text(tp["id"], raw_text)
+            is_clear = not full_text or full_text.upper() in ["CLEAR", "EMPTY"]
+            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", full_text, re.I)) and (tp["id"] != "22")
+            is_blend = bool(re.search(r"\bBLEND\b", full_text, re.I))
+
+            total_cars = extract_cars_from_text(tp["id"], full_text)
 
             dwell_days = 0
             dwell_warning = False
-            date_matches = re.findall(r"(?:FROM|DATED?)\s+(\d{1,2})/(\d{1,2})", raw_text, re.I)
+            date_matches = re.findall(r"(?:FROM|DATED?)\s+(\d{1,2})/(\d{1,2})", full_text, re.I)
             oldest_date_str = None
             if date_matches:
                 for m_str in date_matches:
@@ -345,8 +361,8 @@ def parse_grid_layout(rows, svg_caps):
                 "name": f"Track {tp['id']}",
                 "cars": 0 if is_clear else total_cars,
                 "capacity": cap,
-                "commodity": raw_text if not is_clear else "Empty",
-                "notes": raw_text,
+                "commodity": comm if not is_clear else "Empty",
+                "notes": notes,
                 "status": status,
                 "is_clear": is_clear,
                 "is_bad_order": is_bad_order,

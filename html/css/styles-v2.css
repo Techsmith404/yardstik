@@ -1261,10 +1261,51 @@ body.desktop-mode .desktop-reminder-header {
     stroke-width: 4px !important;
     filter: drop-shadow(0 0 8px #38bdf8);
 }
-.track-line-clear { stroke: #10b981 !important; stroke-opacity: 0.85; }
-.track-line-bo { stroke: #ef4444 !important; stroke-opacity: 0.95; }
-.track-line-blend { stroke: #00f0ff !important; stroke-opacity: 0.95; }
-.track-line-dwell { stroke: #f59e0b !important; stroke-opacity: 0.95; }
+.yard-track-line {
+    transition: stroke 0.3s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+.yard-track-line:hover {
+    stroke-width: 5px !important;
+    filter: drop-shadow(0 0 10px #38bdf8) !important;
+}
+.track-line-clear { 
+    stroke: #10b981 !important; 
+    stroke-width: 2px !important; 
+    stroke-opacity: 0.85; 
+    stroke-dasharray: none !important;
+}
+.track-line-occ { 
+    stroke: #38bdf8 !important; 
+    stroke-width: 3.5px !important; 
+    stroke-opacity: 0.95; 
+    stroke-dasharray: 12 3 !important; 
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.45));
+}
+.track-line-bo { 
+    stroke: #ef4444 !important; 
+    stroke-width: 3.5px !important; 
+    stroke-opacity: 0.95; 
+    stroke-dasharray: 12 3 !important;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+}
+.track-line-blend { 
+    stroke: #00f0ff !important; 
+    stroke-width: 3.5px !important; 
+    stroke-opacity: 0.95; 
+    stroke-dasharray: 12 3 !important;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.5));
+}
+.track-line-dwell { 
+    stroke: #f59e0b !important; 
+    stroke-width: 3.5px !important; 
+    stroke-opacity: 0.95; 
+    stroke-dasharray: 12 3 !important;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+}
 
 .yard-switch-point {
     transition: r 0.2s ease, filter 0.2s ease;
@@ -1305,6 +1346,9 @@ g.badge-rect, .badge-rect {
 
 .badge-dwell .badge-rect { fill: rgba(245, 158, 11, 0.3) !important; stroke: #f59e0b !important; }
 .badge-dwell .badge-text { fill: #f59e0b !important; }
+
+.badge-occ .badge-rect { fill: rgba(56, 189, 248, 0.25) !important; stroke: #38bdf8 !important; }
+.badge-occ .badge-text { fill: #38bdf8 !important; }
 
 /* Track Map Fullscreen Theater Mode */
 .clickable-trackmap {

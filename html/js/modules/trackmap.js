@@ -192,6 +192,7 @@ function bindSvgInteractivity(container, isTheater = false) {
             else if (data.is_bad_order) el.classList.add("track-line-bo");
             else if (data.is_blend) el.classList.add("track-line-blend");
             else if (data.dwell_warning) el.classList.add("track-line-dwell");
+            else el.classList.add("track-line-occ");
 
             el.style.cursor = "pointer";
             el.onclick = (e) => {
@@ -216,6 +217,7 @@ function bindSvgInteractivity(container, isTheater = false) {
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
             else if (data.is_blend) el.classList.add("badge-blend");
             else if (data.dwell_warning) el.classList.add("badge-dwell");
+            else el.classList.add("badge-occ");
 
             const textEl = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
             const rect = el.querySelector("rect");
@@ -353,7 +355,7 @@ export function showTrackModal(track) {
                 ${track.notes && track.notes !== track.commodity ? `
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Shift Conductor Notes:</span>
-                    <span class="modal-detail-val" style="color: var(--text-secondary); font-style: italic;">${track.notes}</span>
+                    <span class="modal-detail-val" style="color: #38bdf8; font-weight: 600;">📝 ${track.notes}</span>
                 </div>` : ""}
                 ${track.oldest_inbound_date ? `
                 <div class="modal-detail-row">
