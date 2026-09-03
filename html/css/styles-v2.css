@@ -1253,6 +1253,27 @@ body.desktop-mode .desktop-reminder-header {
 .track-card-commodity { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-card-dwell { font-size: 0.75rem; color: #f59e0b; margin-top: 4px; font-weight: 600; }
 
+/* Yard Track Vector Lines & Switches */
+.yard-track-line {
+    transition: stroke 0.3s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+.yard-track-line:hover {
+    stroke-width: 4px !important;
+    filter: drop-shadow(0 0 8px #38bdf8);
+}
+.track-line-clear { stroke: #10b981 !important; stroke-opacity: 0.85; }
+.track-line-bo { stroke: #ef4444 !important; stroke-opacity: 0.95; }
+.track-line-blend { stroke: #00f0ff !important; stroke-opacity: 0.95; }
+.track-line-dwell { stroke: #f59e0b !important; stroke-opacity: 0.95; }
+
+.yard-switch-point {
+    transition: r 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+}
+.yard-switch-point:hover {
+    filter: drop-shadow(0 0 8px #f59e0b);
+}
+
 /* Track Map Fullscreen Theater Mode */
 .clickable-trackmap {
     cursor: zoom-in;

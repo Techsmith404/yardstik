@@ -1,6 +1,5 @@
 // YardStik Universal Interactive Track Map & Track Check Module
 import { cachedFeatures } from "./features.js";
-import { isDesktopMode } from "./config.js";
 
 export let cachedTracks = [];
 export let trackStats = {
@@ -8,7 +7,8 @@ export let trackStats = {
     badOrderCars: 0,
     blendCars: 0,
     clearTracksCount: 0,
-    dwellWarningCount: 0
+    dwellWarningCount: 0,
+    totalCapacity: 0
 };
 
 export async function fetchTracks() {
@@ -41,7 +41,8 @@ function calculateTrackStats() {
         badOrderCars: bo,
         blendCars: blend,
         clearTracksCount: clear,
-        dwellWarningCount: dwell
+        dwellWarningCount: dwell,
+        totalCapacity: 0
     };
     updateHeaderStats();
 }
@@ -74,7 +75,6 @@ export async function renderTrackMap() {
     const container = document.getElementById("trackmap-viewport");
     if (!container) return;
 
-    // Check if feature is enabled
     const isEnabled = cachedFeatures?.features?.track_map !== false;
     const widget = document.getElementById("widget-trackmap");
     if (widget) {
@@ -82,11 +82,9 @@ export async function renderTrackMap() {
     }
     if (!isEnabled) return;
 
-    // Make widget clickable to expand on desktop
     container.classList.add("clickable-trackmap");
     container.onclick = (e) => {
-        // If clicking background or map, expand full screen
-        if (!e.target.closest("g[data-track]")) {
+        if (!e.target.closest("[id*='track'], [id*='label'], g[data-track]")) {
             openExpandedTrackMap();
         }
     };
@@ -125,48 +123,85 @@ function bindSvgInteractivity(container, isTheater = false) {
         trackMap[t.id.toUpperCase()] = t;
     });
 
-    const badgeGroups = svg.querySelectorAll("g[data-track], g[transform]");
-    badgeGroups.forEach(g => {
-        let trackId = g.getAttribute("data-track");
+    // 1. Hook Track Lines (IDs like track-23, track_23, or class track)
+    const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], path.track, polyline.track, line.track");
+    trackLineElements.forEach(el => {
+        const idAttr = el.getAttribute("id") || "";
+        const rawId = idAttr.replace(/^track[-_]/i, "").toUpperCase();
+        const data = trackMap[rawId];
+        
+        // Read data-capacity if provided in SVG
+        const capacityAttr = el.getAttribute("data-capacity") || el.dataset?.capacity;
+        if (capacityAttr && data) {
+            data.capacity = parseInt(capacityAttr, 10);
+        }
+
+        if (data) {
+            el.classList.add("yard-track-line");
+            if (data.is_clear) el.classList.add("track-line-clear");
+            else if (data.is_bad_order) el.classList.add("track-line-bo");
+            else if (data.is_blend) el.classList.add("track-line-blend");
+            else if (data.dwell_warning) el.classList.add("track-line-dwell");
+
+            el.style.cursor = "pointer";
+            el.onclick = (e) => {
+                e.stopPropagation();
+                showTrackModal(data);
+            };
+            el.onmouseenter = (e) => showTrackHoverTooltip(e, data);
+            el.onmouseleave = hideTrackHoverTooltip;
+        }
+    });
+
+    // 2. Hook Labels / Badges (IDs like label-23, label_23, or data-track, or text content)
+    const labelElements = svg.querySelectorAll("[id^='label-'], [id^='label_'], g[data-track], g[transform]");
+    labelElements.forEach(el => {
+        const idAttr = el.getAttribute("id") || "";
+        let trackId = idAttr ? idAttr.replace(/^label[-_]/i, "").toUpperCase() : el.getAttribute("data-track");
+        
         if (!trackId) {
-            const txt = g.querySelector("text");
-            if (txt) trackId = txt.textContent.trim().toUpperCase();
+            const txt = el.querySelector("text") || (el.tagName.toLowerCase() === "text" ? el : null);
+            if (txt) {
+                const clean = txt.textContent.trim().replace(/\s*\(.*\)/, "").toUpperCase();
+                if (trackMap[clean]) trackId = clean;
+            }
         }
         if (!trackId) return;
 
         const data = trackMap[trackId.toUpperCase()];
         if (data) {
-            if (data.is_clear) {
-                g.classList.add("badge-clear");
-            } else if (data.is_bad_order) {
-                g.classList.add("badge-bad-order");
-            } else if (data.is_blend) {
-                g.classList.add("badge-blend");
-            } else if (data.dwell_warning) {
-                g.classList.add("badge-dwell");
-            }
+            if (data.is_clear) el.classList.add("badge-clear");
+            else if (data.is_bad_order) el.classList.add("badge-bad-order");
+            else if (data.is_blend) el.classList.add("badge-blend");
+            else if (data.dwell_warning) el.classList.add("badge-dwell");
 
-            const textEl = g.querySelector("text");
+            const textEl = el.querySelector("text") || (el.tagName.toLowerCase() === "text" ? el : null);
             if (textEl && data.cars > 0) {
                 textEl.textContent = `${trackId} (${data.cars})`;
-                const rect = g.querySelector("rect");
+                const rect = el.querySelector("rect");
                 if (rect) {
                     rect.setAttribute("width", "36");
                     rect.setAttribute("x", "-18");
                 }
             }
 
-            g.onclick = (e) => {
+            el.style.cursor = "pointer";
+            el.onclick = (e) => {
                 e.stopPropagation();
                 showTrackModal(data);
             };
+            el.onmouseenter = (e) => showTrackHoverTooltip(e, data);
+            el.onmouseleave = hideTrackHoverTooltip;
+        }
+    });
 
-            g.onmouseenter = (e) => {
-                showTrackHoverTooltip(e, data);
-            };
-            g.onmouseleave = () => {
-                hideTrackHoverTooltip();
-            };
+    // 3. Hook Switch Points (IDs like switch-23-24)
+    const switchElements = svg.querySelectorAll("[id^='switch-'], [id^='switch_'], circle.switch-point");
+    switchElements.forEach(sw => {
+        const idAttr = sw.getAttribute("id") || "";
+        sw.classList.add("yard-switch-point");
+        if (idAttr) {
+            sw.setAttribute("title", `Switch: ${idAttr.replace(/^switch[-_]/i, "").replace("-", " ⇄ ")}`);
         }
     });
 }
@@ -222,6 +257,23 @@ export function showTrackModal(track) {
                     ? `<span class="modal-status-badge status-dwell">⚠️ DWELL WARNING (${track.dwell_days} DAYS)</span>`
                     : `<span class="modal-status-badge status-occ">⚪ OCCUPIED</span>`)));
 
+    let capacityInfo = "";
+    if (track.capacity) {
+        const pct = Math.round((track.cars / track.capacity) * 100);
+        const barColor = pct > 90 ? "#ef4444" : (pct > 75 ? "#f59e0b" : "#38bdf8");
+        capacityInfo = `
+            <div class="modal-detail-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                    <span class="modal-detail-label">Track Capacity Utilization:</span>
+                    <span style="font-weight: bold; color: ${barColor};">${track.cars} / ${track.capacity} Cars (${pct}%)</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: ${barColor}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+        `;
+    }
+
     modal.innerHTML = `
         <div class="track-modal-card">
             <div class="track-modal-header">
@@ -234,6 +286,7 @@ export function showTrackModal(track) {
                     <span class="modal-detail-label">Car Count:</span>
                     <span class="modal-detail-val" style="font-size: 1.3rem; font-weight: bold; color: #38bdf8;">${track.cars} Cars</span>
                 </div>
+                ${capacityInfo}
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Contents / Commodity:</span>
                     <span class="modal-detail-val">${track.commodity || "None"}</span>
@@ -262,9 +315,17 @@ function showTrackHoverTooltip(e, track) {
         hoverTooltipEl.className = "track-hover-tooltip";
         document.body.appendChild(hoverTooltipEl);
     }
+    
+    let capText = "";
+    if (track.capacity) {
+        const pct = Math.round((track.cars / track.capacity) * 100);
+        capText = `<br><span style="color: #38bdf8; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
+    }
+
     hoverTooltipEl.innerHTML = `
         <strong>${track.name}</strong>: ${track.is_clear ? "CLEAR" : track.cars + " Cars"}<br>
         <span style="color: #94a3b8; font-size: 0.8rem;">${track.commodity || "Empty"}</span>
+        ${capText}
         ${track.dwell_warning ? `<br><span style="color: #f59e0b; font-size: 0.75rem;">⚠️ ${track.dwell_days}d Dwell</span>` : ""}
     `;
     hoverTooltipEl.style.left = (e.pageX + 12) + "px";
@@ -296,7 +357,6 @@ export async function openExpandedTrackMap() {
         theater.className = "track-theater-backdrop";
         document.body.appendChild(theater);
 
-        // Global Esc key to close
         window.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && isTheaterOpen) {
                 closeExpandedTrackMap();
@@ -374,7 +434,6 @@ export async function openExpandedTrackMap() {
         applyBuildingVisibility();
     }
 
-    // Pan & Zoom Event Listeners
     if (viewport && svgWrapper) {
         viewport.onwheel = (e) => {
             e.preventDefault();
@@ -384,7 +443,7 @@ export async function openExpandedTrackMap() {
         };
 
         viewport.onmousedown = (e) => {
-            if (e.target.closest("g[data-track]") || e.target.closest("button")) return;
+            if (e.target.closest("[id*='track'], [id*='label'], button")) return;
             isPanning = true;
             startPanX = e.clientX - theaterPanX;
             startPanY = e.clientY - theaterPanY;
@@ -432,9 +491,9 @@ function resetTheaterTransform() {
 function applyBuildingVisibility() {
     const svgWrapper = document.getElementById("theater-svg-wrapper");
     if (!svgWrapper) return;
-    const buildings = svgWrapper.querySelectorAll("rect.yard-building, circle.yard-building, g.yard-building, [style*='fill:']");
+    const buildings = svgWrapper.querySelectorAll("[id*='building'], .building, [class*='yard-building'], rect[style*='fill:']:not(.badge-rect)");
     buildings.forEach(b => {
-        if (!b.closest("g[data-track]") && !b.classList.contains("badge-rect")) {
+        if (!b.closest("[id*='track']") && !b.closest("[id*='label']")) {
             b.style.display = showBuildings ? "" : "none";
         }
     });
