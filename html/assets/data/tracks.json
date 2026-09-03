@@ -90,7 +90,15 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "os_switches": [],
+    "os_switches": [
+      {
+        "tracks": [
+          "24"
+        ],
+        "dir": "S",
+        "raw": "SWITCH OS AT S/END"
+      }
+    ],
     "updated_at": "2026-09-02T00:00:00"
   },
   {
@@ -304,9 +312,9 @@
     "capacity": 14,
     "commodity": "11 - HEAVY TRIM",
     "notes": "45/70 E/END O.S.",
-    "status": "bad_order",
+    "status": "occupied",
     "is_clear": false,
-    "is_bad_order": true,
+    "is_bad_order": false,
     "is_blend": false,
     "dwell_days": 0,
     "dwell_warning": false,
@@ -496,12 +504,12 @@
   {
     "id": "95",
     "name": "Track 95",
-    "cars": 1,
+    "cars": 0,
     "capacity": 20,
-    "commodity": "CLEAR",
+    "commodity": "Empty",
     "notes": "#512",
-    "status": "occupied",
-    "is_clear": false,
+    "status": "clear",
+    "is_clear": true,
     "is_bad_order": false,
     "is_blend": false,
     "dwell_days": 0,
@@ -602,9 +610,9 @@
     "capacity": 4,
     "commodity": "#1564 O.S.   #1211 O.S",
     "notes": "#1564 O.S.   #1211 O.S",
-    "status": "bad_order",
+    "status": "occupied",
     "is_clear": false,
-    "is_bad_order": true,
+    "is_bad_order": false,
     "is_blend": false,
     "dwell_days": 0,
     "dwell_warning": false,

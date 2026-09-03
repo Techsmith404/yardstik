@@ -18,24 +18,24 @@ EXCLUDE_WORDS = {"N", "S", "E", "W", "END", "CLEAR", "EMPTY", "BO", "OS", "SWITC
 def extract_switch_os(track_id, text):
     found = []
     # Pattern 1: 45/70 E/END O.S. or 21/22 SWITCH O.S.
-    for m in re.finditer(r"([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?.*?\b(O\.S\.?|OUT OF SERVICE)\b", text, re.I):
+    for m in re.finditer(r"([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?.*?\b(O\.S\.?|OUT OF SERVICE|OS)\b", text, re.I):
         t1, t2, dir_opt = m.group(1).upper(), m.group(2).upper(), (m.group(3) or "").upper()
         if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
             found.append({"tracks": [t1, t2], "dir": dir_opt, "raw": m.group(0).strip()})
 
     # Pattern 2: O.S AT 21/22 SWITCH
-    for m in re.finditer(r"\b(O\.S\.?|OUT OF SERVICE)\b.*?(?:AT|ON)\s+([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?", text, re.I):
+    for m in re.finditer(r"\b(O\.S\.?|OUT OF SERVICE|OS)\b.*?(?:AT|ON)\s+([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?", text, re.I):
         t1, t2, dir_opt = m.group(2).upper(), m.group(3).upper(), (m.group(4) or "").upper()
         if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
             if not any(f["tracks"] == [t1, t2] for f in found):
                 found.append({"tracks": [t1, t2], "dir": dir_opt, "raw": m.group(0).strip()})
 
     # Pattern 3: SWITCH OS AT S/END or SWITCH O.S. AT N/END
-    for m in re.finditer(r"\bSWITCH\s+(?:O\.S\.?|OUT OF SERVICE)\s+(?:AT|ON)\s+([NSEW])(?:/END|\s+END)?", text, re.I):
+    for m in re.finditer(r"\bSWITCH\s+(?:O\.S\.?|OUT OF SERVICE|OS)\s+(?:AT|ON)?\s*([NSEW])(?:/END|\s+END)?", text, re.I):
         dir_opt = m.group(1).upper()
         found.append({"tracks": [track_id], "dir": dir_opt, "raw": m.group(0).strip()})
 
-    for m in re.finditer(r"\b(?:O\.S\.?|OUT OF SERVICE)\s+(?:AT|ON)\s+([NSEW])(?:/END|\s+END)?\s+SWITCH", text, re.I):
+    for m in re.finditer(r"\b(?:O\.S\.?|OUT OF SERVICE|OS)\s+(?:AT|ON)?\s*([NSEW])(?:/END|\s+END)?\s+SWITCH", text, re.I):
         dir_opt = m.group(1).upper()
         found.append({"tracks": [track_id], "dir": dir_opt, "raw": m.group(0).strip()})
 
@@ -168,18 +168,22 @@ def parse_matrix(rows, svg_caps=None):
     if svg_caps is None:
         svg_caps = {}
 
-    # Check for standard table headers in top 5 rows
     for r_idx, r in enumerate(rows[:5]):
         h_row = [str(cell or '').strip().lower() for cell in r]
         if any('track' in h for h in h_row) and any('car' in h or 'count' in h or 'commodity' in h for h in h_row):
             return parse_standard_table(rows, r_idx, h_row, svg_caps)
 
-    # Multi-column grid / legacy track layout parser
     return parse_grid_layout(rows, svg_caps)
 
 def extract_cars_from_text(track_id, raw_text):
     if not raw_text or raw_text.upper() in ["CLEAR", "EMPTY"]:
         return 0
+    # Solely switch notes means 0 cars
+    if re.search(r"\bSWITCH\s+(?:O\.S\.?|OUT OF SERVICE|OS)\b", raw_text, re.I) and not re.search(r"\d+\s*[-–]", raw_text):
+        return 0
+    if re.search(r"^\s*(?:SWITCH\s+)?(?:O\.S\.?|OUT OF SERVICE|OS)\s+(?:AT|ON)?\s*[NSEW]?(?:/END|\s+END)?\s*$", raw_text, re.I):
+        return 0
+
     engine_nums = re.findall(r"#(\d+)", raw_text)
     if track_id in ["Y", "RO"] and engine_nums:
         return len(engine_nums)
@@ -198,7 +202,7 @@ def extract_cars_from_text(track_id, raw_text):
             if val:
                 nums.append(int(val))
                 break
-    return sum(nums) if nums else 1
+    return sum(nums) if nums else 0
 
 def parse_standard_table(rows, header_row_idx, header, svg_caps):
     track_col = next(i for i, h in enumerate(header) if 'track' in h)
@@ -354,11 +358,10 @@ def parse_grid_layout(rows, svg_caps):
 
             full_text = " ".join(raw_lines).strip()
 
-            is_clear = not full_text or full_text.upper() in ["CLEAR", "EMPTY"]
-            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", full_text, re.I)) and (tp["id"] != "22")
-            is_blend = bool(re.search(r"\bBLEND\b", full_text, re.I))
-
             total_cars = extract_cars_from_text(tp["id"], full_text)
+            is_clear = (total_cars == 0) or not full_text or full_text.upper() in ["CLEAR", "EMPTY"]
+            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER)\b", full_text, re.I)) and (tp["id"] != "22")
+            is_blend = bool(re.search(r"\bBLEND\b", full_text, re.I))
 
             dwell_days = 0
             dwell_warning = False
