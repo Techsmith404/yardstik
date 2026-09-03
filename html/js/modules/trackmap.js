@@ -62,14 +62,42 @@ export function getCarColor(cars, capacity, isBadOrder = false) {
     return "#ef4444";                     // Red (>90%)
 }
 
-export function getCarDasharray(cars, capacity) {
+function getElementExactLength(el) {
+    if (!el) return 500;
+    try {
+        if (typeof el.getTotalLength === "function") {
+            const len = el.getTotalLength();
+            if (len > 0) return len;
+        }
+    } catch (e) {}
+
+    if (el.tagName && el.tagName.toLowerCase() === "polyline") {
+        const pointsAttr = el.getAttribute("points") || "";
+        const coords = pointsAttr.trim().split(/[\s,]+/).map(Number);
+        let total = 0;
+        for (let i = 0; i < coords.length - 3; i += 2) {
+            const dx = coords[i+2] - coords[i];
+            const dy = coords[i+3] - coords[i+1];
+            total += Math.hypot(dx, dy);
+        }
+        if (total > 0) return total;
+    }
+    return 600;
+}
+
+export function getCarDasharray(el, cars, capacity) {
     if (!cars || cars <= 0) return "none";
+    const totalLen = getElementExactLength(el);
     const cap = capacity || 20;
+    const unitLen = totalLen / cap;
+    const carLen = Math.max(unitLen * 0.65, 6);
+    const gapLen = Math.max(unitLen * 0.35, 4);
+
     const dashes = [];
     for (let i = 0; i < cars - 1; i++) {
-        dashes.push("0.76", "0.24");
+        dashes.push(carLen.toFixed(1), gapLen.toFixed(1));
     }
-    dashes.push("0.76", "1000");
+    dashes.push(carLen.toFixed(1), (totalLen * 3).toFixed(1));
     return dashes.join(" ");
 }
 
@@ -219,18 +247,18 @@ function bindSvgInteractivity(container, isTheater = false) {
             if (data.cars > 0 && !data.is_clear) {
                 const overlay = el.cloneNode(true);
                 overlay.removeAttribute("id");
+                overlay.classList.remove("yard-track-line");
                 overlay.classList.add("train-car-overlay");
 
                 const cap = data.capacity || 20;
                 const carColor = getCarColor(data.cars, cap, data.is_bad_order);
-                const dashPattern = getCarDasharray(data.cars, cap);
+                const dashPattern = getCarDasharray(el, data.cars, cap);
 
-                overlay.setAttribute("pathLength", cap.toString());
-                overlay.style.stroke = carColor;
-                overlay.style.strokeWidth = "3.5px";
-                overlay.style.strokeDasharray = dashPattern;
-                overlay.style.strokeLinecap = "round";
-                overlay.style.fill = "none";
+                overlay.style.setProperty("stroke", carColor, "important");
+                overlay.style.setProperty("stroke-width", "4.5px", "important");
+                overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
+                overlay.style.setProperty("stroke-linecap", "butt", "important");
+                overlay.style.setProperty("fill", "none", "important");
                 overlay.style.pointerEvents = "auto";
                 overlay.style.cursor = "pointer";
                 overlay.style.filter = `drop-shadow(0 0 4px ${carColor})`;
@@ -528,7 +556,7 @@ export async function openExpandedTrackMap() {
             <div class="track-theater-header">
                 <div class="theater-title-group">
                     <i class="fa-solid fa-train-subway" style="color: #38bdf8; font-size: 1.3rem;"></i>
-                    <h2 style="margin: 0; font-size: 1.25rem; color: #fff;">Yard Track Map & Dispatch Console</h2>
+                    <h2 style="margin: 0; font-size: 1.25rem; color: #fff;">YARD TRACK MAP</h2>
                     <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}${capText}</strong> Cars</span>
                     <span class="track-stat-pill pill-clear">🟢 <strong>${trackStats.clearTracksCount}</strong> Clear</span>
                     ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
