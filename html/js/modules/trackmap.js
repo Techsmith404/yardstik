@@ -1,5 +1,6 @@
 // YardStik Universal Interactive Track Map & Track Check Module
 import { cachedFeatures } from "./features.js";
+import { isDesktopMode } from "./config.js";
 
 export let cachedTracks = [];
 export let trackStats = {
@@ -17,6 +18,9 @@ export async function fetchTracks() {
             cachedTracks = await res.json();
             calculateTrackStats();
             renderTrackMap();
+            if (isTheaterOpen) {
+                updateTheaterMap();
+            }
         }
     } catch (e) {
         console.warn("Could not load tracks.json:", e);
@@ -50,7 +54,17 @@ function updateHeaderStats() {
             <span class="track-stat-pill pill-clear">🟢 <strong>${trackStats.clearTracksCount}</strong> Clear</span>
             ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
             ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
+            <button id="btn-trackmap-expand" class="trackmap-expand-btn" title="Expand Full Screen">
+                <i class="fa-solid fa-expand"></i> Expand
+            </button>
         `;
+        const expBtn = document.getElementById("btn-trackmap-expand");
+        if (expBtn) {
+            expBtn.onclick = (e) => {
+                e.stopPropagation();
+                openExpandedTrackMap();
+            };
+        }
     }
 }
 
@@ -68,6 +82,15 @@ export async function renderTrackMap() {
     }
     if (!isEnabled) return;
 
+    // Make widget clickable to expand on desktop
+    container.classList.add("clickable-trackmap");
+    container.onclick = (e) => {
+        // If clicking background or map, expand full screen
+        if (!e.target.closest("g[data-track]")) {
+            openExpandedTrackMap();
+        }
+    };
+
     try {
         if (!svgTemplateCache) {
             const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
@@ -78,7 +101,7 @@ export async function renderTrackMap() {
 
         if (svgTemplateCache) {
             container.innerHTML = svgTemplateCache;
-            bindSvgInteractivity(container);
+            bindSvgInteractivity(container, false);
         } else {
             renderFallbackCardGrid(container);
         }
@@ -88,23 +111,20 @@ export async function renderTrackMap() {
     }
 }
 
-function bindSvgInteractivity(container) {
+function bindSvgInteractivity(container, isTheater = false) {
     const svg = container.querySelector("svg");
     if (!svg) return;
 
-    // Make SVG scale responsively inside widget
     svg.setAttribute("width", "100%");
     svg.setAttribute("height", "100%");
     svg.style.maxHeight = "100%";
     svg.style.display = "block";
 
-    // Build lookup map
     const trackMap = {};
     cachedTracks.forEach(t => {
         trackMap[t.id.toUpperCase()] = t;
     });
 
-    // Find all badge groups
     const badgeGroups = svg.querySelectorAll("g[data-track], g[transform]");
     badgeGroups.forEach(g => {
         let trackId = g.getAttribute("data-track");
@@ -116,7 +136,6 @@ function bindSvgInteractivity(container) {
 
         const data = trackMap[trackId.toUpperCase()];
         if (data) {
-            // Apply dynamic status classes
             if (data.is_clear) {
                 g.classList.add("badge-clear");
             } else if (data.is_bad_order) {
@@ -127,10 +146,8 @@ function bindSvgInteractivity(container) {
                 g.classList.add("badge-dwell");
             }
 
-            // Append car count text if occupied
             const textEl = g.querySelector("text");
             if (textEl && data.cars > 0) {
-                // If there is space or tooltip
                 textEl.textContent = `${trackId} (${data.cars})`;
                 const rect = g.querySelector("rect");
                 if (rect) {
@@ -139,7 +156,6 @@ function bindSvgInteractivity(container) {
                 }
             }
 
-            // Interactive Tooltip / Modal Click
             g.onclick = (e) => {
                 e.stopPropagation();
                 showTrackModal(data);
@@ -260,4 +276,174 @@ function hideTrackHoverTooltip() {
     if (hoverTooltipEl) {
         hoverTooltipEl.style.display = "none";
     }
+}
+
+// ── Fullscreen Theater Mode Engine ──────────────────────────────────────────
+let isTheaterOpen = false;
+let theaterZoom = 1;
+let theaterPanX = 0;
+let theaterPanY = 0;
+let isPanning = false;
+let startPanX = 0;
+let startPanY = 0;
+let showBuildings = true;
+
+export async function openExpandedTrackMap() {
+    let theater = document.getElementById("trackmap-theater-modal");
+    if (!theater) {
+        theater = document.createElement("div");
+        theater.id = "trackmap-theater-modal";
+        theater.className = "track-theater-backdrop";
+        document.body.appendChild(theater);
+
+        // Global Esc key to close
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && isTheaterOpen) {
+                closeExpandedTrackMap();
+            }
+        });
+    }
+
+    if (!svgTemplateCache) {
+        try {
+            const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
+            if (res.ok) svgTemplateCache = await res.text();
+        } catch (e) {
+            console.warn("Could not load SVG for theater mode:", e);
+        }
+    }
+
+    theater.innerHTML = `
+        <div class="track-theater-container">
+            <div class="track-theater-header">
+                <div class="theater-title-group">
+                    <i class="fa-solid fa-train-subway" style="color: #38bdf8; font-size: 1.3rem;"></i>
+                    <h2 style="margin: 0; font-size: 1.25rem; color: #fff;">Yard Track Map & Dispatch Console</h2>
+                    <span class="track-stat-pill pill-total">🚂 <strong>${trackStats.totalCars}</strong> Cars</span>
+                    <span class="track-stat-pill pill-clear">🟢 <strong>${trackStats.clearTracksCount}</strong> Clear</span>
+                    ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
+                    ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
+                </div>
+                <div class="theater-controls-group">
+                    <button id="btn-toggle-bld" class="theater-btn ${showBuildings ? "active" : ""}" title="Toggle Building Outlines">
+                        <i class="fa-solid fa-building"></i> Buildings
+                    </button>
+                    <button id="btn-reset-zoom" class="theater-btn" title="Reset Zoom & Pan">
+                        <i class="fa-solid fa-arrows-to-dot"></i> Reset
+                    </button>
+                    <button id="btn-close-theater" class="theater-btn theater-btn-close" title="Close Fullscreen (Esc)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="track-theater-viewport" id="theater-viewport">
+                <div id="theater-svg-wrapper" class="theater-svg-wrapper">
+                    ${svgTemplateCache || "<div style='color:#fff;padding:40px;'>No vector track map available.</div>"}
+                </div>
+                <div class="theater-hint-bar">
+                    <span><i class="fa-solid fa-computer-mouse"></i> Scroll to Zoom | Drag to Pan | Click Track for Details</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    theater.style.display = "flex";
+    isTheaterOpen = true;
+    theaterZoom = 1;
+    theaterPanX = 0;
+    theaterPanY = 0;
+
+    const viewport = document.getElementById("theater-viewport");
+    const svgWrapper = document.getElementById("theater-svg-wrapper");
+    const btnClose = document.getElementById("btn-close-theater");
+    const btnReset = document.getElementById("btn-reset-zoom");
+    const btnToggleBld = document.getElementById("btn-toggle-bld");
+
+    if (btnClose) btnClose.onclick = closeExpandedTrackMap;
+    if (btnReset) btnReset.onclick = resetTheaterTransform;
+    if (btnToggleBld) {
+        btnToggleBld.onclick = () => {
+            showBuildings = !showBuildings;
+            btnToggleBld.classList.toggle("active", showBuildings);
+            applyBuildingVisibility();
+        };
+    }
+
+    if (svgWrapper) {
+        bindSvgInteractivity(svgWrapper, true);
+        applyBuildingVisibility();
+    }
+
+    // Pan & Zoom Event Listeners
+    if (viewport && svgWrapper) {
+        viewport.onwheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 1.15 : 0.85;
+            theaterZoom = Math.min(Math.max(0.6, theaterZoom * delta), 5);
+            applyTheaterTransform();
+        };
+
+        viewport.onmousedown = (e) => {
+            if (e.target.closest("g[data-track]") || e.target.closest("button")) return;
+            isPanning = true;
+            startPanX = e.clientX - theaterPanX;
+            startPanY = e.clientY - theaterPanY;
+            viewport.style.cursor = "grabbing";
+        };
+
+        window.onmousemove = (e) => {
+            if (!isPanning) return;
+            theaterPanX = e.clientX - startPanX;
+            theaterPanY = e.clientY - startPanY;
+            applyTheaterTransform();
+        };
+
+        window.onmouseup = () => {
+            isPanning = false;
+            if (viewport) viewport.style.cursor = "grab";
+        };
+    }
+}
+
+function updateTheaterMap() {
+    const svgWrapper = document.getElementById("theater-svg-wrapper");
+    if (svgWrapper && svgTemplateCache) {
+        svgWrapper.innerHTML = svgTemplateCache;
+        bindSvgInteractivity(svgWrapper, true);
+        applyBuildingVisibility();
+        applyTheaterTransform();
+    }
+}
+
+function applyTheaterTransform() {
+    const svgWrapper = document.getElementById("theater-svg-wrapper");
+    if (svgWrapper) {
+        svgWrapper.style.transform = `translate(${theaterPanX}px, ${theaterPanY}px) scale(${theaterZoom})`;
+    }
+}
+
+function resetTheaterTransform() {
+    theaterZoom = 1;
+    theaterPanX = 0;
+    theaterPanY = 0;
+    applyTheaterTransform();
+}
+
+function applyBuildingVisibility() {
+    const svgWrapper = document.getElementById("theater-svg-wrapper");
+    if (!svgWrapper) return;
+    const buildings = svgWrapper.querySelectorAll("rect.yard-building, circle.yard-building, g.yard-building, [style*='fill:']");
+    buildings.forEach(b => {
+        if (!b.closest("g[data-track]") && !b.classList.contains("badge-rect")) {
+            b.style.display = showBuildings ? "" : "none";
+        }
+    });
+}
+
+export function closeExpandedTrackMap() {
+    const theater = document.getElementById("trackmap-theater-modal");
+    if (theater) {
+        theater.style.display = "none";
+    }
+    isTheaterOpen = false;
 }
