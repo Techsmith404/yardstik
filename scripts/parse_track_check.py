@@ -2,6 +2,7 @@
 """
 YardStik Universal Track Check Parser Engine
 Parses standard CSV/Excel (.xlsx, .xls, .csv) templates, tabular sheets, and multi-column grid layouts.
+Integrates vector SVG track capacities and handles locomotive engine tallies and parenthetical breakdowns.
 Outputs normalized JSON array to /data/tracks.json (or local assets).
 """
 
@@ -10,6 +11,32 @@ import os
 import json
 import re
 from datetime import datetime
+
+def extract_svg_capacities():
+    """Reads SVG drawings and extracts data-capacity values for all track IDs."""
+    caps = {}
+    candidate_paths = [
+        "/data/track-map.svg",
+        "html/assets/data/track-map.svg",
+        "html/assets/images/track-map.svg",
+        "../html/assets/images/track-map.svg",
+        "../html/assets/data/track-map.svg"
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    svg_content = f.read()
+                    for m in re.finditer(r'id=[\'"]([^\'"]+)[\'"][^>]*data-capacity=[\'"](\d+)[\'"]', svg_content):
+                        cid, cap = m.group(1), int(m.group(2))
+                        tid = re.sub(r"^(?:track|label|ncurve|scurve|ecurve|wcurve)[-_]", "", cid, flags=re.I).upper()
+                        tid = re.sub(r"[-_]\d+$", "", tid)
+                        caps[tid] = cap
+                    if caps:
+                        break
+            except:
+                pass
+    return caps
 
 def load_sheet_matrix(file_path):
     """Loads spreadsheet cells into a 2D matrix, using openpyxl or pure python fallback."""
@@ -103,22 +130,25 @@ def parse_file(file_path):
     matrix_or_json = load_sheet_matrix(file_path)
     if isinstance(matrix_or_json, list) and len(matrix_or_json) > 0 and isinstance(matrix_or_json[0], dict):
         return matrix_or_json
-    return parse_matrix(matrix_or_json)
+    svg_caps = extract_svg_capacities()
+    return parse_matrix(matrix_or_json, svg_caps)
 
-def parse_matrix(rows):
+def parse_matrix(rows, svg_caps=None):
     if not rows:
         return []
+    if svg_caps is None:
+        svg_caps = {}
 
     # Check for standard table headers in top 5 rows
     for r_idx, r in enumerate(rows[:5]):
         h_row = [str(cell or '').strip().lower() for cell in r]
         if any('track' in h for h in h_row) and any('car' in h or 'count' in h or 'commodity' in h for h in h_row):
-            return parse_standard_table(rows, r_idx, h_row)
+            return parse_standard_table(rows, r_idx, h_row, svg_caps)
 
     # Multi-column grid / legacy track layout parser
-    return parse_grid_layout(rows)
+    return parse_grid_layout(rows, svg_caps)
 
-def parse_standard_table(rows, header_row_idx, header):
+def parse_standard_table(rows, header_row_idx, header, svg_caps):
     track_col = next(i for i, h in enumerate(header) if 'track' in h)
     car_col = next((i for i, h in enumerate(header) if 'car' in h or 'count' in h or 'qty' in h), None)
     cap_col = next((i for i, h in enumerate(header) if 'cap' in h), None)
@@ -145,18 +175,21 @@ def parse_standard_table(rows, header_row_idx, header):
         except:
             cars = 0
 
-        cap_val = row[cap_col] if (cap_col is not None and len(row) > cap_col) else 0
-        try:
-            capacity = int(float(cap_val or 0))
-        except:
-            capacity = 20
+        cap_val = row[cap_col] if (cap_col is not None and len(row) > cap_col) else None
+        if cap_val is not None:
+            try:
+                capacity = int(float(cap_val or 0))
+            except:
+                capacity = svg_caps.get(track_id, 20)
+        else:
+            capacity = svg_caps.get(track_id, 20)
 
         comm = str(row[comm_col] or '').strip() if (comm_col is not None and len(row) > comm_col) else ''
         notes = str(row[notes_col] or '').strip() if (notes_col is not None and len(row) > notes_col) else ''
         date_val = row[date_col] if (date_col is not None and len(row) > date_col) else None
 
         is_clear = (cars == 0) or (comm.upper() in ['CLEAR', 'EMPTY']) or (notes.upper() in ['CLEAR', 'EMPTY'])
-        is_bad_order = bool(re.search(r"(B\\.O|BAD ORDER)", f"{comm} {notes}", re.I))
+        is_bad_order = bool(re.search(r"(B\\.O|BAD ORDER|O\.S\.?)", f"{comm} {notes}", re.I))
         is_blend = bool(re.search(r"BLEND", f"{comm} {notes}", re.I))
 
         dwell_days = 0
@@ -203,7 +236,7 @@ def parse_standard_table(rows, header_row_idx, header):
     tracks.sort(key=lambda x: (0 if x["id"].isdigit() else 1, int(x["id"]) if x["id"].isdigit() else x["id"]))
     return tracks
 
-def parse_grid_layout(rows):
+def parse_grid_layout(rows, svg_caps):
     shift_date = datetime.now()
     for row in rows[:10]:
         for cell in row:
@@ -233,7 +266,6 @@ def parse_grid_layout(rows):
     tracks = []
 
     for c_idx, tps in by_col.items():
-        # Determine content column range
         content_cols = [c_idx + 1] if c_idx == 0 else [c for c in range(c_idx + 1, c_idx + 6)]
 
         for i, tp in enumerate(tps):
@@ -255,18 +287,30 @@ def parse_grid_layout(rows):
             raw_text = " ".join(text_lines).strip()
 
             is_clear = not raw_text or raw_text.upper() in ["CLEAR", "EMPTY"]
-            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER)\b", raw_text, re.I))
+            is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", raw_text, re.I)) and (tp["id"] != "22")
             is_blend = bool(re.search(r"\bBLEND\b", raw_text, re.I))
 
             total_cars = 0
             if not is_clear:
-                num_matches = re.findall(r"(\d+)\s*[-–]\s*|(\d+)\s*(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COIL|HBI|DL|SMS|MSA)", raw_text, re.I)
-                counts = [int(m[0] or m[1]) for m in num_matches if (m[0] or m[1])]
-                if counts:
-                    total_cars = sum(counts)
+                # Check for Locomotive / Engine tracking on Y or with #
+                engine_nums = re.findall(r"#(\d+)", raw_text)
+                if tp["id"] in ["Y", "RO"] and engine_nums:
+                    total_cars = len(engine_nums)
                 else:
-                    lead = re.match(r"^(\d+)", raw_text)
-                    total_cars = int(lead.group(1)) if lead else 1
+                    # Strip parenthetical breakdowns so "13 - DL (7 P&S, 6 SHRED)" -> "13 - DL"
+                    text_without_parens = re.sub(r"\(.*?\)", "", raw_text).strip()
+                    num_matches = re.findall(r"(\d+)\s*[-–]\s*|(\d+)\s*(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COIL|HBI|DL|SMS|MSA)", text_without_parens, re.I)
+                    counts = [int(m[0] or m[1]) for m in num_matches if (m[0] or m[1])]
+                    if counts:
+                        total_cars = sum(counts)
+                    else:
+                        num_matches = re.findall(r"(\d+)\s*[-–]\s*|(\d+)\s*(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COIL|HBI|DL|SMS|MSA)", raw_text, re.I)
+                        counts = [int(m[0] or m[1]) for m in num_matches if (m[0] or m[1])]
+                        if counts:
+                            total_cars = sum(counts)
+                        else:
+                            lead = re.match(r"^(\d+)", raw_text)
+                            total_cars = int(lead.group(1)) if lead else 1
 
             dwell_days = 0
             dwell_warning = False
@@ -290,11 +334,13 @@ def parse_grid_layout(rows):
 
             status = "clear" if is_clear else ("bad_order" if is_bad_order else ("warning" if dwell_warning else ("blend" if is_blend else "occupied")))
 
+            cap = svg_caps.get(tp["id"], 20)
+
             tracks.append({
                 "id": tp["id"],
                 "name": f"Track {tp['id']}",
                 "cars": 0 if is_clear else total_cars,
-                "capacity": 20,
+                "capacity": cap,
                 "commodity": raw_text if not is_clear else "Empty",
                 "notes": raw_text,
                 "status": status,
