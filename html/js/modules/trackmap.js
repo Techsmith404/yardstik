@@ -400,23 +400,22 @@ function bindSvgInteractivity(container, isTheater = false) {
             const parent = sw.parentNode;
             const marker = document.createElementNS("http://www.w3.org/2000/svg", "g");
             marker.classList.add("switch-os-marker");
-            
-            const transformAttr = sw.getAttribute("transform");
-            if (transformAttr) {
-                marker.setAttribute("transform", transformAttr);
+
+            if (sw.tagName && sw.tagName.toLowerCase() === "path") {
+                // Standard 24x24 icon centered at (12, 12)
                 marker.innerHTML = `
-                    <circle cx="12" cy="12" r="14" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-width="2.5"/>
-                    <line x1="5" y1="5" x2="19" y2="19" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-                    <line x1="19" y1="5" x2="5" y2="19" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="12" fill="rgba(239, 68, 68, 0.6)" stroke="#ffffff" stroke-width="1.8"/>
+                    <line x1="7" y1="7" x2="17" y2="17" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
+                    <line x1="17" y1="7" x2="7" y2="17" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
                 `;
             } else {
-                const cx = parseFloat(sw.getAttribute("cx") || 0);
-                const cy = parseFloat(sw.getAttribute("cy") || 0);
+                const cx = parseFloat(sw.getAttribute("cx") || 12);
+                const cy = parseFloat(sw.getAttribute("cy") || 12);
                 const r = parseFloat(sw.getAttribute("r") || 6);
                 marker.innerHTML = `
-                    <circle cx="${cx}" cy="${cy}" r="${r * 1.7}" fill="rgba(239, 68, 68, 0.45)" stroke="#ef4444" stroke-width="2.5"/>
-                    <line x1="${cx - r}" y1="${cy - r}" x2="${cx + r}" y2="${cy + r}" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-                    <line x1="${cx + r}" y1="${cy - r}" x2="${cx - r}" y2="${cy + r}" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="${cx}" cy="${cy}" r="${r * 1.4}" fill="rgba(239, 68, 68, 0.6)" stroke="#ffffff" stroke-width="1.8"/>
+                    <line x1="${cx - r * 0.6}" y1="${cy - r * 0.6}" x2="${cx + r * 0.6}" y2="${cy + r * 0.7}" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
+                    <line x1="${cx + r * 0.6}" y1="${cy - r * 0.6}" x2="${cx - r * 0.6}" y2="${cy + r * 0.7}" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
                 `;
             }
 
