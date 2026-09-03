@@ -26,11 +26,9 @@ function extractTrackIdFromElement(el) {
         clean = clean.replace(/[-_]\\d+$/, "");
         return clean.toUpperCase();
     }
-    // Fallback: check data-track attribute
     const dataTrack = el.getAttribute("data-track");
     if (dataTrack) return dataTrack.trim().toUpperCase();
 
-    // Fallback: check text content
     const txt = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
     if (txt) {
         const raw = txt.textContent.trim().replace(/\\s*\\(.*\\)/, "").toUpperCase();
@@ -176,7 +174,6 @@ function bindSvgInteractivity(container, isTheater = false) {
         if (!rawId) return;
         const data = trackMap[rawId];
 
-        // Merge SVG capacity into track data if not set
         const capAttr = el.getAttribute("data-capacity") || el.dataset?.capacity;
         if (capAttr && data && !data.capacity) {
             data.capacity = parseInt(capAttr, 10);
@@ -200,7 +197,7 @@ function bindSvgInteractivity(container, isTheater = false) {
     });
 
     // 2. Hook Labels / Badges (e.g. label-21, label-21-2, label-68, etc.)
-    const labelElements = svg.querySelectorAll("[id^='label-'], [id^='label_'], g[data-track], g[transform]");
+    const labelElements = svg.querySelectorAll("[id^='label-'], [id^='label_'], g[data-track]");
     labelElements.forEach(el => {
         const rawId = extractTrackIdFromElement(el);
         if (!rawId) return;
@@ -213,13 +210,27 @@ function bindSvgInteractivity(container, isTheater = false) {
             else if (data.dwell_warning) el.classList.add("badge-dwell");
 
             const textEl = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
-            if (textEl && data.cars > 0) {
-                textEl.textContent = `${rawId} (${data.cars})`;
-                const rect = el.querySelector("rect");
-                if (rect) {
-                    rect.setAttribute("width", "36");
-                    rect.setAttribute("x", "-18");
+            const rect = el.querySelector("rect");
+
+            if (textEl && rect) {
+                // Keep original text clean or append car count centered around original position
+                if (data.cars > 0) {
+                    textEl.textContent = `${rawId} (${data.cars})`;
+                } else {
+                    textEl.textContent = `${rawId}`;
                 }
+
+                // Adjust width symmetrically without moving the rectangle away from its origin
+                const origX = parseFloat(rect.getAttribute("data-orig-x") || rect.getAttribute("x"));
+                const origW = parseFloat(rect.getAttribute("data-orig-w") || rect.getAttribute("width"));
+                if (!rect.hasAttribute("data-orig-x")) {
+                    rect.setAttribute("data-orig-x", origX);
+                    rect.setAttribute("data-orig-w", origW);
+                }
+                const centerX = origX + (origW / 2);
+                const newWidth = data.cars > 0 ? Math.max(origW, 36) : origW;
+                rect.setAttribute("width", newWidth);
+                rect.setAttribute("x", centerX - (newWidth / 2));
             }
 
             el.style.cursor = "pointer";
@@ -546,11 +557,9 @@ function resetTheaterTransform() {
 function applyBuildingVisibility() {
     const svgWrapper = document.getElementById("theater-svg-wrapper");
     if (!svgWrapper) return;
-    const buildings = svgWrapper.querySelectorAll("[id*='building'], .building, [class*='yard-building'], rect[style*='fill:']:not(.badge-rect)");
+    const buildings = svgWrapper.querySelectorAll(".building, .tank, [id*='building'], [class*='building']");
     buildings.forEach(b => {
-        if (!b.closest("[id*='track']") && !b.closest("[id*='label']") && !b.closest("[id*='curve']")) {
-            b.style.display = showBuildings ? "" : "none";
-        }
+        b.style.display = showBuildings ? "" : "none";
     });
 }
 
