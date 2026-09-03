@@ -88,16 +88,23 @@ function getElementExactLength(el) {
 export function getCarDasharray(el, cars, capacity) {
     if (!cars || cars <= 0) return "none";
     const totalLen = getElementExactLength(el);
-    const cap = capacity || 20;
-    const unitLen = totalLen / cap;
-    const carLen = Math.max(unitLen * 0.65, 6);
-    const gapLen = Math.max(unitLen * 0.35, 4);
+    
+    // Uniform physical railcar size across all tracks in the yard
+    const CAR_LEN = 24.0;
+    const GAP_LEN = 6.0;
+    const totalTrainLen = (cars * CAR_LEN) + ((cars - 1) * GAP_LEN);
 
-    const dashes = [];
-    for (let i = 0; i < cars - 1; i++) {
-        dashes.push(carLen.toFixed(1), gapLen.toFixed(1));
+    // Center the train along the track length
+    let startOffset = 10.0;
+    if (totalLen > totalTrainLen) {
+        startOffset = (totalLen - totalTrainLen) / 2.0;
     }
-    dashes.push(carLen.toFixed(1), (totalLen * 3).toFixed(1));
+
+    const dashes = ["0", startOffset.toFixed(1)];
+    for (let i = 0; i < cars - 1; i++) {
+        dashes.push(CAR_LEN.toFixed(1), GAP_LEN.toFixed(1));
+    }
+    dashes.push(CAR_LEN.toFixed(1), (totalLen * 3).toFixed(1));
     return dashes.join(" ");
 }
 
@@ -244,7 +251,8 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.style.cursor = "pointer";
 
             // If track is occupied with cars, create overlay path with exact car count dashes
-            if (data.cars > 0 && !data.is_clear) {
+            const isMainTrack = (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""));
+            if (isMainTrack && data.cars > 0 && !data.is_clear) {
                 const overlay = el.cloneNode(true);
                 overlay.removeAttribute("id");
                 overlay.classList.remove("yard-track-line");
