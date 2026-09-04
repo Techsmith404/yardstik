@@ -204,7 +204,7 @@ export async function fetchTracks() {
         if (res.ok) {
             cachedTracks = await res.json();
             calculateTrackStats();
-            renderTrackMap();
+            await renderTrackMap();
             if (isTheaterOpen) {
                 updateTheaterMap();
             }
@@ -592,12 +592,14 @@ export function showTrackModal(track) {
         modal = document.createElement("div");
         modal.id = "track-detail-modal";
         modal.className = "track-modal-backdrop";
+        modal.style.zIndex = "1000002";
         modal.onclick = (e) => {
             if (e.target === modal) modal.style.display = "none";
         };
         document.body.appendChild(modal);
     }
 
+    const commCat = getCommodityCategory(track);
     const statusBadge = track.is_clear 
         ? `<span class="modal-status-badge status-clear">🟢 CLEAR / EMPTY</span>`
         : (track.is_bad_order 
@@ -611,31 +613,34 @@ export function showTrackModal(track) {
     let capacityInfo = "";
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
-        const barColor = getCarColor(track.cars, track.capacity, track.is_bad_order);
+        const bedColor = getCapacityBedColor(track.cars, track.capacity, track.is_bad_order);
         capacityInfo = `
             <div class="modal-detail-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
                     <span class="modal-detail-label">Track Capacity Utilization:</span>
-                    <span style="font-weight: bold; color: ${barColor};">${track.cars} / ${track.capacity} Cars (${pct}%)</span>
+                    <span style="font-weight: bold; color: ${commCat.color || '#38bdf8'};">${track.cars} / ${track.capacity} Cars (${pct}%)</span>
                 </div>
                 <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
-                    <div style="background: ${barColor}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
+                    <div style="background: ${commCat.color || bedColor}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
                 </div>
             </div>
         `;
     }
 
     modal.innerHTML = `
-        <div class="track-modal-card">
+        <div class="track-modal-card" style="border-color: ${commCat.color ? commCat.color + '66' : 'rgba(56, 189, 248, 0.3)'};">
             <div class="track-modal-header">
-                <h3>${track.name}</h3>
+                <h3 style="color: ${commCat.color || '#38bdf8'};">${track.name}</h3>
                 <button class="track-modal-close" onclick="document.getElementById('track-detail-modal').style.display='none'">&times;</button>
             </div>
             <div class="track-modal-body">
-                <div style="margin-bottom: 15px;">${statusBadge}</div>
+                <div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    ${statusBadge}
+                    ${!track.is_clear && !track.is_bad_order ? `<span class="modal-status-badge" style="background: rgba(${hexToRgb(commCat.color)}, 0.18); color: ${commCat.color}; border: 1px solid ${commCat.color};">📦 ${commCat.name}</span>` : ""}
+                </div>
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Car Count:</span>
-                    <span class="modal-detail-val" style="font-size: 1.3rem; font-weight: bold; color: #38bdf8;">${track.cars} Cars</span>
+                    <span class="modal-detail-val" style="font-size: 1.3rem; font-weight: bold; color: ${commCat.color || '#38bdf8'};">${track.cars} Cars</span>
                 </div>
                 ${capacityInfo}
                 <div class="modal-detail-row">
@@ -924,7 +929,7 @@ export async function openExpandedTrackMap() {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            if (Math.hypot(dx, dy) > 8) {
                 hasDraggedMap = true;
                 viewport.style.cursor = "grabbing";
                 hideTrackHoverTooltip();
@@ -940,7 +945,11 @@ export async function openExpandedTrackMap() {
                 isMouseDown = false;
                 if (viewport) viewport.style.cursor = "grab";
                 if (svgWrapper) svgWrapper.style.transition = "transform 0.05s ease-out";
-                setTimeout(() => { hasDraggedMap = false; }, 50);
+                if (hasDraggedMap) {
+                    setTimeout(() => { hasDraggedMap = false; }, 30);
+                } else {
+                    hasDraggedMap = false;
+                }
             }
         };
     }
