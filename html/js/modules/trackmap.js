@@ -184,6 +184,161 @@ function getElementExactLength(el) {
     return 600;
 }
 
+export function getCommodityCategoryForText(text) {
+    if (!text || !text.trim() || !commodityRules || !commodityRules.categories) {
+        return { id: "default", name: "Other / General", color: commodityRules?.default_color || "#38bdf8" };
+    }
+    const upper = text.toUpperCase().trim();
+    for (const cat of commodityRules.categories) {
+        if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
+        for (const kw of cat.keywords) {
+            const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+            const reg = new RegExp(`\\b${escaped}\\b`, "i");
+            if (reg.test(upper)) {
+                return cat;
+            }
+        }
+    }
+    return { id: "default", name: "Other / General", color: commodityRules.default_color || "#38bdf8" };
+}
+
+export function getTrackCommodityBreakdown(track) {
+    if (!track || !track.cars || track.cars <= 0) return [];
+
+    if (track.is_bad_order) {
+        const boCat = commodityRules?.categories?.find(c => c.id === "bad_order") || { id: "bad_order", name: "Bad Order", color: "#ef4444" };
+        return [{ count: track.cars, category: boCat, color: boCat.color, desc: "Bad Order" }];
+    }
+    if (track.is_clear) {
+        const obCat = commodityRules?.categories?.find(c => c.id === "ob_empty") || { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+        return [{ count: track.cars, category: obCat, color: obCat.color, desc: "Empty" }];
+    }
+
+    const totalCars = track.cars;
+    const comm = (track.commodity || "").trim();
+    const notes = (track.notes || "").trim();
+
+    let textToParse = notes && notes.length >= comm.length && comm.toUpperCase() !== "CLEAR" ? notes : (comm || notes);
+    if (notes && comm && notes !== comm && comm.toUpperCase() !== "CLEAR" && notes.toUpperCase() !== "CLEAR") {
+        textToParse = `${comm} + ${notes}`;
+    }
+
+    // Clean dates like 8/30 or 12/31
+    let cleaned = textToParse.replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, "");
+    // Clean engine tags like #1210
+    cleaned = cleaned.replace(/#\d+/g, "");
+    // Clean O.S switch phrases
+    cleaned = cleaned.replace(/(?:SWITCH\s+)?O\.?S\.?\s*(?:AT\s+[\w/-]+|[\w/-]+\s+SWITCH)?/gi, "");
+    // Protect P&S from being split
+    cleaned = cleaned.replace(/\bP\s*&\s*S\b/gi, "P&S");
+
+    // Check for parenthetical breakdown e.g. "13 - DL (7 - P&S, 6 - SHRED)"
+    const parenMatch = cleaned.match(/\(([^)]+)\)/);
+    let candidateText = cleaned;
+    if (parenMatch) {
+        const inside = parenMatch[1];
+        const insideNums = (inside.match(/\b\d+\b/g) || []).map(Number);
+        const insideSum = insideNums.reduce((a, b) => a + b, 0);
+        if (insideSum === totalCars) {
+            candidateText = inside;
+        }
+    }
+
+    // Split into chunks by +, ;, comma, AND, or newline
+    const rawChunks = candidateText.split(/[,;+]|\band\b|\n/i);
+    const segments = [];
+
+    for (const rawChunk of rawChunks) {
+        let ch = rawChunk.trim();
+        if (!ch) continue;
+
+        // Matches: "3 - UP COIL", "3 UP COILS", "3-DL BALE", "3 DL", "7 P&S"
+        const m1 = ch.match(/^(\d+)\s*(?:[-–:]|\bOF\b)?\s*(.+)$/i);
+        if (m1) {
+            const cnt = parseInt(m1[1], 10);
+            const desc = m1[2].trim();
+            if (desc && cnt > 0) {
+                const cat = getCommodityCategoryForText(desc);
+                segments.push({ count: cnt, category: cat, color: cat.color, desc: desc });
+            }
+        } else {
+            // Matches: "UP COIL 3" or "DOGBONE 3"
+            const m2 = ch.match(/^(.+?)\s*[-–:]?\s*(\d+)$/);
+            if (m2) {
+                const cnt = parseInt(m2[2], 10);
+                const desc = m2[1].trim();
+                if (desc && cnt > 0 && isNaN(Number(desc))) {
+                    const cat = getCommodityCategoryForText(desc);
+                    segments.push({ count: cnt, category: cat, color: cat.color, desc: desc });
+                }
+            }
+        }
+    }
+
+    const parsedSum = segments.reduce((sum, s) => sum + s.count, 0);
+
+    if (segments.length === 0 || parsedSum === 0) {
+        const primaryCat = getCommodityCategory(track);
+        return [{ count: totalCars, category: primaryCat, color: primaryCat.color, desc: textToParse }];
+    }
+
+    if (parsedSum === totalCars) {
+        return segments;
+    }
+
+    if (parsedSum < totalCars) {
+        const rem = totalCars - parsedSum;
+        const primaryCat = getCommodityCategory(track);
+        segments.push({ count: rem, category: primaryCat, color: primaryCat.color, desc: "Remainder" });
+        return segments;
+    }
+
+    // Clamped fit to totalCars if parsed sum > totalCars
+    let cur = 0;
+    const clamped = [];
+    for (const s of segments) {
+        if (cur + s.count <= totalCars) {
+            clamped.push(s);
+            cur += s.count;
+        } else {
+            const rem = totalCars - cur;
+            if (rem > 0) {
+                clamped.push({ count: rem, category: s.category, color: s.color, desc: s.desc });
+                cur += rem;
+            }
+            break;
+        }
+    }
+    return clamped.length > 0 ? clamped : [{ count: totalCars, category: getCommodityCategory(track), color: getCommodityCategory(track).color, desc: textToParse }];
+}
+
+export function getMultiCarDasharray(el, carColors, targetColor) {
+    if (!carColors || !carColors.length) return "none";
+    const totalLen = getElementExactLength(el);
+    const N = carColors.length;
+    const CAR_LEN = 24.0;
+    const GAP_LEN = 6.0;
+    const totalTrainLen = (N * CAR_LEN) + ((N - 1) * GAP_LEN);
+
+    let startOffset = 10.0;
+    if (totalLen > totalTrainLen) {
+        startOffset = (totalLen - totalTrainLen) / 2.0;
+    }
+
+    const dashes = ["0", startOffset.toFixed(1)];
+    for (let i = 0; i < N; i++) {
+        const isTarget = (carColors[i] === targetColor);
+        if (isTarget) {
+            dashes.push(CAR_LEN.toFixed(1), GAP_LEN.toFixed(1));
+        } else {
+            // Draw 0px dash and skip the exact space of the other car + gap
+            dashes.push("0", (CAR_LEN + GAP_LEN).toFixed(1));
+        }
+    }
+    dashes.push("0", (totalLen * 3).toFixed(1));
+    return dashes.join(" ");
+}
+
 export function getCarDasharray(el, cars, capacity) {
     if (!cars || cars <= 0) return "none";
     const totalLen = getElementExactLength(el);
@@ -355,36 +510,52 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.style.setProperty("stroke", bedColor, "important");
             el.style.setProperty("stroke-width", "2.8px", "important");
 
-            // If track is occupied with cars, create overlay path with exact car count dashes
+            // If track is occupied with cars, create overlay path(s) with exact car count dashes
             const isMainTrack = (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""));
             if (isMainTrack && data.cars > 0 && !data.is_clear) {
-                const overlay = el.cloneNode(true);
-                overlay.removeAttribute("id");
-                overlay.classList.remove("yard-track-line");
-                overlay.classList.add("train-car-overlay");
+                const breakdown = getTrackCommodityBreakdown(data);
+                const carColors = [];
+                breakdown.forEach(seg => {
+                    for (let k = 0; k < seg.count; k++) {
+                        carColors.push(seg.color);
+                    }
+                });
+                const primaryCat = getCommodityCategory(data);
+                while (carColors.length < data.cars) {
+                    carColors.push(primaryCat.color);
+                }
+                if (carColors.length > data.cars) {
+                    carColors.length = data.cars;
+                }
 
-                const commCat = getCommodityCategory(data);
-                const carColor = commCat.color;
-                const dashPattern = getCarDasharray(el, data.cars, cap);
+                const uniqueColors = [...new Set(carColors)];
+                uniqueColors.forEach(col => {
+                    const overlay = el.cloneNode(true);
+                    overlay.removeAttribute("id");
+                    overlay.classList.remove("yard-track-line");
+                    overlay.classList.add("train-car-overlay");
 
-                overlay.style.setProperty("stroke", carColor, "important");
-                overlay.style.setProperty("stroke-width", "4.8px", "important");
-                overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
-                overlay.style.setProperty("stroke-linecap", "butt", "important");
-                overlay.style.setProperty("fill", "none", "important");
-                overlay.style.pointerEvents = "auto";
-                overlay.style.cursor = "pointer";
-                overlay.style.filter = `drop-shadow(0 0 5px ${carColor})`;
+                    const dashPattern = getMultiCarDasharray(el, carColors, col);
 
-                overlay.onclick = (e) => {
-                    if (hasDraggedMap) return;
-                    e.stopPropagation();
-                    showTrackModal(data);
-                };
-                overlay.onmouseenter = (e) => showTrackHoverTooltip(e, data);
-                overlay.onmouseleave = hideTrackHoverTooltip;
+                    overlay.style.setProperty("stroke", col, "important");
+                    overlay.style.setProperty("stroke-width", "4.8px", "important");
+                    overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
+                    overlay.style.setProperty("stroke-linecap", "butt", "important");
+                    overlay.style.setProperty("fill", "none", "important");
+                    overlay.style.pointerEvents = "auto";
+                    overlay.style.cursor = "pointer";
+                    overlay.style.filter = `drop-shadow(0 0 5px ${col})`;
 
-                el.parentNode.insertBefore(overlay, el.nextSibling);
+                    overlay.onclick = (e) => {
+                        if (hasDraggedMap) return;
+                        e.stopPropagation();
+                        showTrackModal(data);
+                    };
+                    overlay.onmouseenter = (e) => showTrackHoverTooltip(e, data);
+                    overlay.onmouseleave = hideTrackHoverTooltip;
+
+                    el.parentNode.insertBefore(overlay, el.nextSibling);
+                });
             }
 
             el.onclick = (e) => {
@@ -558,8 +729,10 @@ function bindSvgInteractivity(container, isTheater = false) {
 }
 
 function hexToRgb(hex) {
+    if (!hex) return "255, 255, 255";
     const c = hex.replace("#", "");
     const bigint = parseInt(c, 16);
+    if (isNaN(bigint)) return "255, 255, 255";
     const r = (bigint >> 16) & 255;
     const g = (bigint >> 8) & 255;
     const b = bigint & 255;
@@ -609,6 +782,7 @@ export function showTrackModal(track) {
         document.body.appendChild(modal);
     }
 
+    const breakdown = (track.cars > 0 && !track.is_clear) ? getTrackCommodityBreakdown(track) : [];
     const commCat = getCommodityCategory(track);
     const statusBadge = track.is_clear 
         ? `<span class="modal-status-badge status-clear">🟢 CLEAR / EMPTY</span>`
@@ -624,17 +798,39 @@ export function showTrackModal(track) {
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
         const bedColor = getCapacityBedColor(track.cars, track.capacity, track.is_bad_order);
+        
+        let barSegments = "";
+        if (breakdown.length > 1) {
+            barSegments = breakdown.map(b => {
+                const segPct = (b.count / track.capacity) * 100;
+                return `<div style="background: ${b.color}; width: ${segPct}%; height: 100%; transition: width 0.3s ease;" title="${b.count}x ${b.category.name}"></div>`;
+            }).join("");
+        } else {
+            barSegments = `<div style="background: ${commCat.color || bedColor}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>`;
+        }
+
         capacityInfo = `
             <div class="modal-detail-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
                     <span class="modal-detail-label">Track Capacity Utilization:</span>
                     <span style="font-weight: bold; color: ${commCat.color || '#38bdf8'};">${track.cars} / ${track.capacity} Cars (${pct}%)</span>
                 </div>
-                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
-                    <div style="background: ${commCat.color || bedColor}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 4px; transition: width 0.3s ease;"></div>
+                <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; display: flex;">
+                    ${barSegments}
                 </div>
             </div>
         `;
+    }
+
+    let commodityBadges = "";
+    if (breakdown.length > 1) {
+        commodityBadges = breakdown.map(b => `
+            <span class="modal-status-badge" style="background: rgba(${hexToRgb(b.color)}, 0.18); color: ${b.color}; border: 1px solid ${b.color};">
+                📦 ${b.count}x ${b.category.name} <small style="opacity: 0.85;">(${b.desc})</small>
+            </span>
+        `).join("");
+    } else if (!track.is_clear && !track.is_bad_order) {
+        commodityBadges = `<span class="modal-status-badge" style="background: rgba(${hexToRgb(commCat.color)}, 0.18); color: ${commCat.color}; border: 1px solid ${commCat.color};">📦 ${commCat.name}</span>`;
     }
 
     modal.innerHTML = `
@@ -646,7 +842,7 @@ export function showTrackModal(track) {
             <div class="track-modal-body">
                 <div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
                     ${statusBadge}
-                    ${!track.is_clear && !track.is_bad_order ? `<span class="modal-status-badge" style="background: rgba(${hexToRgb(commCat.color)}, 0.18); color: ${commCat.color}; border: 1px solid ${commCat.color};">📦 ${commCat.name}</span>` : ""}
+                    ${commodityBadges}
                 </div>
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Car Count:</span>
@@ -722,16 +918,25 @@ function showTrackHoverTooltip(e, track) {
         document.body.appendChild(hoverTooltipEl);
     }
     
+    const breakdown = (track.cars > 0 && !track.is_clear) ? getTrackCommodityBreakdown(track) : [];
     const commCat = getCommodityCategory(track);
     let capText = "";
     if (track.capacity) {
         const pct = Math.round((track.cars / track.capacity) * 100);
-        capText = `<br><span style="color: ${commCat.color}; font-weight: 600; font-size: 0.75rem;">📦 ${commCat.name}</span> &bull; <span style="color: #94a3b8; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
+        let breakdownBadges = "";
+        if (breakdown.length > 1) {
+            breakdownBadges = `<div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">` + 
+                breakdown.map(b => `<span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: rgba(${hexToRgb(b.color)}, 0.2); color: ${b.color}; border: 1px solid ${b.color};">${b.count}x ${b.category.name}</span>`).join("") +
+                `</div>`;
+        } else {
+            breakdownBadges = `<span style="color: ${commCat.color}; font-weight: 600; font-size: 0.75rem;">📦 ${commCat.name}</span>`;
+        }
+        capText = `<br>${breakdownBadges} &bull; <span style="color: #94a3b8; font-size: 0.75rem;">Cap: ${track.cars}/${track.capacity} (${pct}%)</span>`;
     }
 
     hoverTooltipEl.innerHTML = `
         <strong>${track.name}</strong>: ${track.is_clear ? "CLEAR" : track.cars + " Cars"}<br>
-        <span style="color: #cbd5e1; font-size: 0.8rem;">${track.commodity || "Empty"}</span>
+        <span style="color: #cbd5e1; font-size: 0.8rem;">${(track.cars > 0 && (track.commodity || '').toUpperCase() === 'CLEAR') ? (track.notes || 'Occupied') : (track.commodity || "Empty")}</span>
         ${capText}
         ${track.dwell_warning ? `<br><span style="color: #f59e0b; font-size: 0.75rem;">⚠️ ${track.dwell_days}d Dwell</span>` : ""}
     `;

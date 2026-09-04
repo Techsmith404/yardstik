@@ -121,10 +121,10 @@
   {
     "id": "26",
     "name": "Track 26",
-    "cars": 2,
+    "cars": 6,
     "capacity": 15,
-    "commodity": "2 - SHEETS",
-    "notes": "2 - SHEETS",
+    "commodity": "3 - UP COIL + 3 - DL SHEETS",
+    "notes": "3 - UP COIL + 3 - DL SHEETS",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
