@@ -75,6 +75,10 @@ export async function fetchCommodityRules() {
 
 export function getCommodityCategory(track) {
     if (!track) return { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+    if (!commodityRules || !commodityRules.categories || !commodityRules.categories.length) {
+        return { id: "default", name: "General Freight", color: "#38bdf8" };
+    }
+
     if (track.is_bad_order) {
         const boCat = commodityRules.categories.find(c => c.id === "bad_order");
         return boCat || { id: "bad_order", name: "Bad Order", color: "#ef4444" };
@@ -84,14 +88,20 @@ export function getCommodityCategory(track) {
         return obCat || { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
     }
 
-    const text = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+    // When track is occupied with cars (>0), ignore pure "CLEAR" or "EMPTY" keywords so actual occupied commodities match!
+    let rawText = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+    if (track.cars > 0) {
+        rawText = rawText.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
+    }
 
     for (const cat of commodityRules.categories) {
         if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
         for (const kw of cat.keywords) {
+            if (track.cars > 0 && (kw.toUpperCase() === "CLEAR" || kw.toUpperCase() === "EMPTY")) continue;
+
             const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
             const reg = new RegExp(`\\b${escaped}\\b`, "i");
-            if (reg.test(text)) {
+            if (reg.test(rawText)) {
                 return cat;
             }
         }
@@ -645,9 +655,9 @@ export function showTrackModal(track) {
                 ${capacityInfo}
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Contents / Commodity:</span>
-                    <span class="modal-detail-val">${track.commodity || "None"}</span>
+                    <span class="modal-detail-val">${(track.cars > 0 && (track.commodity || '').toUpperCase() === 'CLEAR') ? (track.notes || 'Occupied') : (track.commodity || "None")}</span>
                 </div>
-                ${track.notes && track.notes !== track.commodity ? `
+                ${track.notes && track.notes !== track.commodity && !(track.cars > 0 && (track.commodity || '').toUpperCase() === 'CLEAR') ? `
                 <div class="modal-detail-row">
                     <span class="modal-detail-label">Shift Conductor Notes:</span>
                     <span class="modal-detail-val" style="color: #38bdf8; font-weight: 600;">📝 ${track.notes}</span>

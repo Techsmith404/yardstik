@@ -1552,13 +1552,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const upper = text.toUpperCase();
+        let upper = text.toUpperCase();
+        // If testing phrase contains numbers/cars or occupied notes, clean out CLEAR/EMPTY so real commodity shows
+        if (/\d+/.test(upper) || /inbound|slab|dl|scrap|blend|bof|up|coil/i.test(upper)) {
+            upper = upper.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
+        }
+
         let matchedCat = null;
         let matchedKw = null;
 
         for (const cat of (currentCommodityRules.categories || [])) {
             if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
             for (const kw of cat.keywords) {
+                if (/\d+/.test(text) && (kw.toUpperCase() === "CLEAR" || kw.toUpperCase() === "EMPTY")) continue;
+
                 const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
                 const reg = new RegExp(`\\b${escaped}\\b`, "i");
                 if (reg.test(upper)) {
@@ -1615,7 +1622,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="text" class="commodity-name-input" value="${cat.name || ''}" placeholder="Category Name (e.g. UP / Hot Rail)">
                         <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px;">ID: ${cat.id}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="btn btn-secondary btn-move-up" title="Move Up (Higher Priority)" style="padding: 5px 8px;" ${catIdx === 0 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-secondary btn-move-down" title="Move Down (Lower Priority)" style="padding: 5px 8px;" ${catIdx === currentCommodityRules.categories.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </button>
                         <div class="commodity-color-picker-wrap">
                             <input type="color" class="commodity-color-picker" value="${cat.color || '#38bdf8'}">
                             <input type="text" class="commodity-hex-input" value="${cat.color || '#38bdf8'}" maxlength="7">
@@ -1639,6 +1652,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
+
+            const moveUpBtn = card.querySelector('.btn-move-up');
+            const moveDownBtn = card.querySelector('.btn-move-down');
+            if (moveUpBtn && catIdx > 0) {
+                moveUpBtn.onclick = () => {
+                    const item = currentCommodityRules.categories.splice(catIdx, 1)[0];
+                    currentCommodityRules.categories.splice(catIdx - 1, 0, item);
+                    renderCommodityCategories();
+                    testCommodityMatcher();
+                };
+            }
+            if (moveDownBtn && catIdx < currentCommodityRules.categories.length - 1) {
+                moveDownBtn.onclick = () => {
+                    const item = currentCommodityRules.categories.splice(catIdx, 1)[0];
+                    currentCommodityRules.categories.splice(catIdx + 1, 0, item);
+                    renderCommodityCategories();
+                    testCommodityMatcher();
+                };
+            }
 
             // Elements within card
             const nameInput = card.querySelector('.commodity-name-input');

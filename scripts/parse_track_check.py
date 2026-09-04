@@ -353,8 +353,12 @@ def parse_grid_layout(rows, svg_caps):
                 comm = raw_lines[0]
                 notes = raw_lines[0]
             else:
-                comm = raw_lines[0]
-                notes = ", ".join(raw_lines[1:])
+                if raw_lines[0].strip().upper() in ["CLEAR", "EMPTY"]:
+                    comm = ", ".join(raw_lines[1:])
+                    notes = ", ".join(raw_lines[1:])
+                else:
+                    comm = raw_lines[0]
+                    notes = ", ".join(raw_lines[1:])
 
             full_text = " ".join(raw_lines).strip()
 

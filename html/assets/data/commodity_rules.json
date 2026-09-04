@@ -109,6 +109,16 @@
         "LIMESTONE"
       ],
       "description": "Raw charge materials, HBI, pellets, and flux."
+    },
+    {
+      "id": "inbound",
+      "name": "Inbound",
+      "color": "#3a60f8",
+      "keywords": [
+        "INBOUND",
+        "IB"
+      ],
+      "description": "Inbound loads and incoming train cars."
     }
   ],
   "default_color": "#38bdf8"
