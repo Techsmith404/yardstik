@@ -865,4 +865,130 @@ select.form-control option {
     border-top: 1px dashed var(--border-color);
 }
 
+/* ── Commodity Rules & Car Color Editor Styles ───────────────────────────── */
+.commodity-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+.commodity-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+.commodity-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.commodity-name-input {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    flex: 1;
+    transition: all 0.2s;
+}
+.commodity-name-input:focus {
+    background: var(--bg-dark);
+    border-color: var(--accent);
+    outline: none;
+}
+.commodity-color-picker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+.commodity-color-picker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.commodity-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.commodity-color-picker::-webkit-color-swatch {
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 4px;
+}
+.commodity-hex-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    width: 75px;
+    outline: none;
+}
+.keyword-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    min-height: 28px;
+    align-items: center;
+}
+.keyword-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid;
+    transition: all 0.15s ease;
+}
+.keyword-chip-remove {
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.15s, transform 0.15s;
+    line-height: 1;
+}
+.keyword-chip-remove:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+.keyword-add-wrap {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.keyword-add-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #fff;
+    flex: 1;
+    max-width: 320px;
+}
+.keyword-add-input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+.keyword-add-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 

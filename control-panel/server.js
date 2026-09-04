@@ -41,7 +41,7 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json', 'track-map.svg'];
+        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json', 'track-map.svg', 'commodity_rules.json'];
 
         syncFiles.forEach(f => {
             const p = path.join('/data', f);
@@ -623,6 +623,105 @@ app.get('/api/tracks/template', (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="standard_track_check_template.csv"');
     res.send(csvContent);
+});
+
+// ── Commodity Rules & Classification API ────────────────────────────────────
+const COMMODITY_RULES_PATH = '/data/commodity_rules.json';
+const DEFAULT_COMMODITY_RULES = {
+    categories: [
+        {
+            id: "bad_order",
+            name: "Bad Order / O.S.",
+            color: "#ef4444",
+            keywords: ["B.O", "BAD ORDER", "O.S", "O.S.", "OS", "DEFECT", "REPAIR"],
+            description: "Bad order cars and out of service track turnouts."
+        },
+        {
+            id: "blend_bof",
+            name: "Blend / BOF",
+            color: "#00f0ff",
+            keywords: ["BLEND", "BOF", "MH82", "MH81", "MH97", "SMS", "MSA"],
+            description: "Active blend loading, BOF heats, and mill charges."
+        },
+        {
+            id: "up",
+            name: "UP (Hot Rail / Plate)",
+            color: "#f97316",
+            keywords: ["UP", "HOT RAIL", "SLAB", "SLABS", "ONE CUT", "ONE CUTS", "PLATE", "COBBLE", "HEAVY TRIM", "LIGHT TRIM", "TRIM", "SMASH", "COIL", "COILS", "SCALE", "NOTICE", "MILL SCALE", "SPEAR"],
+            description: "Hot rail slabs, plate, cobble, coils, smash, and steel trim products."
+        },
+        {
+            id: "dl",
+            name: "DL (Direct Load / Scrap)",
+            color: "#c084fc",
+            keywords: ["DL", "DL'S", "DLS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            description: "Direct load scrap, slitter, sheets, baler scrap, P&S, and shred."
+        },
+        {
+            id: "ob_empty",
+            name: "OB / Empty",
+            color: "#22c55e",
+            keywords: ["EMPTY", "CLEAR", "MTY", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
+            description: "Outbound loads, empty flats, and cleared tracks."
+        },
+        {
+            id: "raw_materials",
+            name: "Raw Materials / HBI",
+            color: "#38bdf8",
+            keywords: ["HBI", "ORE", "PELLETS", "COAL", "COKE", "LIMESTONE"],
+            description: "Raw charge materials, HBI, pellets, and flux."
+        }
+    ],
+    default_color: "#38bdf8"
+};
+
+app.get('/api/commodity-rules', (req, res) => {
+    try {
+        if (fs.existsSync(COMMODITY_RULES_PATH)) {
+            const data = JSON.parse(fs.readFileSync(COMMODITY_RULES_PATH, 'utf8'));
+            return res.json(data);
+        }
+        const localPath = path.join(__dirname, '../html/assets/data/commodity_rules.json');
+        if (fs.existsSync(localPath)) {
+            const data = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+            return res.json(data);
+        }
+        res.json(DEFAULT_COMMODITY_RULES);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to read commodity rules: ' + e.message });
+    }
+});
+
+app.post('/api/commodity-rules', express.json(), (req, res) => {
+    try {
+        const payload = req.body;
+        if (!payload || !Array.isArray(payload.categories)) {
+            return res.status(400).json({ error: 'Expected object with categories array' });
+        }
+        const formattedJson = JSON.stringify(payload, null, 2);
+        
+        // Write to container /data path if directory exists
+        if (fs.existsSync(path.dirname(COMMODITY_RULES_PATH))) {
+            fs.writeFileSync(COMMODITY_RULES_PATH, formattedJson, 'utf8');
+        }
+        // Write to local repo data path if present
+        const localPath = path.join(__dirname, '../html/assets/data/commodity_rules.json');
+        if (fs.existsSync(path.dirname(localPath))) {
+            fs.writeFileSync(localPath, formattedJson, 'utf8');
+        }
+        
+        // Bump version.txt to instantly refresh Kiosks
+        try {
+            if (fs.existsSync('/data')) fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+            const localVer = path.join(__dirname, '../html/assets/data/version.txt');
+            if (fs.existsSync(path.dirname(localVer))) fs.writeFileSync(localVer, Date.now().toString(), 'utf8');
+        } catch {}
+
+        syncToCloud();
+        res.json({ success: true, count: payload.categories.length });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save commodity rules: ' + e.message });
+    }
 });
 
 // ── Site Settings API ──────────────────────────────────────────────────────

@@ -1344,6 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tracksView) tracksView.classList.add('active');
             currentScriptTitle.innerText = 'Yard Track Management';
             loadTracksData();
+            loadCommodityRules();
         });
     }
 
@@ -1515,6 +1516,303 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(err => {
+        });
+    }
+
+    // ── Commodity Rules & Classification Manager ─────────────────────────────
+    const btnAddCommodityCat = document.getElementById('btn-add-commodity-category');
+    const btnSaveCommodityRules = document.getElementById('btn-save-commodity-rules');
+    const commodityCategoriesContainer = document.getElementById('commodity-categories-container');
+    const commodityRulesStatus = document.getElementById('commodity-rules-status');
+    const commodityTesterInput = document.getElementById('commodity-tester-input');
+    const commodityTesterResult = document.getElementById('commodity-tester-result');
+
+    let currentCommodityRules = {
+        categories: [],
+        default_color: "#38bdf8"
+    };
+
+    function hexToRgba(hex, alpha = 0.2) {
+        if (!hex || !hex.startsWith('#')) return `rgba(56, 189, 248, ${alpha})`;
+        const c = hex.replace("#", "");
+        const bigint = parseInt(c, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function testCommodityMatcher() {
+        if (!commodityTesterInput || !commodityTesterResult) return;
+        const text = (commodityTesterInput.value || '').trim();
+        if (!text) {
+            commodityTesterResult.innerHTML = `<span style="color: var(--text-secondary); font-style: italic;">Enter text above to test live</span>`;
+            commodityTesterResult.style.border = 'none';
+            commodityTesterResult.style.background = 'rgba(255,255,255,0.05)';
+            return;
+        }
+
+        const upper = text.toUpperCase();
+        let matchedCat = null;
+        let matchedKw = null;
+
+        for (const cat of (currentCommodityRules.categories || [])) {
+            if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
+            for (const kw of cat.keywords) {
+                const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+                const reg = new RegExp(`\\b${escaped}\\b`, "i");
+                if (reg.test(upper)) {
+                    matchedCat = cat;
+                    matchedKw = kw;
+                    break;
+                }
+            }
+            if (matchedCat) break;
+        }
+
+        if (matchedCat) {
+            commodityTesterResult.style.background = hexToRgba(matchedCat.color, 0.2);
+            commodityTesterResult.style.border = `1px solid ${matchedCat.color}`;
+            commodityTesterResult.innerHTML = `
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${matchedCat.color}; box-shadow: 0 0 6px ${matchedCat.color};"></span>
+                <span style="color: #fff; font-weight: 700;">${matchedCat.name}</span>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">(Matched: <code>${matchedKw}</code>)</span>
+            `;
+        } else {
+            const defColor = currentCommodityRules.default_color || "#38bdf8";
+            commodityTesterResult.style.background = hexToRgba(defColor, 0.2);
+            commodityTesterResult.style.border = `1px solid ${defColor}`;
+            commodityTesterResult.innerHTML = `
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${defColor};"></span>
+                <span style="color: #fff; font-weight: 700;">Other / General</span>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">(Default fallback)</span>
+            `;
+        }
+    }
+
+    if (commodityTesterInput) {
+        commodityTesterInput.addEventListener('input', testCommodityMatcher);
+    }
+
+    function renderCommodityCategories() {
+        if (!commodityCategoriesContainer) return;
+        commodityCategoriesContainer.innerHTML = '';
+
+        if (!currentCommodityRules.categories || currentCommodityRules.categories.length === 0) {
+            commodityCategoriesContainer.innerHTML = `<div style="padding: 20px; color: var(--text-secondary); text-align: center;">No commodity categories configured. Click "Add Category" to create one.</div>`;
+            return;
+        }
+
+        currentCommodityRules.categories.forEach((cat, catIdx) => {
+            const card = document.createElement('div');
+            card.className = 'commodity-card';
+            card.style.borderLeftColor = cat.color || '#38bdf8';
+
+            card.innerHTML = `
+                <div class="commodity-card-header">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <span class="category-bullet" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${cat.color || '#38bdf8'}; box-shadow: 0 0 8px ${cat.color || '#38bdf8'};"></span>
+                        <input type="text" class="commodity-name-input" value="${cat.name || ''}" placeholder="Category Name (e.g. UP / Hot Rail)">
+                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px;">ID: ${cat.id}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="commodity-color-picker-wrap">
+                            <input type="color" class="commodity-color-picker" value="${cat.color || '#38bdf8'}">
+                            <input type="text" class="commodity-hex-input" value="${cat.color || '#38bdf8'}" maxlength="7">
+                        </div>
+                        <button class="btn btn-secondary btn-delete-cat" title="Delete Category" style="padding: 5px 10px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05);">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <input type="text" class="form-control form-control-sm commodity-desc-input" value="${cat.description || ''}" placeholder="Description / commodity contents (optional)" style="font-size: 0.85rem; padding: 4px 10px; width: 100%;">
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Matching Keywords & Aliases:
+                    </div>
+                    <div class="keyword-chips-container"></div>
+                    <div class="keyword-add-wrap">
+                        <input type="text" class="keyword-add-input" placeholder="Add keyword (e.g. SLAB, SLITTER, TRIM) & press Enter...">
+                        <button class="btn btn-secondary keyword-add-btn"><i class="fa-solid fa-plus"></i> Add</button>
+                    </div>
+                </div>
+            `;
+
+            // Elements within card
+            const nameInput = card.querySelector('.commodity-name-input');
+            const descInput = card.querySelector('.commodity-desc-input');
+            const colorPicker = card.querySelector('.commodity-color-picker');
+            const hexInput = card.querySelector('.commodity-hex-input');
+            const bullet = card.querySelector('.category-bullet');
+            const chipsContainer = card.querySelector('.keyword-chips-container');
+            const addInput = card.querySelector('.keyword-add-input');
+            const addBtn = card.querySelector('.keyword-add-btn');
+            const delBtn = card.querySelector('.btn-delete-cat');
+
+            function renderChips() {
+                chipsContainer.innerHTML = '';
+                if (!Array.isArray(cat.keywords) || cat.keywords.length === 0) {
+                    chipsContainer.innerHTML = `<span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">No keywords added yet.</span>`;
+                    return;
+                }
+                cat.keywords.forEach((kw, kwIdx) => {
+                    const chip = document.createElement('span');
+                    chip.className = 'keyword-chip';
+                    chip.style.borderColor = cat.color || '#38bdf8';
+                    chip.style.background = hexToRgba(cat.color || '#38bdf8', 0.15);
+                    chip.style.color = cat.color || '#38bdf8';
+                    chip.innerHTML = `
+                        <span>${kw}</span>
+                        <span class="keyword-chip-remove" title="Remove keyword">&times;</span>
+                    `;
+                    chip.querySelector('.keyword-chip-remove').onclick = () => {
+                        cat.keywords.splice(kwIdx, 1);
+                        renderChips();
+                        testCommodityMatcher();
+                    };
+                    chipsContainer.appendChild(chip);
+                });
+            }
+
+            renderChips();
+
+            function addKeywordsFromInput() {
+                const val = (addInput.value || '').trim();
+                if (!val) return;
+                if (!Array.isArray(cat.keywords)) cat.keywords = [];
+                const parts = val.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+                parts.forEach(p => {
+                    if (!cat.keywords.includes(p)) {
+                        cat.keywords.push(p);
+                    }
+                });
+                addInput.value = '';
+                renderChips();
+                testCommodityMatcher();
+            }
+
+            addBtn.onclick = addKeywordsFromInput;
+            addInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addKeywordsFromInput();
+                }
+            });
+
+            nameInput.oninput = (e) => {
+                cat.name = e.target.value;
+                testCommodityMatcher();
+            };
+
+            descInput.oninput = (e) => {
+                cat.description = e.target.value;
+            };
+
+            function updateColor(newColor) {
+                if (!newColor || !newColor.startsWith('#')) return;
+                cat.color = newColor;
+                card.style.borderLeftColor = newColor;
+                bullet.style.background = newColor;
+                bullet.style.boxShadow = `0 0 8px ${newColor}`;
+                colorPicker.value = newColor;
+                hexInput.value = newColor;
+                renderChips();
+                testCommodityMatcher();
+            }
+
+            colorPicker.oninput = (e) => updateColor(e.target.value);
+            hexInput.onchange = (e) => {
+                let v = e.target.value.trim();
+                if (!v.startsWith('#')) v = '#' + v;
+                if (/^#[0-9A-F]{6}$/i.test(v)) {
+                    updateColor(v);
+                } else {
+                    hexInput.value = cat.color;
+                }
+            };
+
+            delBtn.onclick = () => {
+                if (confirm(`Are you sure you want to delete category "${cat.name || cat.id}"?`)) {
+                    currentCommodityRules.categories.splice(catIdx, 1);
+                    renderCommodityCategories();
+                    testCommodityMatcher();
+                }
+            };
+
+            commodityCategoriesContainer.appendChild(card);
+        });
+    }
+
+    function loadCommodityRules() {
+        fetch('/api/commodity-rules')
+            .then(r => r.json())
+            .then(data => {
+                if (data && Array.isArray(data.categories)) {
+                    currentCommodityRules = data;
+                    renderCommodityCategories();
+                    testCommodityMatcher();
+                }
+            })
+            .catch(err => console.error("Could not fetch commodity rules:", err));
+    }
+
+    if (btnAddCommodityCat) {
+        btnAddCommodityCat.addEventListener('click', () => {
+            const catName = prompt("Enter new Category Name (e.g. Inbound Slabs, Billets, Pig Iron):");
+            if (catName && catName.trim()) {
+                const cleanName = catName.trim();
+                const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `cat_${Date.now()}`;
+                
+                if (!Array.isArray(currentCommodityRules.categories)) {
+                    currentCommodityRules.categories = [];
+                }
+
+                currentCommodityRules.categories.push({
+                    id: slug,
+                    name: cleanName,
+                    color: "#38bdf8",
+                    keywords: [cleanName.toUpperCase()],
+                    description: ""
+                });
+                renderCommodityCategories();
+                testCommodityMatcher();
+            }
+        });
+    }
+
+    if (btnSaveCommodityRules) {
+        btnSaveCommodityRules.addEventListener('click', () => {
+            btnSaveCommodityRules.disabled = true;
+            btnSaveCommodityRules.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            
+            fetch('/api/commodity-rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentCommodityRules)
+            })
+            .then(r => r.json())
+            .then(data => {
+                btnSaveCommodityRules.disabled = false;
+                if (data.success) {
+                    btnSaveCommodityRules.innerHTML = '<i class="fa-solid fa-check"></i> Saved & Synced!';
+                    if (commodityRulesStatus) {
+                        commodityRulesStatus.style.display = 'block';
+                        commodityRulesStatus.innerHTML = `<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> Successfully saved ${data.count} commodity categories & bumped kiosk version!</span>`;
+                        setTimeout(() => { commodityRulesStatus.style.display = 'none'; }, 4000);
+                    }
+                } else {
+                    btnSaveCommodityRules.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Rules';
+                    alert('Error saving rules: ' + (data.error || 'Unknown error'));
+                }
+                setTimeout(() => { btnSaveCommodityRules.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Rules'; }, 2000);
+            })
+            .catch(err => {
+                btnSaveCommodityRules.disabled = false;
+                btnSaveCommodityRules.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Rules';
+                alert('Network error saving commodity rules: ' + err.message);
+            });
         });
     }
 

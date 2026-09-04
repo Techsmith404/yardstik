@@ -62,6 +62,10 @@
                                 <h5><i class="fa-solid fa-clipboard-list"></i> Equipment Editor</h5>
                                 <p>Manage equipment status directly from the web. Add categories, update statuses (OK, OS, PM), and instantly push updates to the Kiosk's Masonry grid.</p>
                             </div>
+                            <div class="info-card" data-script="tracks">
+                                <h5><i class="fa-solid fa-train"></i> Track Management & Commodity Rules</h5>
+                                <p>Upload daily track checks, vector SVG maps, live edit car counts, and customize commodity keywords and car dash colors.</p>
+                            </div>
                             <div class="info-card" data-script="shifts">
                                 <h5><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</h5>
                                 <p>Manage facility work shifts, working days, and hours. Powers the live TV shift countdown progress bar.</p>
@@ -652,6 +656,45 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- Commodity Classification & Car Colors Section -->
+                    <div class="settings-section" id="commodity-rules-section" style="margin-top: 25px;">
+                        <div class="settings-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-palette" style="color: #f97316;"></i>
+                                <h4>Commodity Classification Rules & Car Colors</h4>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-add-commodity-category" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">
+                                    <i class="fa-solid fa-plus"></i> Add Category
+                                </button>
+                                <button id="btn-save-commodity-rules" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem;">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save Rules
+                                </button>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                            Define how conductor notes, commodities, and track descriptions are classified into visual commodity groups and train car dash colors on the interactive yard map.
+                        </p>
+
+                        <!-- Live Rule Matcher / Tester -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; color: #38bdf8;">
+                                <i class="fa-solid fa-flask"></i> Test Keyword Matcher:
+                            </div>
+                            <input type="text" id="commodity-tester-input" class="form-control" placeholder="Type a sample note (e.g. 3 - SLITTER & 2 BALES or 5 - HOT RAIL)..." style="flex: 1; min-width: 240px; padding: 6px 12px; font-size: 0.85rem;">
+                            <div id="commodity-tester-result" style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; padding: 4px 12px; border-radius: 6px; background: rgba(255,255,255,0.05);">
+                                <span style="color: var(--text-secondary); font-style: italic;">Enter text to test live</span>
+                            </div>
+                        </div>
+
+                        <!-- Categories List Container -->
+                        <div id="commodity-categories-container" style="display: flex; flex-direction: column; gap: 14px;">
+                            <!-- Populated dynamically via app.js -->
+                        </div>
+
+                        <div id="commodity-rules-status" style="margin-top: 12px; font-size: 0.85rem; display: none;"></div>
                     </div>
                 </div>
             </div>
