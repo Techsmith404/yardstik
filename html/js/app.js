@@ -1,6 +1,4 @@
-// YardStik Operations Dashboard - Master Controller (ES Module)
-
-import { initMobileRedirect, setupDesktopLayout, fetchSiteConfig, checkVersion, isDesktopMode } from './modules/config.js';
+import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, fetchSiteConfig, checkVersion, isDesktopMode } from './modules/config.js';
 import { fetchShifts, startClockLoop } from './modules/clock.js';
 import { updateTrackers } from './modules/trackers.js';
 import { getWeather } from './modules/weather.js';
@@ -17,6 +15,7 @@ import { fetchTracks } from './modules/trackmap.js';
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 initMobileRedirect();
+setupHandoffLayout();
 fetchFeatures().then(() => {
     initSeasonalTheme();
 });
@@ -71,7 +70,19 @@ if (!isDesktopMode) {
 const views = document.querySelectorAll('.kiosk-view');
 let currentView = 0;
 let panelRotationTimeout = null;
-const isShort = new URLSearchParams(window.location.search).get('short') === 'true';
+const urlParams = new URLSearchParams(window.location.search);
+const isShort = urlParams.get('short') === 'true';
+const slideParam = (urlParams.get('slide') || '').toLowerCase();
+
+if (slideParam) {
+    if (slideParam === '1' || slideParam === 'production' || slideParam === 'equipment') currentView = 0;
+    else if (slideParam === '2' || slideParam === 'safety' || slideParam === 'milestones') currentView = 1;
+    else if (slideParam === '3' || slideParam === 'announcements' || slideParam === 'trackmap' || slideParam === 'reminders') currentView = 2;
+    else {
+        const parsed = parseInt(slideParam, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= views.length) currentView = parsed - 1;
+    }
+}
 
 if (isDesktopMode) {
     // In Desktop Mode: all views are visible simultaneously in one unified scrollable page!
@@ -94,6 +105,12 @@ if (isDesktopMode) {
         pSaf.style.opacity = '1';
     }
 } else {
+    views.forEach(v => v.classList.remove('active'));
+    if (views[currentView]) {
+        views[currentView].classList.add('active');
+        if (views[currentView].id === 'view-special') views[currentView].style.display = 'flex';
+    }
+
     // In Kiosk TV Mode: cycle views on timed slide loop
     function cycleViews() {
         const checkView = views[currentView];
@@ -112,11 +129,8 @@ if (isDesktopMode) {
         
         let ms = parseInt(checkView.getAttribute('data-duration')) || 40000;
         
-        if (checkView.id === 'view-announcements') {
-            const overrideMs = advanceReminderSlide();
-            if (overrideMs) ms = overrideMs;
-            
-            // Dynamic Sub-Panel Rotation (Anniversaries -> Safety Videos)
+        if (checkView.id === 'view-safety') {
+            // Dynamic Sub-Panel Rotation on Slide 2 (Anniversaries -> Safety Videos)
             const pAnn = document.getElementById('panel-anniversaries');
             const pSaf = document.getElementById('panel-safety');
             
@@ -152,6 +166,11 @@ if (isDesktopMode) {
                     });
                 });
             }
+        }
+
+        if (checkView.id === 'view-announcements') {
+            const overrideMs = advanceReminderSlide();
+            if (overrideMs) ms = overrideMs;
         }
         
         if (isShort) ms = 10000;

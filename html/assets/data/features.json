@@ -22,6 +22,7 @@
         "reminders": true,
         "anniversaries": true,
         "safety_videos": true,
+        "track_map": true,
         "mobile_qr": true
     }
 }

@@ -20,6 +20,7 @@ export let cachedFeatures = {
         reminders: true,
         anniversaries: true,
         safety_videos: true,
+        track_map: true,
         mobile_qr: true
     }
 };
@@ -88,7 +89,8 @@ export function applyFeatureFlags() {
     ['bg-dots', 'bg-hex', 'bg-diagonal', 'bg-aurora', 'bg-minimal', 'bg-grid'].forEach(cls => body.classList.remove(cls));
     body.classList.add(`bg-${activeBg}`);
 
-    // --- Adaptive Mosaic Classes ---
+    // --- Adaptive Mosaic Classes & Slide Toggles ---
+    const viewSafety = document.getElementById('view-safety');
     const viewAnnouncements = document.getElementById('view-announcements');
 
     // Check if View 1 Sidebar is completely empty
@@ -99,25 +101,23 @@ export function applyFeatureFlags() {
         body.classList.remove('feature-no-sidebar');
     }
 
-    // Check View 2 Layout Adaptations
+    // Check View 2 (Safety & Milestones) Active Status
     const noToolbox = (f.toolbox_talk === false);
-    if (noToolbox) {
-        body.classList.add('feature-no-toolbox');
-    } else {
-        body.classList.remove('feature-no-toolbox');
+    const viewSafetyEmpty = noToolbox && !hasPanels;
+    if (viewSafety) {
+        if (viewSafetyEmpty) {
+            viewSafety.setAttribute('data-disabled', 'true');
+        } else {
+            viewSafety.removeAttribute('data-disabled');
+        }
     }
 
-    const onlyReminders = noToolbox && !hasPanels && (f.reminders !== false);
-    if (onlyReminders) {
-        body.classList.add('feature-only-reminders');
-    } else {
-        body.classList.remove('feature-only-reminders');
-    }
-
-    // Check if View 2 has NO active content at all -> skip it in slideshow
-    const view2Empty = noToolbox && !hasPanels && (f.reminders === false);
+    // Check View 3 (Track Map & Reminders) Active Status
+    const noTrackMap = (f.track_map === false);
+    const noReminders = (f.reminders === false);
+    const viewAnnEmpty = noTrackMap && noReminders;
     if (viewAnnouncements) {
-        if (view2Empty) {
+        if (viewAnnEmpty) {
             viewAnnouncements.setAttribute('data-disabled', 'true');
         } else {
             viewAnnouncements.removeAttribute('data-disabled');

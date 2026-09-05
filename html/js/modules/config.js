@@ -27,6 +27,10 @@ export const isKioskMode = isExplicitKiosk || isLocalhostKiosk;
 export const isDesktopMode = !isKioskMode && !isExplicitHandoff;
 export let isHandoffActive = isExplicitHandoff;
 
+if (isExplicitHandoff && typeof document !== 'undefined' && document.body) {
+    document.body.classList.add('handoff-mode');
+}
+
 export function setupHandoffLayout(active = isHandoffActive) {
     isHandoffActive = active;
     if (active) {
@@ -61,27 +65,6 @@ export function setupDesktopLayout() {
         document.body.classList.add('desktop-mode');
         const navBar = document.getElementById('desktop-nav-bar');
         if (navBar) navBar.style.display = 'flex';
-
-        const setupDesktopColumns = () => {
-            const trackWidget = document.getElementById('widget-trackmap') || document.querySelector('.announcement-slide');
-            const panelAnn = document.getElementById('panel-anniversaries');
-            const viewAnn = document.getElementById('view-announcements');
-            if (trackWidget && panelAnn && viewAnn) {
-                let leftCol = document.getElementById('announcements-col-left');
-                if (!leftCol) {
-                    leftCol = document.createElement('div');
-                    leftCol.id = 'announcements-col-left';
-                    viewAnn.insertBefore(leftCol, viewAnn.firstChild);
-                }
-                leftCol.appendChild(trackWidget);
-                leftCol.appendChild(panelAnn);
-            }
-        };
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', setupDesktopColumns);
-        } else {
-            setupDesktopColumns();
-        }
     }
 }
 

@@ -367,7 +367,15 @@ h2, h3 {
     margin-top: 5px;
 }
 
-/* VIEW 2: ANNOUNCEMENTS & WORK MILESTONES GRID */
+/* VIEW 2: SAFETY STAND-DOWN & WORK MILESTONES GRID */
+#view-safety {
+    display: grid;
+    grid-template-columns: 2.1fr 1.4fr;
+    grid-template-rows: calc(100vh - 60px);
+    gap: 25px;
+}
+
+/* VIEW 3: TRACK MAP & ANNOUNCEMENTS GRID */
 #view-announcements {
     display: grid;
     grid-template-columns: 2.1fr 1.4fr;
@@ -388,45 +396,20 @@ body.feature-no-sidebar #equipment-masonry {
     column-count: 4 !important;
 }
 
-body.feature-no-toolbox #view-announcements {
+body.feature-no-toolbox #view-safety {
     grid-template-columns: 1fr !important;
 }
 
-body.feature-no-toolbox .announcement-slide {
+body.feature-no-toolbox #toolbox-widget-container {
     display: none !important;
 }
 
-body.feature-no-toolbox #view-announcements .side-stats {
-    display: grid !important;
-    grid-template-columns: 1.25fr 1fr !important;
-    gap: 25px !important;
-    height: 100% !important;
-    width: 100% !important;
+body.feature-no-trackmap #view-announcements {
+    grid-template-columns: 1fr !important;
 }
 
-body.feature-no-toolbox #reminders-widget-container {
-    height: 100% !important;
-    flex: 1 1 0 !important;
-    margin: 0 !important;
-}
-
-body.feature-no-toolbox #rotating-panels-wrapper {
-    height: 100% !important;
-    flex: 1 1 0 !important;
-    margin: 0 !important;
-}
-
-/* When only Reminders is active on View 2 (Toolbox + Panels disabled) */
-body.feature-only-reminders #view-announcements .side-stats {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-}
-
-body.feature-only-reminders #reminders-widget-container {
-    width: 100% !important;
-    height: 100% !important;
-    font-size: 1.25rem !important;
+body.feature-no-trackmap #widget-trackmap {
+    display: none !important;
 }
 
 /* QR Code Toggle */
@@ -941,8 +924,8 @@ body.desktop-mode #view-production .side-stats {
     gap: 20px !important;
 }
 
-/* Announcements View Grid in Desktop Mode - Clean 2-Column Independent Flow */
-body.desktop-mode #view-announcements {
+/* Safety View Grid in Desktop Mode */
+body.desktop-mode #view-safety {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 30px !important;
@@ -950,6 +933,25 @@ body.desktop-mode #view-announcements {
     min-height: auto !important;
     align-items: start !important;
     margin-top: 10px !important;
+}
+
+body.desktop-mode #view-safety .side-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 25px !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Announcements & Track Map View Grid in Desktop Mode */
+body.desktop-mode #view-announcements {
+    display: grid !important;
+    grid-template-columns: 1.4fr 1fr !important;
+    gap: 30px !important;
+    height: auto !important;
+    min-height: auto !important;
+    align-items: start !important;
+    margin-top: 20px !important;
 }
 
 body.desktop-mode #announcements-col-left {
@@ -991,12 +993,19 @@ body.desktop-mode #view-announcements .side-stats {
     flex-direction: column !important;
     gap: 25px !important;
     width: 100% !important;
+    height: 700px !important;
+    min-height: 500px !important;
     margin: 0 !important;
 }
 
+body.desktop-mode #widget-trackmap {
+    height: 700px !important;
+    min-height: 500px !important;
+}
+
 body.desktop-mode #reminders-widget-container {
-    height: fit-content !important;
-    min-height: auto !important;
+    height: 100% !important;
+    min-height: 500px !important;
     padding: 25px 30px !important;
 }
 

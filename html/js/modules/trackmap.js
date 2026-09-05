@@ -702,9 +702,13 @@ export async function fetchTracks() {
     }
 }
 
-function calculateTrackStats() {
+function calculateTrackStats(activeTrackIds = null) {
     let total = 0, bo = 0, blend = 0, clear = 0, dwell = 0, cap = 0;
-    cachedTracks.forEach(t => {
+    const tracksToCount = (activeTrackIds && activeTrackIds.size > 0)
+        ? cachedTracks.filter(t => activeTrackIds.has(t.id.toUpperCase()))
+        : cachedTracks;
+
+    tracksToCount.forEach(t => {
         total += (t.cars || 0);
         cap += (t.capacity || 0);
         if (t.is_bad_order) bo += (t.cars || 0);
@@ -857,6 +861,12 @@ function bindSvgInteractivity(container, isTheater = false) {
             carHostElementMap[rawId] = mainSeg;
         }
     });
+
+    // Calculate track stats filtered strictly to the active tracks present on this SVG map
+    const activeTrackIds = new Set(Object.keys(carHostElementMap).map(k => k.toUpperCase()));
+    if (!isTheater && activeTrackIds.size > 0) {
+        calculateTrackStats(activeTrackIds);
+    }
 
     // Calculate uniform yard car scale (derived from minimum track capacity ratio or scale rule)
     const globalYardScale = calculateGlobalYardCarScale(svg, trackMap, carHostElementMap);
