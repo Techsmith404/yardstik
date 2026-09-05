@@ -582,15 +582,68 @@ export function sortBreakdownByDirection(breakdown, targetPath) {
     });
 }
 
-export function getMultiCarDasharray(el, carColors, targetColor) {
+export function calculateGlobalYardCarScale(svg, trackMap, carHostElementMap) {
+    if (!svg) return { carLen: 22.0, gapLen: 5.5, strokeWidth: 4.8 };
+
+    // 1. Check for explicit scale override in SVG
+    const scaleEl = svg.querySelector("#scale-rule, .scale-rule, [id*='scale-rule'], [data-car-len]");
+    if (scaleEl) {
+        const directLen = parseFloat(scaleEl.getAttribute("data-car-len") || svg.getAttribute("data-car-len"));
+        if (directLen && directLen > 0) {
+            const carLen = directLen;
+            const gapLen = Math.max(1.2, carLen * 0.22);
+            const strokeWidth = Math.max(2.0, Math.min(5.0, carLen * 0.38));
+            return { carLen, gapLen, strokeWidth };
+        }
+        const scaleFeet = parseFloat(scaleEl.getAttribute("data-feet"));
+        if (scaleFeet && scaleFeet > 0) {
+            const rulePx = getElementExactLength(scaleEl);
+            const pxPerFoot = rulePx / scaleFeet;
+            const carLen = Math.max(4.0, Math.min(28.0, 50.0 * pxPerFoot)); // Standard 50ft car
+            const gapLen = Math.max(1.0, carLen * 0.22);
+            const strokeWidth = Math.max(2.0, Math.min(5.0, carLen * 0.38));
+            return { carLen, gapLen, strokeWidth };
+        }
+    }
+
+    // 2. Compute minimum ratio (tightest capacity fit) across all tracks in the yard
+    const ratios = [];
+    if (carHostElementMap && trackMap) {
+        Object.keys(carHostElementMap).forEach(trackId => {
+            const el = carHostElementMap[trackId];
+            const data = trackMap[trackId];
+            const cap = (data && data.capacity) ? data.capacity : parseInt(el.getAttribute("data-capacity") || "0", 10);
+            if (cap >= 3) {
+                const totalLen = getElementExactLength(el);
+                if (totalLen > 20) {
+                    ratios.push(totalLen / cap);
+                }
+            }
+        });
+    }
+
+    if (ratios.length > 0) {
+        ratios.sort((a, b) => a - b);
+        const minRatio = ratios[0]; // Tightest track ratio ensures full capacity fits everywhere
+        const carLen = Math.max(4.5, Math.min(24.0, minRatio * 0.72));
+        const gapLen = Math.max(1.2, carLen * 0.22);
+        const strokeWidth = Math.max(2.0, Math.min(4.8, carLen * 0.38));
+        return { carLen, gapLen, strokeWidth };
+    }
+
+    return { carLen: 22.0, gapLen: 5.5, strokeWidth: 4.8 };
+}
+
+export function getMultiCarDasharray(el, carColors, targetColor, scaleConfig) {
     if (!carColors || !carColors.length) return "none";
     const totalLen = getElementExactLength(el);
     const N = carColors.length;
-    const CAR_LEN = 24.0;
-    const GAP_LEN = 6.0;
+
+    const CAR_LEN = (scaleConfig && scaleConfig.carLen) ? scaleConfig.carLen : 22.0;
+    const GAP_LEN = (scaleConfig && scaleConfig.gapLen) ? scaleConfig.gapLen : 5.5;
     const totalTrainLen = (N * CAR_LEN) + ((N - 1) * GAP_LEN);
 
-    let startOffset = 10.0;
+    let startOffset = 5.0;
     if (totalLen > totalTrainLen) {
         startOffset = (totalLen - totalTrainLen) / 2.0;
     }
@@ -612,23 +665,23 @@ export function getMultiCarDasharray(el, carColors, targetColor) {
 export function getCarDasharray(el, cars, capacity) {
     if (!cars || cars <= 0) return "none";
     const totalLen = getElementExactLength(el);
-    
-    // Uniform physical railcar size across all tracks in the yard
-    const CAR_LEN = 24.0;
-    const GAP_LEN = 6.0;
+    const cap = (capacity && capacity > 0) ? capacity : 20;
+    const minRatio = totalLen / cap;
+    const CAR_LEN = Math.max(4.5, Math.min(24.0, minRatio * 0.72));
+    const GAP_LEN = Math.max(1.2, CAR_LEN * 0.22);
     const totalTrainLen = (cars * CAR_LEN) + ((cars - 1) * GAP_LEN);
 
-    // Center the train along the track length
-    let startOffset = 10.0;
+    let startOffset = 5.0;
     if (totalLen > totalTrainLen) {
         startOffset = (totalLen - totalTrainLen) / 2.0;
     }
 
-    const dashes = ["0", startOffset.toFixed(1)];
-    for (let i = 0; i < cars - 1; i++) {
+    const dashes = [];
+    dashes.push("0", startOffset.toFixed(1));
+    for (let i = 0; i < cars; i++) {
         dashes.push(CAR_LEN.toFixed(1), GAP_LEN.toFixed(1));
     }
-    dashes.push(CAR_LEN.toFixed(1), (totalLen * 3).toFixed(1));
+    dashes.push("0", (totalLen * 3).toFixed(1));
     return dashes.join(" ");
 }
 
@@ -805,6 +858,9 @@ function bindSvgInteractivity(container, isTheater = false) {
         }
     });
 
+    // Calculate uniform yard car scale (derived from minimum track capacity ratio or scale rule)
+    const globalYardScale = calculateGlobalYardCarScale(svg, trackMap, carHostElementMap);
+
     // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, track segments with class 'cars' or 'track')
     trackLineElements.forEach(el => {
         const rawId = extractTrackIdFromElement(el);
@@ -851,10 +907,10 @@ function bindSvgInteractivity(container, isTheater = false) {
                     overlay.classList.remove("yard-track-line", "cars", "car-zone", "car-zone-guide");
                     overlay.classList.add("train-car-overlay");
 
-                    const dashPattern = getMultiCarDasharray(el, carColors, col);
+                    const dashPattern = getMultiCarDasharray(el, carColors, col, globalYardScale);
 
                     overlay.style.setProperty("stroke", col, "important");
-                    overlay.style.setProperty("stroke-width", "4.8px", "important");
+                    overlay.style.setProperty("stroke-width", `${globalYardScale.strokeWidth.toFixed(1)}px`, "important");
                     overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
                     overlay.style.setProperty("stroke-linecap", "butt", "important");
                     overlay.style.setProperty("fill", "none", "important");
