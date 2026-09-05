@@ -123,18 +123,74 @@ export function getCapacityBedColor(cars, capacity, isBadOrder = false) {
 }
 
 
+export function normalizeCompoundPathData(d) {
+    if (!d || !d.trim()) return d;
+    const subpathStrings = d.trim().split(/(?=[Mm])/);
+    if (subpathStrings.length <= 1) return d;
+
+    const subpaths = [];
+    for (const sp of subpathStrings) {
+        const matches = sp.match(/[A-Za-z]|-?\d+(?:\.\d+)?/g);
+        if (!matches) continue;
+        const pts = [];
+        let i = 0;
+        let cmd = "L";
+        while (i < matches.length) {
+            const token = matches[i];
+            if (/^[A-Za-z]$/.test(token)) {
+                cmd = token.toUpperCase();
+                i++;
+            }
+            if (cmd === "M" || cmd === "L") {
+                if (i + 1 < matches.length && !isNaN(Number(matches[i])) && !isNaN(Number(matches[i+1]))) {
+                    pts.push([parseFloat(matches[i]), parseFloat(matches[i+1])]);
+                    i += 2;
+                } else {
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        if (pts.length > 0) subpaths.push(pts);
+    }
+
+    if (subpaths.length === 2) {
+        const [p1, p2] = subpaths;
+        const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+        if (dist(p1[0], p2[0]) < 2.0) {
+            const combined = [...p2.slice().reverse(), ...p1.slice(1)];
+            return "M " + combined.map(pt => `${pt[0]} ${pt[1]}`).join(" L ");
+        } else if (dist(p1[p1.length - 1], p2[0]) < 2.0) {
+            const combined = [...p1, ...p2.slice(1)];
+            return "M " + combined.map(pt => `${pt[0]} ${pt[1]}`).join(" L ");
+        } else if (dist(p1[0], p2[p2.length - 1]) < 2.0) {
+            const combined = [...p2, ...p1.slice(1)];
+            return "M " + combined.map(pt => `${pt[0]} ${pt[1]}`).join(" L ");
+        } else if (dist(p1[p1.length - 1], p2[p2.length - 1]) < 2.0) {
+            const combined = [...p1, ...p2.slice().reverse().slice(1)];
+            return "M " + combined.map(pt => `${pt[0]} ${pt[1]}`).join(" L ");
+        }
+    }
+    return d;
+}
+
 function extractTrackIdFromElement(el) {
     if (!el) return null;
     const idAttr = el.getAttribute("id") || "";
     if (idAttr) {
         let clean = idAttr.trim();
         clean = clean.replace(/^[nsew]curve[-_]/i, "");
+        clean = clean.replace(/^car[-_]zone[-_]/i, "");
+        clean = clean.replace(/^cars[-_]/i, "");
         clean = clean.replace(/^track[-_]/i, "");
+        clean = clean.replace(/[-_]cars$/i, "");
+        clean = clean.replace(/[-_]car[-_]zone$/i, "");
         clean = clean.replace(/^label[-_]/i, "");
         clean = clean.replace(/[-_]\d+$/, "");
         return clean.toUpperCase();
     }
-    const dataTrack = el.getAttribute("data-track");
+    const dataTrack = el.getAttribute("data-track") || el.getAttribute("data-car-track");
     if (dataTrack) return dataTrack.trim().toUpperCase();
 
     const txt = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
@@ -481,6 +537,17 @@ function bindSvgInteractivity(container, isTheater = false) {
     svg.style.maxHeight = "100%";
     svg.style.display = "block";
 
+    // Normalize any compound paths created from Boxy SVG joins
+    svg.querySelectorAll("path").forEach(p => {
+        const d = p.getAttribute("d");
+        if (d && (d.match(/[Mm]/g) || []).length > 1) {
+            const norm = normalizeCompoundPathData(d);
+            if (norm !== d) {
+                p.setAttribute("d", norm);
+            }
+        }
+    });
+
     // Clean up old overlay paths if re-binding
     svg.querySelectorAll(".train-car-overlay").forEach(o => o.remove());
 
@@ -489,9 +556,28 @@ function bindSvgInteractivity(container, isTheater = false) {
         trackMap[t.id.toUpperCase()] = t;
     });
 
+    // 0. Detect and index designated car zones (e.g. class="car-zone", id="cars-48", id="car-zone-48", etc.)
+    const carZoneElements = svg.querySelectorAll("[id^='cars-'], [id^='cars_'], [id^='car-zone-'], [id^='car_zone_'], [id$='-cars'], .car-zone, [data-car-zone], [data-car-track]");
+    const carZoneMap = {};
+    carZoneElements.forEach(cz => {
+        const czId = extractTrackIdFromElement(cz);
+        if (czId) {
+            carZoneMap[czId.toUpperCase()] = cz;
+            cz.classList.add("car-zone-guide");
+            cz.style.setProperty("stroke", "transparent", "important");
+            cz.style.setProperty("fill", "none", "important");
+            cz.style.setProperty("pointer-events", "none", "important");
+        }
+    });
+
     // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, etc.)
     const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], [id*='curve-'], [id*='curve_'], path.track, polyline.track, line.track");
     trackLineElements.forEach(el => {
+        // Skip car zone guide lines from receiving separate track bed styling
+        if (el.classList.contains("car-zone-guide") || el.classList.contains("car-zone") || /^cars[-_]|^car[-_]zone/i.test(el.id || "")) {
+            return;
+        }
+
         const rawId = extractTrackIdFromElement(el);
         if (!rawId) return;
         const data = trackMap[rawId];
@@ -513,6 +599,7 @@ function bindSvgInteractivity(container, isTheater = false) {
             // If track is occupied with cars, create overlay path(s) with exact car count dashes
             const isMainTrack = (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""));
             if (isMainTrack && data.cars > 0 && !data.is_clear) {
+                const targetPath = carZoneMap[rawId] || el;
                 const breakdown = getTrackCommodityBreakdown(data);
                 const carColors = [];
                 breakdown.forEach(seg => {
@@ -530,12 +617,12 @@ function bindSvgInteractivity(container, isTheater = false) {
 
                 const uniqueColors = [...new Set(carColors)];
                 uniqueColors.forEach(col => {
-                    const overlay = el.cloneNode(true);
+                    const overlay = targetPath.cloneNode(true);
                     overlay.removeAttribute("id");
-                    overlay.classList.remove("yard-track-line");
+                    overlay.classList.remove("yard-track-line", "car-zone", "car-zone-guide");
                     overlay.classList.add("train-car-overlay");
 
-                    const dashPattern = getMultiCarDasharray(el, carColors, col);
+                    const dashPattern = getMultiCarDasharray(targetPath, carColors, col);
 
                     overlay.style.setProperty("stroke", col, "important");
                     overlay.style.setProperty("stroke-width", "4.8px", "important");
