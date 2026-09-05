@@ -612,28 +612,43 @@ function bindSvgInteractivity(container, isTheater = false) {
         trackMap[t.id.toUpperCase()] = t;
     });
 
-    // 0. Detect and index designated car zones (e.g. class="car-zone", id="cars-48", id="car-zone-48", etc.)
-    const carZoneElements = svg.querySelectorAll("[id^='cars-'], [id^='cars_'], [id^='car-zone-'], [id^='car_zone_'], [id$='-cars'], .car-zone, [data-car-zone], [data-car-track]");
-    const carZoneMap = {};
-    carZoneElements.forEach(cz => {
-        const czId = extractTrackIdFromElement(cz);
-        if (czId) {
-            carZoneMap[czId.toUpperCase()] = cz;
-            cz.classList.add("car-zone-guide");
-            cz.style.setProperty("stroke", "transparent", "important");
-            cz.style.setProperty("fill", "none", "important");
-            cz.style.setProperty("pointer-events", "none", "important");
+    function isExplicitCarElement(el) {
+        if (!el) return false;
+        const cls = el.getAttribute("class") || "";
+        if (/\b(?:cars|car|car-zone|cars-zone|car-segment)\b/i.test(cls)) return true;
+        if (el.hasAttribute("data-cars") || el.hasAttribute("data-car-zone")) return true;
+        const id = (el.getAttribute("id") || "").toLowerCase();
+        if (/^cars[-_]|^car[-_]zone[-_]|[-_]cars$/i.test(id)) return true;
+        return false;
+    }
+
+    // Index all track segments and select the designated car segment for each track
+    const carHostElementMap = {};
+    const trackSegmentsByTrackId = {};
+
+    const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], [id*='curve-'], [id*='curve_'], [id^='cars-'], [id^='car-zone-'], path.track, polyline.track, line.track, .track, .cars, .car-zone");
+    trackLineElements.forEach(el => {
+        const rawId = extractTrackIdFromElement(el);
+        if (!rawId) return;
+        if (!trackSegmentsByTrackId[rawId]) {
+            trackSegmentsByTrackId[rawId] = [];
+        }
+        trackSegmentsByTrackId[rawId].push(el);
+    });
+
+    Object.keys(trackSegmentsByTrackId).forEach(rawId => {
+        const segs = trackSegmentsByTrackId[rawId];
+        const explicitCarSeg = segs.find(el => isExplicitCarElement(el));
+        if (explicitCarSeg) {
+            carHostElementMap[rawId] = explicitCarSeg;
+        } else {
+            const mainSeg = segs.find(el => (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""))) || segs[0];
+            carHostElementMap[rawId] = mainSeg;
         }
     });
 
-    // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, etc.)
-    const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], [id*='curve-'], [id*='curve_'], path.track, polyline.track, line.track");
+    // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, track segments with class 'cars' or 'track')
     trackLineElements.forEach(el => {
-        // Skip car zone guide lines from receiving separate track bed styling
-        if (el.classList.contains("car-zone-guide") || el.classList.contains("car-zone") || /^cars[-_]|^car[-_]zone/i.test(el.id || "")) {
-            return;
-        }
-
         const rawId = extractTrackIdFromElement(el);
         if (!rawId) return;
         const data = trackMap[rawId];
@@ -652,10 +667,9 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.style.setProperty("stroke", bedColor, "important");
             el.style.setProperty("stroke-width", "2.8px", "important");
 
-            // If track is occupied with cars, create overlay path(s) with exact car count dashes
-            const isMainTrack = (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""));
-            if (isMainTrack && data.cars > 0 && !data.is_clear) {
-                const targetPath = carZoneMap[rawId] || el;
+            // If this element is the designated host segment for cars, create overlay path(s)
+            const isCarHost = (el === carHostElementMap[rawId]);
+            if (isCarHost && data.cars > 0 && !data.is_clear) {
                 const breakdown = getTrackCommodityBreakdown(data);
                 const carColors = [];
                 breakdown.forEach(seg => {
@@ -673,12 +687,12 @@ function bindSvgInteractivity(container, isTheater = false) {
 
                 const uniqueColors = [...new Set(carColors)];
                 uniqueColors.forEach(col => {
-                    const overlay = targetPath.cloneNode(true);
+                    const overlay = el.cloneNode(true);
                     overlay.removeAttribute("id");
-                    overlay.classList.remove("yard-track-line", "car-zone", "car-zone-guide");
+                    overlay.classList.remove("yard-track-line", "cars", "car-zone", "car-zone-guide");
                     overlay.classList.add("train-car-overlay");
 
-                    const dashPattern = getMultiCarDasharray(targetPath, carColors, col);
+                    const dashPattern = getMultiCarDasharray(el, carColors, col);
 
                     overlay.style.setProperty("stroke", col, "important");
                     overlay.style.setProperty("stroke-width", "4.8px", "important");
