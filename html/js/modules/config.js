@@ -17,16 +17,47 @@ export function initMobileRedirect() {
     }
 }
 
-// 2. Desktop vs Kiosk Mode Evaluation
+// 2. Desktop vs Kiosk vs Handoff Mode Evaluation
+export const isExplicitHandoff = viewParam === 'handoff' || urlParams.get('handoff') === 'true' || urlParams.has('handoff') || urlParams.get('mode') === 'handoff' || urlParams.get('mock') === 'handoff';
 export const isExplicitKiosk = viewParam === 'kiosk';
 export const isExplicitDesktop = viewParam === 'desktop';
-export const isLocalhostKiosk = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isExplicitDesktop;
+export const isLocalhostKiosk = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isExplicitDesktop && !isExplicitHandoff;
 
 export const isKioskMode = isExplicitKiosk || isLocalhostKiosk;
-export const isDesktopMode = !isKioskMode;
+export const isDesktopMode = !isKioskMode && !isExplicitHandoff;
+export let isHandoffActive = isExplicitHandoff;
+
+export function setupHandoffLayout(active = isHandoffActive) {
+    isHandoffActive = active;
+    if (active) {
+        document.body.classList.add('handoff-mode');
+        const hOsha = document.getElementById('header-osha');
+        const hBlend = document.getElementById('header-blend');
+        const hTitle = document.getElementById('header-title-container');
+        if (hOsha) hOsha.style.display = 'flex';
+        if (hBlend) hBlend.style.display = 'flex';
+        if (hTitle) hTitle.style.display = 'none';
+
+        // Check if weather alerts are active
+        const alertsContainer = document.getElementById('dynamic-alerts-container');
+        if (alertsContainer && alertsContainer.children.length > 0) {
+            document.body.classList.add('weather-alert-active');
+        } else {
+            document.body.classList.remove('weather-alert-active');
+        }
+    } else if (!isExplicitHandoff) {
+        document.body.classList.remove('handoff-mode', 'weather-alert-active');
+        const hOsha = document.getElementById('header-osha');
+        const hBlend = document.getElementById('header-blend');
+        const hTitle = document.getElementById('header-title-container');
+        if (hOsha) hOsha.style.display = 'none';
+        if (hBlend) hBlend.style.display = 'none';
+        if (hTitle) hTitle.style.display = 'flex';
+    }
+}
 
 export function setupDesktopLayout() {
-    if (isDesktopMode) {
+    if (isDesktopMode && !isExplicitHandoff) {
         document.body.classList.add('desktop-mode');
         const navBar = document.getElementById('desktop-nav-bar');
         if (navBar) navBar.style.display = 'flex';

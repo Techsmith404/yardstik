@@ -1,5 +1,6 @@
 // Clock, Shift Tracker & Countdown Engine Module
 import { applyTheme, getSeasonalTheme } from './theme.js';
+import { setupHandoffLayout, isExplicitHandoff } from './config.js';
 
 export let cachedShifts = [];
 let lastTrackedShiftName = '__INIT__';
@@ -58,6 +59,10 @@ export function updateShiftTracker() {
                         const totalDuration = endMinsWeek - startMinsWeek;
                         const elapsed = testMins - startMinsWeek;
                         shiftProgress = (elapsed / totalDuration) * 100;
+                        
+                        // Trigger Handoff Mode during first 15 mins of shift or via URL param
+                        const isHandoffWindow = (elapsed >= 0 && elapsed <= 15) || isExplicitHandoff;
+                        setupHandoffLayout(isHandoffWindow);
                         
                         const minsLeft = endMinsWeek - testMins;
                         const hrs = Math.floor(minsLeft / 60);

@@ -1624,4 +1624,41 @@ g.badge-rect, .badge-rect {
     font-weight: 700;
 }
 
+/* ==========================================================================
+   SHIFT HANDOFF MODE (Issue #18)
+   Triggered via ?view=handoff, ?handoff, or first 15 mins of active shift
+   ========================================================================== */
+body.handoff-mode .header-widget {
+    justify-content: space-between;
+    gap: 15px;
+}
+
+body.handoff-mode #header-title-container {
+    display: none !important;
+}
+
+body.handoff-mode #header-osha,
+body.handoff-mode #header-blend {
+    display: flex !important;
+}
+
+body.handoff-mode #osha-widget-container,
+body.handoff-mode #blend-widget-container,
+body.handoff-mode #filler-widgets-container {
+    display: none !important;
+}
+
+body.handoff-mode:not(.weather-alert-active) #view-production .side-stats {
+    display: none !important;
+}
+
+body.handoff-mode:not(.weather-alert-active) #view-production #equipment-dashboard-container {
+    grid-column: span 4 !important;
+}
+
+body.handoff-mode:not(.weather-alert-active) #equipment-masonry {
+    column-count: 3 !important;
+}
+
+
 
