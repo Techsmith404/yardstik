@@ -33,8 +33,10 @@ if (isExplicitHandoff && typeof document !== 'undefined' && document.body) {
 
 export function setupHandoffLayout(active = isHandoffActive) {
     isHandoffActive = active;
+    const viewSafety = document.getElementById('view-safety');
     if (active) {
         document.body.classList.add('handoff-mode');
+        if (viewSafety) viewSafety.removeAttribute('data-disabled');
         const hOsha = document.getElementById('header-osha');
         const hBlend = document.getElementById('header-blend');
         const hTitle = document.getElementById('header-title-container');
@@ -51,6 +53,7 @@ export function setupHandoffLayout(active = isHandoffActive) {
         }
     } else if (!isExplicitHandoff) {
         document.body.classList.remove('handoff-mode', 'weather-alert-active');
+        if (viewSafety) viewSafety.setAttribute('data-disabled', 'true');
         const hOsha = document.getElementById('header-osha');
         const hBlend = document.getElementById('header-blend');
         const hTitle = document.getElementById('header-title-container');

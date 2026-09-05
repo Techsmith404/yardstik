@@ -1,5 +1,5 @@
 // Markdown Reminders & Magic Words Parser Module
-import { isDesktopMode } from './config.js';
+import { isDesktopMode, isHandoffActive } from './config.js';
 
 export let remindersList = [];
 export let currentReminderIndex = 0;
@@ -10,7 +10,7 @@ let reminderScrollTimeout = null;
 let reminderScrollRaf = null;
 
 export function startRemindersScroll() {
-    const content = document.getElementById('reminders-content');
+    const content = document.getElementById('reminders-content') || document.querySelector('.reminder-body');
     if (!content) return;
 
     if (reminderScrollRaf) cancelAnimationFrame(reminderScrollRaf);
@@ -65,21 +65,87 @@ export function startRemindersScroll() {
     }, 2500);
 }
 
-export function renderAllReminders() {
-    const contentContainer = document.getElementById('reminders-content');
-    const titleEl = document.getElementById('reminders-title');
-    const container = document.getElementById('reminders-widget-container');
-    if (!contentContainer) return null;
+export function renderMultipleRemindersWidgets() {
+    const parentContainer = document.getElementById('reminders-side-stats') || document.querySelector('#view-announcements .side-stats');
+    if (!parentContainer) return null;
 
     const now = Date.now();
     const activeList = remindersList.filter(r => !r.expireTime || now <= r.expireTime);
 
-    if (titleEl) {
-        titleEl.innerText = "ACTIVE REMINDERS & NOTICES";
+    if (activeList.length === 0) {
+        parentContainer.innerHTML = `
+            <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0;">
+                <h3 id="reminders-title">Reminders</h3>
+                <div id="reminders-content" style="color: var(--text-muted); font-style: italic; font-size: 0.95rem; padding-right: 5px; flex: 1;">No active reminders.</div>
+            </div>
+        `;
+        return null;
     }
 
+    let widgetsHtml = '';
+    activeList.forEach((r) => {
+        const parsedBody = marked.parse(r.body.trim());
+        let priorityBadge = '';
+        let widgetBorder = '1px solid rgba(255, 255, 255, 0.12)';
+        let widgetShadow = '0 10px 30px rgba(0,0,0,0.5)';
+        let widgetAnim = 'none';
+        let quoteBorderColor = 'rgba(128, 138, 148, 0.6)';
+
+        if (r.priority === 'critical') {
+            priorityBadge = '<span class="reminder-badge badge-critical">Critical</span>';
+            widgetBorder = '1px solid #ff0033';
+            widgetShadow = '0 0 20px rgba(255, 0, 51, 0.6)';
+            widgetAnim = 'pulse-border-glow 1.5s infinite alternate';
+            quoteBorderColor = '#ff0033';
+        } else if (r.priority === 'high') {
+            priorityBadge = '<span class="reminder-badge badge-important">Important</span>';
+            widgetBorder = '1px solid var(--neon-amber)';
+            widgetShadow = '0 0 15px rgba(255, 170, 0, 0.4)';
+            widgetAnim = 'pulse-border-glow 2.5s infinite alternate ease-in-out';
+            quoteBorderColor = 'var(--neon-amber)';
+        }
+
+        widgetsHtml += `
+            <div class="widget reminder-widget-card" style="flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; border: ${widgetBorder}; box-shadow: ${widgetShadow}; animation: ${widgetAnim}; --quote-border-color: ${quoteBorderColor}; padding: 25px 30px;">
+                <h3 style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; font-size: 1.25rem;">
+                    <span>${r.title}</span>
+                    ${priorityBadge}
+                </h3>
+                <div class="reminder-body ${r.splitList ? 'split-list' : ''} ${r.isLarge ? 'large-text' : ''} ${r.isCenter ? 'center-text' : ''}" style="color: var(--text-primary); font-size: 0.95rem; flex: 1; overflow-y: auto;">
+                    ${parsedBody}
+                </div>
+            </div>
+        `;
+    });
+
+    parentContainer.innerHTML = widgetsHtml;
+    const hasLong = activeList.some(r => r.isLong);
+    return hasLong ? 120000 : null;
+}
+
+export function advanceSingleReminderSlide() {
+    const parentContainer = document.getElementById('reminders-side-stats') || document.querySelector('#view-announcements .side-stats');
+    if (!parentContainer) return null;
+
+    let container = document.getElementById('reminders-widget-container');
+    if (!container || parentContainer.children.length !== 1 || !document.getElementById('reminders-content')) {
+        parentContainer.innerHTML = `
+            <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 id="reminders-title">Reminders</h3>
+                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px; flex: 1; overflow-y: auto;">Loading...</div>
+            </div>
+        `;
+        container = document.getElementById('reminders-widget-container');
+    }
+
+    const now = Date.now();
+    const activeList = remindersList.filter(r => !r.expireTime || now <= r.expireTime);
+
     if (activeList.length === 0) {
-        contentContainer.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>';
+        const titleEl = document.getElementById('reminders-title');
+        const contentEl = document.getElementById('reminders-content');
+        if (titleEl) titleEl.innerText = "Reminders";
+        if (contentEl) contentEl.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>';
         if (container) {
             container.style.border = '1px solid rgba(255, 255, 255, 0.12)';
             container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
@@ -88,16 +154,25 @@ export function renderAllReminders() {
         return null;
     }
 
-    // Set container glow based on priority
+    if (currentReminderIndex >= activeList.length) {
+        currentReminderIndex = 0;
+    }
+
+    const reminder = activeList[currentReminderIndex];
+    const titleEl = document.getElementById('reminders-title');
+    const contentContainer = document.getElementById('reminders-content');
+
+    if (titleEl) {
+        titleEl.innerText = reminder.title;
+    }
+
     if (container) {
-        const hasCritical = activeList.some(r => r.priority === 'critical');
-        const hasHigh = activeList.some(r => r.priority === 'high');
-        if (hasCritical) {
+        if (reminder.priority === 'critical') {
             container.style.border = '1px solid #ff0033';
             container.style.boxShadow = '0 0 20px rgba(255, 0, 51, 0.6)';
             container.style.animation = 'pulse-border-glow 1.5s infinite alternate';
             container.style.setProperty('--quote-border-color', '#ff0033');
-        } else if (hasHigh) {
+        } else if (reminder.priority === 'high') {
             container.style.border = '1px solid var(--neon-amber)';
             container.style.boxShadow = '0 0 15px rgba(255, 170, 0, 0.4)';
             container.style.animation = 'pulse-border-glow 2.5s infinite alternate ease-in-out';
@@ -110,43 +185,37 @@ export function renderAllReminders() {
         }
     }
 
-    let fullHtml = '';
-    activeList.forEach((r) => {
-        const parsedBody = marked.parse(r.body.trim());
-        let priorityBadge = '';
-        if (r.priority === 'critical') {
-            priorityBadge = '<span class="reminder-badge badge-critical">Critical</span>';
-        } else if (r.priority === 'high') {
-            priorityBadge = '<span class="reminder-badge badge-important">Important</span>';
-        }
+    if (contentContainer) {
+        if (reminder.splitList) contentContainer.classList.add('split-list');
+        else contentContainer.classList.remove('split-list');
 
-        fullHtml += `
-            <div class="reminder-item ${r.priority}">
-                <div class="reminder-header">
-                    <span class="reminder-title-text">${r.title}</span>
-                    ${priorityBadge}
-                </div>
-                <div class="reminder-body ${r.splitList ? 'split-list' : ''} ${r.isLarge ? 'large-text' : ''} ${r.isCenter ? 'center-text' : ''}">
-                    ${parsedBody}
-                </div>
-            </div>
-        `;
-    });
+        if (reminder.isLarge) contentContainer.classList.add('large-text');
+        else contentContainer.classList.remove('large-text');
 
-    contentContainer.innerHTML = fullHtml;
+        if (reminder.isCenter) contentContainer.classList.add('center-text');
+        else contentContainer.classList.remove('center-text');
 
-    const hasLong = activeList.some(r => r.isLong);
-    return hasLong ? 120000 : null;
+        const htmlContent = marked.parse(reminder.body.trim());
+        contentContainer.innerHTML = htmlContent;
+    }
+
+    currentReminderIndex = (currentReminderIndex + 1) % activeList.length;
+    startRemindersScroll();
+
+    if (reminder.isLong) return 120000;
+    return null;
 }
 
 export function advanceReminderSlide() {
-    const overrideMs = renderAllReminders();
-    startRemindersScroll();
-    return overrideMs;
+    if (isHandoffActive || isDesktopMode) {
+        return renderMultipleRemindersWidgets();
+    } else {
+        return advanceSingleReminderSlide();
+    }
 }
 
 export function renderDesktopReminders() {
-    renderAllReminders();
+    renderMultipleRemindersWidgets();
 }
 
 export async function fetchReminders() {
@@ -240,14 +309,10 @@ export async function fetchReminders() {
             // Reset index if it's out of bounds after a file update
             if (currentReminderIndex >= remindersList.length) currentReminderIndex = 0;
             
-            if (isDesktopMode) {
+            if (isDesktopMode || isHandoffActive) {
                 renderDesktopReminders();
             } else {
-                // If this is the initial load, render immediately
-                const content = document.getElementById('reminders-content');
-                if (content && content.innerHTML === 'Loading...') {
-                    advanceReminderSlide();
-                }
+                advanceSingleReminderSlide();
             }
         } else {
             throw new Error('No valid sections found');

@@ -75,10 +75,17 @@ const isShort = urlParams.get('short') === 'true';
 const slideParam = (urlParams.get('slide') || '').toLowerCase();
 
 if (slideParam) {
-    if (slideParam === '1' || slideParam === 'production' || slideParam === 'equipment') currentView = 0;
-    else if (slideParam === '2' || slideParam === 'safety' || slideParam === 'milestones') currentView = 1;
-    else if (slideParam === '3' || slideParam === 'announcements' || slideParam === 'trackmap' || slideParam === 'reminders') currentView = 2;
-    else {
+    if (slideParam === '1' || slideParam === 'production' || slideParam === 'equipment') {
+        currentView = 0;
+    } else if (slideParam === 'safety' || slideParam === 'milestones') {
+        currentView = 1;
+    } else if (slideParam === 'announcements' || slideParam === 'trackmap' || slideParam === 'reminders') {
+        currentView = 2;
+    } else if (slideParam === '2') {
+        currentView = isHandoffActive ? 1 : 2;
+    } else if (slideParam === '3') {
+        currentView = 2;
+    } else {
         const parsed = parseInt(slideParam, 10);
         if (!isNaN(parsed) && parsed >= 1 && parsed <= views.length) currentView = parsed - 1;
     }
@@ -106,6 +113,9 @@ if (isDesktopMode) {
     }
 } else {
     views.forEach(v => v.classList.remove('active'));
+    if (views[currentView] && views[currentView].getAttribute('data-disabled') === 'true') {
+        currentView = (currentView + 1) % views.length;
+    }
     if (views[currentView]) {
         views[currentView].classList.add('active');
         if (views[currentView].id === 'view-special') views[currentView].style.display = 'flex';

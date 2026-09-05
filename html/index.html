@@ -112,8 +112,8 @@
         </div>
     </div>
 
-    <!-- Slide 2: Safety Stand-down & Milestones -->
-    <div id="view-safety" class="kiosk-view" data-duration="30000">
+    <!-- Slide 2: Safety Stand-down & Milestones (Enabled in Shift Handoff Mode) -->
+    <div id="view-safety" class="kiosk-view" data-duration="30000" data-disabled="true">
         <div class="widget announcement-slide" id="toolbox-widget-container" style="flex: 1 1 55%; display: flex; flex-direction: column; overflow: hidden; margin: 0; min-height: 0;">
             <h3 style="display: flex; align-items: center; justify-content: space-between;">
                 <span>DAILY TOOLBOX TALK</span>
@@ -168,7 +168,7 @@
                 <!-- Dynamically rendered SVG Track Map or Card Grid -->
             </div>
         </div>
-        <div class="side-stats" style="display: flex; flex-direction: column; gap: 25px;">
+        <div class="side-stats" id="reminders-side-stats" style="display: flex; flex-direction: column; gap: 25px;">
             <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
                 <h3 id="reminders-title">Reminders</h3>
                 <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px; flex: 1; overflow-y: auto;">Loading...</div>
