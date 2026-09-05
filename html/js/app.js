@@ -1,4 +1,4 @@
-import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, fetchSiteConfig, checkVersion, isDesktopMode } from './modules/config.js';
+import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, fetchSiteConfig, checkVersion, isDesktopMode, isHandoffActive } from './modules/config.js';
 import { fetchShifts, startClockLoop } from './modules/clock.js';
 import { updateTrackers } from './modules/trackers.js';
 import { getWeather } from './modules/weather.js';
@@ -128,6 +128,9 @@ if (isDesktopMode) {
         if (checkView.id === 'view-special') checkView.style.display = 'flex';
         
         let ms = parseInt(checkView.getAttribute('data-duration')) || 40000;
+        if (isHandoffActive) {
+            ms = 60000;
+        }
         
         if (checkView.id === 'view-safety') {
             // Dynamic Sub-Panel Rotation on Slide 2 (Anniversaries -> Safety Videos)
@@ -170,7 +173,7 @@ if (isDesktopMode) {
 
         if (checkView.id === 'view-announcements') {
             const overrideMs = advanceReminderSlide();
-            if (overrideMs) ms = overrideMs;
+            if (overrideMs && !isHandoffActive) ms = overrideMs;
         }
         
         if (isShort) ms = 10000;
@@ -182,6 +185,7 @@ if (isDesktopMode) {
     // Start the loop dynamically based on the first view's requested duration
     if (views.length > 0) {
         let initialDelay = parseInt(views[0].getAttribute('data-duration')) || 40000;
+        if (isHandoffActive) initialDelay = 60000;
         if (isShort) initialDelay = 10000;
         setTimeout(cycleViews, initialDelay);
     }

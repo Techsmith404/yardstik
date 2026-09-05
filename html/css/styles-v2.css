@@ -1043,25 +1043,58 @@ body.desktop-mode #equipment-scroll-wrapper::-webkit-scrollbar-thumb:hover {
     background: var(--brand-blue);
 }
 
-/* Desktop All-Reminders View Styling */
-body.desktop-mode .desktop-reminder-item {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+/* Reminders View Styling (Kiosk Slide 3 & Desktop Mode) */
+.reminder-item,
+.desktop-reminder-item {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
-body.desktop-mode .desktop-reminder-item:last-child {
+.reminder-item:last-child,
+.desktop-reminder-item:last-child {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
 }
-body.desktop-mode .desktop-reminder-header {
-    font-size: 1.15rem;
+.reminder-header,
+.desktop-reminder-header {
+    font-size: 1.18rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.reminder-title-text {
+    display: inline-flex;
+    align-items: center;
     gap: 8px;
+}
+.reminder-badge {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+.badge-critical {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    color: #fca5a5;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+.badge-important {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #fcd34d;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
 
 /* Track Map Widget & Module Styles */
