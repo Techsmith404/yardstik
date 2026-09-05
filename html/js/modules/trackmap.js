@@ -314,16 +314,41 @@ export function getCommodityCategoryForText(text) {
     return match.category;
 }
 
+export function extractDirectionFromText(text) {
+    if (!text) return { dir: null, cleanText: text };
+    let dir = null;
+    let cleanText = text;
+
+    // Matches: S/END, N/END, E/END, W/END, S END, N END, E END, W END, NORTH END, SOUTH END, EAST END, WEST END, AT S/END, etc.
+    const dirMatch = cleanText.match(/(?:\b(?:AT|ON)\s+)?\b([NSEW])(?:\s*[\/]\s*END|\s+END|\s+SIDE)\b/i) ||
+                     cleanText.match(/\b(NORTH|SOUTH|EAST|WEST)(?:\s+END|\s+SIDE)?\b/i) ||
+                     cleanText.match(/\b([NSEW])\/E\b/i) ||
+                     cleanText.match(/\(([NSEW])\)/i);
+
+    if (dirMatch) {
+        const rawDir = dirMatch[1].toUpperCase();
+        if (rawDir.startsWith("N")) dir = "N";
+        else if (rawDir.startsWith("S")) dir = "S";
+        else if (rawDir.startsWith("E")) dir = "E";
+        else if (rawDir.startsWith("W")) dir = "W";
+
+        cleanText = cleanText.replace(dirMatch[0], "").trim();
+        cleanText = cleanText.replace(/\s+/g, " ");
+    }
+
+    return { dir, cleanText };
+}
+
 export function getTrackCommodityBreakdown(track) {
     if (!track || !track.cars || track.cars <= 0) return [];
 
     if (track.is_bad_order) {
         const boCat = commodityRules?.categories?.find(c => c.id === "bad_order") || { id: "bad_order", name: "Bad Order", color: "#ef4444" };
-        return [{ count: track.cars, category: boCat, color: boCat.color, desc: "Bad Order" }];
+        return [{ count: track.cars, category: boCat, color: boCat.color, desc: "Bad Order", dir: null }];
     }
     if (track.is_clear) {
         const obCat = commodityRules?.categories?.find(c => c.id === "ob_empty") || { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
-        return [{ count: track.cars, category: obCat, color: obCat.color, desc: "Empty" }];
+        return [{ count: track.cars, category: obCat, color: obCat.color, desc: "Empty", dir: null }];
     }
 
     const totalCars = track.cars;
@@ -356,32 +381,36 @@ export function getTrackCommodityBreakdown(track) {
         }
     }
 
-    // Split into chunks by +, ;, comma, AND, or newline
-    const rawChunks = candidateText.split(/[,;+]|\band\b|\n/i);
+    // Split into chunks by +, ;, comma, AND, newline, or number-dash pattern
+    const rawChunks = candidateText.split(/[,;+]|\band\b|\n|(?<=[A-Za-z\/])\s+(?=\d+\s*[-–:])/i);
     const segments = [];
 
     for (const rawChunk of rawChunks) {
         let ch = rawChunk.trim();
         if (!ch) continue;
 
+        const { dir, cleanText } = extractDirectionFromText(ch);
+        const textToMatch = cleanText.trim();
+        if (!textToMatch) continue;
+
         // Matches: "3 - UP COIL", "3 UP COILS", "3-DL BALE", "3 DL", "7 P&S"
-        const m1 = ch.match(/^(\d+)\s*(?:[-–:]|\bOF\b)?\s*(.+)$/i);
+        const m1 = textToMatch.match(/^(\d+)\s*(?:[-–:]|\bOF\b)?\s*(.+)$/i);
         if (m1) {
             const cnt = parseInt(m1[1], 10);
             const desc = m1[2].trim();
             if (desc && cnt > 0) {
                 const cat = getCommodityCategoryForText(desc);
-                segments.push({ count: cnt, category: cat, color: cat.color, desc: desc });
+                segments.push({ count: cnt, category: cat, color: cat.color, desc: desc, dir: dir });
             }
         } else {
             // Matches: "UP COIL 3" or "DOGBONE 3"
-            const m2 = ch.match(/^(.+?)\s*[-–:]?\s*(\d+)$/);
+            const m2 = textToMatch.match(/^(.+?)\s*[-–:]?\s*(\d+)$/);
             if (m2) {
                 const cnt = parseInt(m2[2], 10);
                 const desc = m2[1].trim();
                 if (desc && cnt > 0 && isNaN(Number(desc))) {
                     const cat = getCommodityCategoryForText(desc);
-                    segments.push({ count: cnt, category: cat, color: cat.color, desc: desc });
+                    segments.push({ count: cnt, category: cat, color: cat.color, desc: desc, dir: dir });
                 }
             }
         }
@@ -391,7 +420,7 @@ export function getTrackCommodityBreakdown(track) {
 
     if (segments.length === 0 || parsedSum === 0) {
         const primaryCat = getCommodityCategory(track);
-        return [{ count: totalCars, category: primaryCat, color: primaryCat.color, desc: textToParse }];
+        return [{ count: totalCars, category: primaryCat, color: primaryCat.color, desc: textToParse, dir: null }];
     }
 
     if (parsedSum === totalCars) {
@@ -401,7 +430,7 @@ export function getTrackCommodityBreakdown(track) {
     if (parsedSum < totalCars) {
         const rem = totalCars - parsedSum;
         const primaryCat = getCommodityCategory(track);
-        segments.push({ count: rem, category: primaryCat, color: primaryCat.color, desc: "Remainder" });
+        segments.push({ count: rem, category: primaryCat, color: primaryCat.color, desc: "Remainder", dir: null });
         return segments;
     }
 
@@ -415,13 +444,98 @@ export function getTrackCommodityBreakdown(track) {
         } else {
             const rem = totalCars - cur;
             if (rem > 0) {
-                clamped.push({ count: rem, category: s.category, color: s.color, desc: s.desc });
+                clamped.push({ count: rem, category: s.category, color: s.color, desc: s.desc, dir: s.dir });
                 cur += rem;
             }
             break;
         }
     }
-    return clamped.length > 0 ? clamped : [{ count: totalCars, category: getCommodityCategory(track), color: getCommodityCategory(track).color, desc: textToParse }];
+    return clamped.length > 0 ? clamped : [{ count: totalCars, category: getCommodityCategory(track), color: getCommodityCategory(track).color, desc: textToParse, dir: null }];
+}
+
+export function getPathOrientation(el) {
+    if (!el) return { axis: "horizontal", startDir: "S", endDir: "N" };
+    let pStart = null;
+    let pEnd = null;
+
+    try {
+        if (typeof el.getTotalLength === "function" && typeof el.getPointAtLength === "function") {
+            const totalLen = el.getTotalLength();
+            if (totalLen > 0) {
+                pStart = el.getPointAtLength(0);
+                pEnd = el.getPointAtLength(totalLen);
+            }
+        }
+    } catch (e) {}
+
+    if (!pStart || !pEnd) {
+        if (el.tagName && el.tagName.toLowerCase() === "polyline") {
+            const pointsAttr = el.getAttribute("points") || "";
+            const coords = pointsAttr.trim().split(/[\s,]+/).map(Number);
+            if (coords.length >= 4) {
+                pStart = { x: coords[0], y: coords[1] };
+                pEnd = { x: coords[coords.length - 2], y: coords[coords.length - 1] };
+            }
+        } else if (el.tagName && el.tagName.toLowerCase() === "line") {
+            pStart = { x: parseFloat(el.getAttribute("x1") || "0"), y: parseFloat(el.getAttribute("y1") || "0") };
+            pEnd = { x: parseFloat(el.getAttribute("x2") || "0"), y: parseFloat(el.getAttribute("y2") || "0") };
+        } else if (el.tagName && el.tagName.toLowerCase() === "path") {
+            const d = el.getAttribute("d") || "";
+            const numMatches = d.match(/-?\d+(?:\.\d+)?/g);
+            if (numMatches && numMatches.length >= 4) {
+                pStart = { x: parseFloat(numMatches[0]), y: parseFloat(numMatches[1]) };
+                pEnd = { x: parseFloat(numMatches[numMatches.length - 2]), y: parseFloat(numMatches[numMatches.length - 1]) };
+            }
+        }
+    }
+
+    if (!pStart || !pEnd) {
+        return { axis: "horizontal", startDir: "S", endDir: "N" };
+    }
+
+    const dx = pEnd.x - pStart.x;
+    const dy = pEnd.y - pStart.y;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        // Horizontal track: Compass West/East is Vertical, Compass South/North is Horizontal
+        // Left (-X) is South, Right (+X) is North
+        const startDir = dx >= 0 ? "S" : "N";
+        const endDir = dx >= 0 ? "N" : "S";
+        return { axis: "horizontal", startDir, endDir };
+    } else {
+        // Vertical track: Top (-Y) is West, Bottom (+Y) is East
+        const startDir = dy >= 0 ? "W" : "E";
+        const endDir = dy >= 0 ? "E" : "W";
+        return { axis: "vertical", startDir, endDir };
+    }
+}
+
+export function sortBreakdownByDirection(breakdown, targetPath) {
+    if (!breakdown || breakdown.length <= 1) return breakdown || [];
+    const orientation = getPathOrientation(targetPath);
+    const { startDir, endDir, axis } = orientation;
+
+    function getSegmentRank(seg) {
+        if (!seg.dir) return 1;
+        let d = seg.dir.toUpperCase();
+
+        // Cross-axis normalization if user typed S/N on a W/E track or vice versa
+        if (axis === "horizontal") {
+            if (d === "W") d = "S";
+            else if (d === "E") d = "N";
+        } else {
+            if (d === "S") d = "W";
+            else if (d === "N") d = "E";
+        }
+
+        if (d === startDir) return 0;
+        if (d === endDir) return 2;
+        return 1;
+    }
+
+    return [...breakdown].sort((a, b) => {
+        return getSegmentRank(a) - getSegmentRank(b);
+    });
 }
 
 export function getMultiCarDasharray(el, carColors, targetColor) {
@@ -671,8 +785,9 @@ function bindSvgInteractivity(container, isTheater = false) {
             const isCarHost = (el === carHostElementMap[rawId]);
             if (isCarHost && data.cars > 0 && !data.is_clear) {
                 const breakdown = getTrackCommodityBreakdown(data);
+                const sortedBreakdown = sortBreakdownByDirection(breakdown, el);
                 const carColors = [];
-                breakdown.forEach(seg => {
+                sortedBreakdown.forEach(seg => {
                     for (let k = 0; k < seg.count; k++) {
                         carColors.push(seg.color);
                     }
@@ -981,11 +1096,14 @@ export function showTrackModal(track) {
 
     let commodityBadges = "";
     if (breakdown.length > 1) {
-        commodityBadges = breakdown.map(b => `
+        commodityBadges = breakdown.map(b => {
+            const dirLabel = b.dir ? ` [${b.dir}/END]` : "";
+            return `
             <span class="modal-status-badge" style="background: rgba(${hexToRgb(b.color)}, 0.18); color: ${b.color}; border: 1px solid ${b.color};">
-                📦 ${b.count}x ${b.category.name} <small style="opacity: 0.85;">(${b.desc})</small>
+                📦 ${b.count}x ${b.category.name}${dirLabel} <small style="opacity: 0.85;">(${b.desc})</small>
             </span>
-        `).join("");
+        `;
+        }).join("");
     } else if (!track.is_clear && !track.is_bad_order) {
         commodityBadges = `<span class="modal-status-badge" style="background: rgba(${hexToRgb(commCat.color)}, 0.18); color: ${commCat.color}; border: 1px solid ${commCat.color};">📦 ${commCat.name}</span>`;
     }
@@ -1083,7 +1201,10 @@ function showTrackHoverTooltip(e, track) {
         let breakdownBadges = "";
         if (breakdown.length > 1) {
             breakdownBadges = `<div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">` + 
-                breakdown.map(b => `<span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: rgba(${hexToRgb(b.color)}, 0.2); color: ${b.color}; border: 1px solid ${b.color};">${b.count}x ${b.category.name}</span>`).join("") +
+                breakdown.map(b => {
+                    const dirLabel = b.dir ? ` [${b.dir}]` : "";
+                    return `<span style="display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: rgba(${hexToRgb(b.color)}, 0.2); color: ${b.color}; border: 1px solid ${b.color};">${b.count}x ${b.category.name}${dirLabel}</span>`;
+                }).join("") +
                 `</div>`;
         } else {
             breakdownBadges = `<span style="color: ${commCat.color}; font-weight: 600; font-size: 0.75rem;">📦 ${commCat.name}</span>`;
