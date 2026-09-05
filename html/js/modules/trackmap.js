@@ -73,6 +73,87 @@ export async function fetchCommodityRules() {
     }
 }
 
+export function findBestCommodityMatch(text, options = {}) {
+    if (!text || !text.trim() || !commodityRules || !commodityRules.categories || !commodityRules.categories.length) {
+        return {
+            category: { id: "default", name: "Other / General", color: commodityRules?.default_color || "#38bdf8" },
+            score: 0,
+            matchedKeyword: null
+        };
+    }
+
+    const { allowEmptyKeywords = true } = options;
+    const rawUpper = text.toUpperCase().trim();
+    // Strip leading count digits, punctuation, and normalize whitespace
+    const cleanUpper = rawUpper.replace(/^[0-9\s\-–—:]+/, "").replace(/[()[\],;+]/g, " ").replace(/\s+/g, " ").trim();
+
+    let bestMatch = null;
+    let highestScore = -1;
+
+    const totalCats = commodityRules.categories.length;
+
+    commodityRules.categories.forEach((cat, catIdx) => {
+        if (!cat.keywords || !Array.isArray(cat.keywords)) return;
+
+        cat.keywords.forEach(kw => {
+            if (!kw || !kw.trim()) return;
+            const kwUpper = kw.toUpperCase().trim();
+            if (!allowEmptyKeywords && (kwUpper === "CLEAR" || kwUpper === "EMPTY")) {
+                return;
+            }
+
+            const escaped = kwUpper.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+            const reg = new RegExp(`(^|[^A-Z0-9])${escaped}([^A-Z0-9]|$)`, "i");
+
+            if (reg.test(rawUpper)) {
+                const kwWords = kwUpper.split(/\s+/).filter(Boolean);
+                const kwWordCount = kwWords.length;
+                const kwCharLen = kwUpper.length;
+
+                let score = 0;
+
+                // 1. Exact full text match (e.g. cleanUpper === "MSA FLATS" matching kw "MSA FLATS")
+                if (cleanUpper === kwUpper) {
+                    score += 50000;
+                }
+
+                // 2. Multi-word specificity (each word in keyword adds huge specificity)
+                score += kwWordCount * 2000;
+
+                // 3. Keyword character length (longer phrases like "MSA FLATS" > "FLATS")
+                score += kwCharLen * 50;
+
+                // 4. Exact start of text match bonus
+                if (cleanUpper.startsWith(kwUpper)) {
+                    score += 500;
+                }
+
+                // 5. Category list priority as tie-breaker
+                score += (totalCats - catIdx) * 0.1;
+
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestMatch = {
+                        category: cat,
+                        score: score,
+                        matchedKeyword: kw
+                    };
+                }
+            }
+        });
+    });
+
+    if (bestMatch) {
+        return bestMatch;
+    }
+
+    return {
+        category: { id: "default", name: "Other / General", color: commodityRules.default_color || "#38bdf8" },
+        score: 0,
+        matchedKeyword: null
+    };
+}
+
 export function getCommodityCategory(track) {
     if (!track) return { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
     if (!commodityRules || !commodityRules.categories || !commodityRules.categories.length) {
@@ -94,20 +175,8 @@ export function getCommodityCategory(track) {
         rawText = rawText.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
     }
 
-    for (const cat of commodityRules.categories) {
-        if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
-        for (const kw of cat.keywords) {
-            if (track.cars > 0 && (kw.toUpperCase() === "CLEAR" || kw.toUpperCase() === "EMPTY")) continue;
-
-            const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-            const reg = new RegExp(`\\b${escaped}\\b`, "i");
-            if (reg.test(rawText)) {
-                return cat;
-            }
-        }
-    }
-
-    return { id: "default", name: "Other / General", color: commodityRules.default_color || "#38bdf8" };
+    const match = findBestCommodityMatch(rawText, { allowEmptyKeywords: !(track.cars > 0) });
+    return match.category;
 }
 
 export function getCapacityBedColor(cars, capacity, isBadOrder = false) {
@@ -241,21 +310,8 @@ function getElementExactLength(el) {
 }
 
 export function getCommodityCategoryForText(text) {
-    if (!text || !text.trim() || !commodityRules || !commodityRules.categories) {
-        return { id: "default", name: "Other / General", color: commodityRules?.default_color || "#38bdf8" };
-    }
-    const upper = text.toUpperCase().trim();
-    for (const cat of commodityRules.categories) {
-        if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
-        for (const kw of cat.keywords) {
-            const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-            const reg = new RegExp(`\\b${escaped}\\b`, "i");
-            if (reg.test(upper)) {
-                return cat;
-            }
-        }
-    }
-    return { id: "default", name: "Other / General", color: commodityRules.default_color || "#38bdf8" };
+    const match = findBestCommodityMatch(text, { allowEmptyKeywords: false });
+    return match.category;
 }
 
 export function getTrackCommodityBreakdown(track) {

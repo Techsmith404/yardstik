@@ -1552,38 +1552,77 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let upper = text.toUpperCase();
+        let rawUpper = text.toUpperCase().trim();
         // If testing phrase contains numbers/cars or occupied notes, clean out CLEAR/EMPTY so real commodity shows
-        if (/\d+/.test(upper) || /inbound|slab|dl|scrap|blend|bof|up|coil/i.test(upper)) {
-            upper = upper.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
+        if (/\d+/.test(rawUpper) || /inbound|slab|dl|scrap|blend|bof|up|coil/i.test(rawUpper)) {
+            rawUpper = rawUpper.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
         }
 
-        let matchedCat = null;
-        let matchedKw = null;
+        const cleanUpper = rawUpper.replace(/^[0-9\s\-–—:]+/, "").replace(/[()[\],;+]/g, " ").replace(/\s+/g, " ").trim();
 
-        for (const cat of (currentCommodityRules.categories || [])) {
-            if (!cat.keywords || !Array.isArray(cat.keywords)) continue;
+        let bestMatch = null;
+        let highestScore = -1;
+
+        const categories = currentCommodityRules.categories || [];
+        const totalCats = categories.length;
+
+        categories.forEach((cat, catIdx) => {
+            if (!cat.keywords || !Array.isArray(cat.keywords)) return;
             for (const kw of cat.keywords) {
-                if (/\d+/.test(text) && (kw.toUpperCase() === "CLEAR" || kw.toUpperCase() === "EMPTY")) continue;
+                if (!kw || !kw.trim()) continue;
+                const kwUpper = kw.toUpperCase().trim();
+                if (/\d+/.test(text) && (kwUpper === "CLEAR" || kwUpper === "EMPTY")) continue;
 
-                const escaped = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-                const reg = new RegExp(`\\b${escaped}\\b`, "i");
-                if (reg.test(upper)) {
-                    matchedCat = cat;
-                    matchedKw = kw;
-                    break;
+                const escaped = kwUpper.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+                const reg = new RegExp(`(^|[^A-Z0-9])${escaped}([^A-Z0-9]|$)`, "i");
+
+                if (reg.test(rawUpper)) {
+                    const kwWords = kwUpper.split(/\s+/).filter(Boolean);
+                    const kwWordCount = kwWords.length;
+                    const kwCharLen = kwUpper.length;
+
+                    let score = 0;
+
+                    // 1. Exact full text match
+                    if (cleanUpper === kwUpper) {
+                        score += 50000;
+                    }
+
+                    // 2. Multi-word specificity
+                    score += kwWordCount * 2000;
+
+                    // 3. Character length
+                    score += kwCharLen * 50;
+
+                    // 4. Leading token match
+                    if (cleanUpper.startsWith(kwUpper)) {
+                        score += 500;
+                    }
+
+                    // 5. Category order as tie-breaker
+                    score += (totalCats - catIdx) * 0.1;
+
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestMatch = {
+                            category: cat,
+                            matchedKeyword: kw,
+                            score: score
+                        };
+                    }
                 }
             }
-            if (matchedCat) break;
-        }
+        });
 
-        if (matchedCat) {
+        if (bestMatch && bestMatch.category) {
+            const matchedCat = bestMatch.category;
+            const matchedKw = bestMatch.matchedKeyword;
             commodityTesterResult.style.background = hexToRgba(matchedCat.color, 0.2);
             commodityTesterResult.style.border = `1px solid ${matchedCat.color}`;
             commodityTesterResult.innerHTML = `
                 <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${matchedCat.color}; box-shadow: 0 0 6px ${matchedCat.color};"></span>
                 <span style="color: #fff; font-weight: 700;">${matchedCat.name}</span>
-                <span style="color: var(--text-secondary); font-size: 0.8rem;">(Matched: <code>${matchedKw}</code>)</span>
+                <span style="color: var(--text-secondary); font-size: 0.8rem;">(Best Match: <code>${matchedKw}</code> &bull; Score: ${Math.round(bestMatch.score)})</span>
             `;
         } else {
             const defColor = currentCommodityRules.default_color || "#38bdf8";
