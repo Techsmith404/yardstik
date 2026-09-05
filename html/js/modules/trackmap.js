@@ -453,7 +453,45 @@ export function getTrackCommodityBreakdown(track) {
     return clamped.length > 0 ? clamped : [{ count: totalCars, category: getCommodityCategory(track), color: getCommodityCategory(track).color, desc: textToParse, dir: null }];
 }
 
-export function getPathOrientation(el) {
+export function getCompassHeading(svg) {
+    const fallback = { northVec: { x: 1, y: 0 }, eastVec: { x: 0, y: 1 }, angleDeg: 90 };
+    if (!svg && typeof document !== "undefined") {
+        svg = document.querySelector("#trackmap-viewport svg") || document.querySelector("svg");
+    }
+    if (!svg) return fallback;
+
+    const compassEl = svg.querySelector("#compass-rose, .compass-rose, [id*='compass']");
+    if (!compassEl) return fallback;
+
+    const transformAttr = compassEl.getAttribute("transform") || "";
+    let angleDeg = 90;
+
+    // Parse SVG transform matrix(a, b, c, d, e, f)
+    const matrixMatch = transformAttr.match(/matrix\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)/);
+    if (matrixMatch) {
+        const a = parseFloat(matrixMatch[1]);
+        const b = parseFloat(matrixMatch[2]);
+        const rotRad = Math.atan2(b, a);
+        angleDeg = (rotRad * 180) / Math.PI;
+    } else {
+        const rotateMatch = transformAttr.match(/rotate\(\s*([-\d.]+)/);
+        if (rotateMatch) {
+            angleDeg = parseFloat(rotateMatch[1]);
+        }
+    }
+
+    angleDeg = ((angleDeg % 360) + 360) % 360;
+
+    // Standard unrotated compass asset has North pointing UP (0, -1) in SVG coordinates.
+    // Rotating clockwise by angleDeg in SVG screen space:
+    const rad = (angleDeg - 90) * (Math.PI / 180);
+    const northVec = { x: Math.cos(rad), y: Math.sin(rad) };
+    const eastVec = { x: -Math.sin(rad), y: Math.cos(rad) };
+
+    return { northVec, eastVec, angleDeg };
+}
+
+export function getPathOrientation(el, svg) {
     if (!el) return { axis: "horizontal", startDir: "S", endDir: "N" };
     let pStart = null;
     let pEnd = null;
@@ -496,16 +534,22 @@ export function getPathOrientation(el) {
     const dx = pEnd.x - pStart.x;
     const dy = pEnd.y - pStart.y;
 
-    if (Math.abs(dx) >= Math.abs(dy)) {
-        // Horizontal track: Compass West/East is Vertical, Compass South/North is Horizontal
-        // Left (-X) is South, Right (+X) is North
-        const startDir = dx >= 0 ? "S" : "N";
-        const endDir = dx >= 0 ? "N" : "S";
+    const svgRoot = svg || el.ownerSVGElement || el.closest("svg");
+    const { northVec, eastVec } = getCompassHeading(svgRoot);
+
+    // Project path drawing vector onto compass North and East vectors
+    const dotNorth = (dx * northVec.x) + (dy * northVec.y);
+    const dotEast = (dx * eastVec.x) + (dy * eastVec.y);
+
+    if (Math.abs(dotNorth) >= Math.abs(dotEast)) {
+        // Track runs primarily along North-South axis
+        const startDir = dotNorth >= 0 ? "S" : "N";
+        const endDir = dotNorth >= 0 ? "N" : "S";
         return { axis: "horizontal", startDir, endDir };
     } else {
-        // Vertical track: Top (-Y) is West, Bottom (+Y) is East
-        const startDir = dy >= 0 ? "W" : "E";
-        const endDir = dy >= 0 ? "E" : "W";
+        // Track runs primarily along West-East axis
+        const startDir = dotEast >= 0 ? "W" : "E";
+        const endDir = dotEast >= 0 ? "E" : "W";
         return { axis: "vertical", startDir, endDir };
     }
 }
