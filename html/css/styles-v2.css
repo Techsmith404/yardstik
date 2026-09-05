@@ -926,6 +926,11 @@ body.desktop-mode #view-production .side-stats {
 
 /* Safety View Grid in Desktop Mode */
 body.desktop-mode #view-safety {
+    display: none !important;
+}
+
+/* Announcements View Grid in Desktop Mode - Clean 2-Column Independent Flow */
+body.desktop-mode #view-announcements {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 30px !important;
@@ -933,25 +938,6 @@ body.desktop-mode #view-safety {
     min-height: auto !important;
     align-items: start !important;
     margin-top: 10px !important;
-}
-
-body.desktop-mode #view-safety .side-stats {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 25px !important;
-    width: 100% !important;
-    margin: 0 !important;
-}
-
-/* Announcements & Track Map View Grid in Desktop Mode */
-body.desktop-mode #view-announcements {
-    display: grid !important;
-    grid-template-columns: 1.4fr 1fr !important;
-    gap: 30px !important;
-    height: auto !important;
-    min-height: auto !important;
-    align-items: start !important;
-    margin-top: 20px !important;
 }
 
 body.desktop-mode #announcements-col-left {
@@ -993,8 +979,6 @@ body.desktop-mode #view-announcements .side-stats {
     flex-direction: column !important;
     gap: 25px !important;
     width: 100% !important;
-    height: 700px !important;
-    min-height: 500px !important;
     margin: 0 !important;
 }
 
@@ -1004,8 +988,8 @@ body.desktop-mode #widget-trackmap {
 }
 
 body.desktop-mode #reminders-widget-container {
-    height: 100% !important;
-    min-height: 500px !important;
+    height: fit-content !important;
+    min-height: auto !important;
     padding: 25px 30px !important;
 }
 
@@ -1643,7 +1627,7 @@ body.handoff-mode .header-widget {
 }
 
 body.handoff-mode #header-title-container {
-    display: none !important;
+    display: flex !important;
 }
 
 body.handoff-mode #header-osha,

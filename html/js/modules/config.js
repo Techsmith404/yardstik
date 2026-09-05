@@ -40,7 +40,7 @@ export function setupHandoffLayout(active = isHandoffActive) {
         const hTitle = document.getElementById('header-title-container');
         if (hOsha) hOsha.style.display = 'flex';
         if (hBlend) hBlend.style.display = 'flex';
-        if (hTitle) hTitle.style.display = 'none';
+        if (hTitle) hTitle.style.display = 'flex';
 
         // Check if weather alerts are active
         const alertsContainer = document.getElementById('dynamic-alerts-container');
@@ -65,6 +65,27 @@ export function setupDesktopLayout() {
         document.body.classList.add('desktop-mode');
         const navBar = document.getElementById('desktop-nav-bar');
         if (navBar) navBar.style.display = 'flex';
+
+        const setupDesktopColumns = () => {
+            const trackWidget = document.getElementById('widget-trackmap') || document.querySelector('.announcement-slide');
+            const panelAnn = document.getElementById('panel-anniversaries');
+            const viewAnn = document.getElementById('view-announcements');
+            if (trackWidget && panelAnn && viewAnn) {
+                let leftCol = document.getElementById('announcements-col-left');
+                if (!leftCol) {
+                    leftCol = document.createElement('div');
+                    leftCol.id = 'announcements-col-left';
+                    viewAnn.insertBefore(leftCol, viewAnn.firstChild);
+                }
+                leftCol.appendChild(trackWidget);
+                leftCol.appendChild(panelAnn);
+            }
+        };
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', setupDesktopColumns);
+        } else {
+            setupDesktopColumns();
+        }
     }
 }
 

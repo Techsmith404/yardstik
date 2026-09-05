@@ -685,12 +685,58 @@ export function getCarDasharray(el, cars, capacity) {
     return dashes.join(" ");
 }
 
+let lastTracksUpdated = null;
+
+function formatAsOfTimestamp(dateInput) {
+    if (!dateInput) return "";
+    let d;
+    if (typeof dateInput === 'number') {
+        d = new Date(dateInput);
+    } else if (typeof dateInput === 'string') {
+        const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+        if (match) {
+            d = new Date(
+                parseInt(match[1], 10),
+                parseInt(match[2], 10) - 1,
+                parseInt(match[3], 10),
+                parseInt(match[4], 10),
+                parseInt(match[5], 10),
+                match[6] ? parseInt(match[6], 10) : 0
+            );
+        } else {
+            d = new Date(dateInput);
+        }
+    } else {
+        d = new Date(dateInput);
+    }
+    if (isNaN(d.getTime())) return "";
+    
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    let hours = d.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hh = String(hours).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    
+    return `${mm}-${dd} ${hh}:${min} ${ampm}`;
+}
+
 export async function fetchTracks() {
     try {
         await fetchCommodityRules();
         const res = await fetch("assets/data/tracks.json?t=" + new Date().getTime());
         if (res.ok) {
+            const lastModified = res.headers.get("Last-Modified");
             cachedTracks = await res.json();
+            
+            const itemDate = cachedTracks.find(t => t.updated_at)?.updated_at;
+            const targetDateStr = itemDate || lastModified;
+            if (targetDateStr) {
+                lastTracksUpdated = formatAsOfTimestamp(targetDateStr);
+            }
+
             calculateTrackStats();
             await renderTrackMap();
             if (isTheaterOpen) {
@@ -728,6 +774,16 @@ function calculateTrackStats(activeTrackIds = null) {
 }
 
 function updateHeaderStats() {
+    const asOfEl = document.getElementById("trackmap-asof");
+    if (asOfEl) {
+        if (lastTracksUpdated) {
+            asOfEl.innerText = `As of: ${lastTracksUpdated}`;
+            asOfEl.style.display = "inline-block";
+        } else {
+            asOfEl.style.display = "none";
+        }
+    }
+
     const statsEl = document.getElementById("trackmap-stats-summary");
     if (statsEl) {
         const capText = trackStats.totalCapacity > 0 ? ` / ${trackStats.totalCapacity}` : "";

@@ -296,12 +296,18 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
     return tracks
 
 def parse_grid_layout(rows, svg_caps):
-    shift_date = datetime.now()
+    now = datetime.now()
+    shift_date = now
     for row in rows[:10]:
         for cell in row:
             if isinstance(cell, datetime):
                 shift_date = cell
                 break
+
+    if shift_date.hour == 0 and shift_date.minute == 0 and shift_date.second == 0:
+        updated_at_dt = datetime.combine(shift_date.date(), now.time())
+    else:
+        updated_at_dt = shift_date
 
     track_positions = []
     for r_idx, row in enumerate(rows[:100]):
@@ -407,7 +413,7 @@ def parse_grid_layout(rows, svg_caps):
                 "dwell_warning": dwell_warning,
                 "oldest_inbound_date": oldest_date_str,
                 "os_switches": os_sw,
-                "updated_at": shift_date.strftime("%Y-%m-%dT%H:%M:%S")
+                "updated_at": updated_at_dt.strftime("%Y-%m-%dT%H:%M:%S")
             })
 
     tracks.sort(key=lambda x: (0 if x["id"].isdigit() else 1, int(x["id"]) if x["id"].isdigit() else x["id"]))

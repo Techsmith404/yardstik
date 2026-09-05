@@ -1,11 +1,11 @@
 [
   {
-    "id": "2",
-    "name": "Track 2",
+    "id": "21",
+    "name": "Track 21",
     "cars": 0,
-    "capacity": 20,
+    "capacity": 17,
     "commodity": "Empty",
-    "notes": "",
+    "notes": "CLEAR",
     "status": "clear",
     "is_clear": true,
     "is_bad_order": false,
@@ -14,24 +14,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "21",
-    "name": "Track 21",
-    "cars": 7,
-    "capacity": 17,
-    "commodity": "7 - OB'S",
-    "notes": "7 - OB'S",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 0,
-    "dwell_warning": false,
-    "oldest_inbound_date": null,
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "22",
@@ -57,7 +40,7 @@
         "raw": "O.S AT 21/22 S"
       }
     ],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "23",
@@ -74,15 +57,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "24",
     "name": "Track 24",
-    "cars": 1,
+    "cars": 5,
     "capacity": 13,
-    "commodity": "1 \u2013 CAR",
-    "notes": "SWITCH OS AT S/END",
+    "commodity": "5 - DL'S (4 - SHRED, 1 - BALE)",
+    "notes": "5 - DL'S (4 - SHRED, 1 - BALE)",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -90,24 +73,16 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "os_switches": [
-      {
-        "tracks": [
-          "24"
-        ],
-        "dir": "S",
-        "raw": "SWITCH OS AT S/END"
-      }
-    ],
-    "updated_at": "2026-09-02T00:00:00"
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "25",
     "name": "Track 25",
-    "cars": 5,
+    "cars": 17,
     "capacity": 23,
-    "commodity": "5 - TO SWEEP",
-    "notes": "5 - TO SWEEP",
+    "commodity": "12 - S&T",
+    "notes": "5 - TO WT",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -116,15 +91,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "26",
     "name": "Track 26",
-    "cars": 6,
+    "cars": 2,
     "capacity": 15,
-    "commodity": "3 - UP COIL + 3 - DL SHEETS",
-    "notes": "3 - UP COIL + 3 - DL SHEETS",
+    "commodity": "2 - UP COIL",
+    "notes": "2 - UP COIL",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -133,14 +108,31 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "27",
     "name": "Track 27",
-    "cars": 5,
+    "cars": 2,
     "capacity": 18,
-    "commodity": "2 - UP + 2 - UP FLATS",
+    "commodity": "2 - MTY;S",
+    "notes": "2 - MTY;S",
+    "status": "occupied",
+    "is_clear": false,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 0,
+    "dwell_warning": false,
+    "oldest_inbound_date": null,
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
+  },
+  {
+    "id": "28",
+    "name": "Track 28",
+    "cars": 6,
+    "capacity": 12,
+    "commodity": "5 - UP",
     "notes": "1 - MTY",
     "status": "occupied",
     "is_clear": false,
@@ -150,32 +142,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "28",
-    "name": "Track 28",
-    "cars": 3,
-    "capacity": 12,
-    "commodity": "1 - UP SPEAR + 2 UP FLATS",
-    "notes": "1 - UP SPEAR + 2 UP FLATS",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 0,
-    "dwell_warning": false,
-    "oldest_inbound_date": null,
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "29",
     "name": "Track 29",
     "cars": 5,
     "capacity": 28,
-    "commodity": "5 - BLEND LOADING MH81   #LOADER",
-    "notes": "FRESH, AUDIT",
+    "commodity": "5 - BLEND LOADING MH78   #1210",
+    "notes": "5 - BLEND LOADING MH78   #1210",
     "status": "blend",
     "is_clear": false,
     "is_bad_order": false,
@@ -184,15 +159,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "32",
     "name": "Track 32",
     "cars": 5,
     "capacity": 30,
-    "commodity": "5 - BLEND LOADING MH97  #1210",
-    "notes": "HEAVY SOUTH",
+    "commodity": "5 - BLEND LOADING MH82  #LOADER",
+    "notes": "5 - BLEND LOADING MH82  #LOADER",
     "status": "blend",
     "is_clear": false,
     "is_bad_order": false,
@@ -201,32 +176,66 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "33",
     "name": "Track 33",
-    "cars": 4,
+    "cars": 13,
     "capacity": 14,
-    "commodity": "3 - HEAVY & 1 LIGHT TRIM",
-    "notes": "3 - HEAVY & 1 LIGHT TRIM",
-    "status": "occupied",
+    "commodity": "13 - DL BALE'S FROM 8/31 &9/4",
+    "notes": "CARS IN THE FOUL NORTH CURVE",
+    "status": "warning",
     "is_clear": false,
     "is_bad_order": false,
     "is_blend": false,
-    "dwell_days": 0,
-    "dwell_warning": false,
-    "oldest_inbound_date": null,
+    "dwell_days": 5,
+    "dwell_warning": true,
+    "oldest_inbound_date": "2026-08-31",
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "34",
     "name": "Track 34",
-    "cars": 6,
+    "cars": 0,
     "capacity": 14,
-    "commodity": "6 - OB'S",
-    "notes": "6 - OB'S",
+    "commodity": "Empty",
+    "notes": "CLEAR",
+    "status": "clear",
+    "is_clear": true,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 0,
+    "dwell_warning": false,
+    "oldest_inbound_date": null,
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
+  },
+  {
+    "id": "35",
+    "name": "Track 35",
+    "cars": 12,
+    "capacity": 18,
+    "commodity": "12 - DL'S (8 - P&S, 4 - SHRED) FROM 8/31",
+    "notes": "12 - DL'S (8 - P&S, 4 - SHRED) FROM 8/31",
+    "status": "warning",
+    "is_clear": false,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 5,
+    "dwell_warning": true,
+    "oldest_inbound_date": "2026-08-31",
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
+  },
+  {
+    "id": "36",
+    "name": "Track 36",
+    "cars": 10,
+    "capacity": 18,
+    "commodity": "10 - BOF MTY'S",
+    "notes": "10 - BOF MTY'S",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -235,41 +244,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "35",
-    "name": "Track 35",
-    "cars": 13,
-    "capacity": 18,
-    "commodity": "13 - DL'S (7 - P&S S/END, 6 - SHRED N/END) FROM 8/30 & 8/31",
-    "notes": "13 - DL'S (7 - P&S S/END, 6 - SHRED N/END) FROM 8/30 & 8/31",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 3,
-    "dwell_warning": false,
-    "oldest_inbound_date": "2026-08-30",
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "36",
-    "name": "Track 36",
-    "cars": 12,
-    "capacity": 18,
-    "commodity": "8 - DL BALES FROM 8/31",
-    "notes": "4 - LWM'S N/END",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 2,
-    "dwell_warning": false,
-    "oldest_inbound_date": "2026-08-31",
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "37",
@@ -286,15 +261,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "38",
     "name": "Track 38",
-    "cars": 3,
+    "cars": 9,
     "capacity": 12,
-    "commodity": "3 - SMASH COILS",
-    "notes": "3 - SMASH COILS",
+    "commodity": "1 - COIL FOR BREAKING, 3 - MTY'S E/END",
+    "notes": "5 - SLITTER DL'S",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -303,7 +278,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "45",
@@ -311,7 +286,7 @@
     "cars": 11,
     "capacity": 14,
     "commodity": "11 - HEAVY TRIM",
-    "notes": "45/70 E/END O.S.",
+    "notes": "11 - HEAVY TRIM",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -319,76 +294,33 @@
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
-    "os_switches": [
-      {
-        "tracks": [
-          "45",
-          "70"
-        ],
-        "dir": "E",
-        "raw": "45/70 E/END O.S"
-      }
-    ],
-    "updated_at": "2026-09-02T00:00:00"
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "46",
     "name": "Track 46",
-    "cars": 5,
+    "cars": 10,
     "capacity": 22,
-    "commodity": "5 - BLEND LOADING MH82  #1212",
-    "notes": "5 - BLEND LOADING MH82  #1212",
-    "status": "blend",
+    "commodity": "10 - DL'S (4 - 40\", 1 - SLITTER, 1 - LIGHT, 4 - DOGBONE)",
+    "notes": "10 - DL'S (4 - 40\", 1 - SLITTER, 1 - LIGHT, 4 - DOGBONE)",
+    "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
-    "is_blend": true,
+    "is_blend": false,
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "47",
     "name": "Track 47",
-    "cars": 10,
+    "cars": 5,
     "capacity": 19,
-    "commodity": "1 - DL BALE, 3 - SHRED S/END 3 - 40in 3-Dogbone",
-    "notes": "43, 33/16",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 0,
-    "dwell_warning": false,
-    "oldest_inbound_date": null,
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "48",
-    "name": "Track 48",
-    "cars": 11,
-    "capacity": 18,
-    "commodity": "11 - HBI CAR",
-    "notes": "11 - HBI CAR",
-    "status": "occupied",
-    "is_clear": false,
-    "is_bad_order": false,
-    "is_blend": false,
-    "dwell_days": 0,
-    "dwell_warning": false,
-    "oldest_inbound_date": null,
-    "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
-  },
-  {
-    "id": "49",
-    "name": "Track 49",
-    "cars": 10,
-    "capacity": 18,
-    "commodity": "10 - BLEND",
-    "notes": "10 - BLEND",
+    "commodity": "5 - BLEND LOADING MH97  #1212",
+    "notes": "43, 33/16, NEED",
     "status": "blend",
     "is_clear": false,
     "is_bad_order": false,
@@ -397,7 +329,41 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
+  },
+  {
+    "id": "48",
+    "name": "Track 48",
+    "cars": 15,
+    "capacity": 18,
+    "commodity": "7 - HBI W/END, 2 - DL SHEETS, 4 - SHRED FROM 8/31",
+    "notes": "1 - COIL FOR BREAKING, 1 - UP E/END",
+    "status": "warning",
+    "is_clear": false,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 5,
+    "dwell_warning": true,
+    "oldest_inbound_date": "2026-08-31",
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
+  },
+  {
+    "id": "49",
+    "name": "Track 49",
+    "cars": 0,
+    "capacity": 18,
+    "commodity": "Empty",
+    "notes": "CLEAR",
+    "status": "clear",
+    "is_clear": true,
+    "is_bad_order": false,
+    "is_blend": false,
+    "dwell_days": 0,
+    "dwell_warning": false,
+    "oldest_inbound_date": null,
+    "os_switches": [],
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "68",
@@ -414,7 +380,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "69",
@@ -431,7 +397,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "70",
@@ -448,15 +414,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "82",
     "name": "Track 82",
-    "cars": 5,
+    "cars": 7,
     "capacity": 12,
     "commodity": "5 - MSA FLATS",
-    "notes": "5 - MSA FLATS",
+    "notes": "2 - UP SLABS W/END",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -465,15 +431,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "83",
     "name": "Track 83",
-    "cars": 3,
+    "cars": 2,
     "capacity": 5,
-    "commodity": "1 - MILL SCALE TO MTY + TEST WEIGHT  & 1 - MTY 1 - NO NOTICE",
-    "notes": "1 - MILL SCALE TO MTY + TEST WEIGHT  & 1 - MTY 1 - NO NOTICE",
+    "commodity": "1 - MILL SCALE TO MTY + TEST WEIGHT  & 1 - NO NOTICE",
+    "notes": "1 - MILL SCALE TO MTY + TEST WEIGHT  & 1 - NO NOTICE",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -482,24 +448,24 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "90",
     "name": "Track 90",
-    "cars": 22,
+    "cars": 0,
     "capacity": 12,
-    "commodity": "CLEAR",
-    "notes": "22  - INBOUND",
-    "status": "occupied",
-    "is_clear": false,
+    "commodity": "Empty",
+    "notes": "CLEAR",
+    "status": "clear",
+    "is_clear": true,
     "is_bad_order": false,
     "is_blend": false,
     "dwell_days": 0,
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "95",
@@ -516,15 +482,15 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "300",
     "name": "Track 300",
-    "cars": 8,
+    "cars": 7,
     "capacity": 20,
-    "commodity": "8 - HBI",
-    "notes": "8 - HBI",
+    "commodity": "7 - HBI",
+    "notes": "7 - HBI",
     "status": "occupied",
     "is_clear": false,
     "is_bad_order": false,
@@ -533,7 +499,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "301",
@@ -550,7 +516,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "338",
@@ -567,7 +533,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "343",
@@ -584,7 +550,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "344",
@@ -601,7 +567,7 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   },
   {
     "id": "Y",
@@ -618,6 +584,6 @@
     "dwell_warning": false,
     "oldest_inbound_date": null,
     "os_switches": [],
-    "updated_at": "2026-09-02T00:00:00"
+    "updated_at": "2026-09-05T01:07:55"
   }
 ]
