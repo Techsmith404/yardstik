@@ -7,11 +7,17 @@ node_modules/
 *.log
 npm-debug.log*
 
+# Python
+__pycache__/
+*.pyc
+
 # Legacy & Temp
 script-server/
+.agents/
 *.bak
 *.tmp
 *.xlsx
+!**/example-track-check.xlsx
 *.xls
 *.csv
 .~lock.*

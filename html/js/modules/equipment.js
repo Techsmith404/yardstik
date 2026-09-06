@@ -1,4 +1,6 @@
 // Equipment Status, Scales, Weekly Audit & Autoscroll Module
+import { getHolidayEquipmentIcon } from './theme.js';
+import { cachedFeatures } from './features.js';
 
 export let cachedEquipment = { categories: [] };
 let equipScrollInterval = null;
@@ -29,9 +31,6 @@ export async function fetchEquipmentStatus() {
         console.error("Failed to fetch equipment.json", e);
     }
 }
-
-import { getHolidayEquipmentIcon } from './theme.js';
-import { cachedFeatures } from './features.js';
 
 export function renderEquipmentDashboard() {
     const container = document.getElementById('equipment-masonry');

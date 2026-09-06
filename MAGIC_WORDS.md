@@ -13,9 +13,10 @@ Changes the glowing border effect of the Reminders widget.
 * **`!CRITICAL`** - Applies an aggressive, rapid-pulsing Red glow. Used for immediate safety halts or severe weather.
 
 ### ⏱️ Timing Overrides
-Changes how long the slide stays on the screen.
+Changes how long the slide stays on the screen or when it expires.
 * **`!LONG`** - Pauses the Kiosk view rotation loop and holds this specific slide on the screen for a full **2 minutes** (120 seconds) instead of the standard 40 seconds. Use this for long reads or detailed procedures.
 * **`!ONLY`** - Hides all other slides in the file and exclusively loops any slides containing this magic word. Use this to quickly force a high-priority temporary message without deleting your standard slides.
+* **`!EXPIRE YYYY-MM-DD-HH`** - Automatically stops displaying the slide after the specified year, month, day, and 24-hour hour (e.g. `!EXPIRE 2026-10-31-17` will stop displaying after 5 PM on October 31st, 2026).
 
 ### 📐 Layout & Text Formatting
 Changes how the text inside the slide is displayed.

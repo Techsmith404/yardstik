@@ -2,6 +2,36 @@
 
 This file tracks major deployments, features added/removed, and critical setup context to ensure project continuity across development sessions.
 
+## [v4.2.0] - Interactive Yard Track Map, Shift Handoff Mode & Multi-Column Spreadsheet Ingestion
+
+### 🚀 Features Added
+- **Interactive Yard Track Map Engine:**
+  - Dynamic vector SVG rendering engine with zoom, pan, and live railcar dash visualization.
+  - Interactive track inspection cards displaying car counts, capacity, inbound dates, and conductor notes.
+  - Automated car status styling (Empty, Active, Overcapacity, Bad Order / O.S.).
+  - Multi-commodity color classification with customizable keyword rules and color pickers in Control Panel.
+  - High-resolution generic 11-track starter SVG map (`track-map.svg`) and starter template (`example-track-check.xlsx`).
+- **Shift Handoff Mode (`?mode=handoff`):**
+  - Dedicated operational mode for shift turnover meetings and supervisor briefings.
+  - Rotates all operational slides (Slide 1: Overview, Slide 2: Daily Safety & Milestones, Slide 3: Yard Track Map) seamlessly.
+  - Full-width Equipment Status widget layout with centered title banner and smooth glow effects.
+- **Advanced Excel & CSV Ingestion Engine (`parse_track_check.py`):**
+  - Native multi-column grid spreadsheet parser capable of reading complex multi-track sheets.
+  - Metadata parsing extracting UTC modification timestamps with native browser timezone localization.
+  - Dynamic column boundary calculation and `{ID}` token validation.
+- **Control Panel Track & Commodity Management Suite:**
+  - Drag-and-drop upload for daily `.xlsx` / `.csv` track checks and `.svg` vector layouts.
+  - Live editable track table with instant search and add/delete capabilities.
+  - Live keyword rule matcher / tester for commodity classification.
+  - One-click starter Excel template download (`/api/tracks/template-excel`) and CSV template download.
+  - "What's New (v4.2)" modal and setup walkthrough.
+- **Graceful Fallbacks & Deployment Resiliency:**
+  - Feature toggle `track_map` is disabled by default (`track_map: false`) to guarantee zero disruption upon updating existing deployed kiosks.
+  - When disabled, normal Kiosk mode automatically rotates Slide 1 and Slide 2 (Toolbox Talk & Safety Milestones).
+  - Clean starter assets with zero proprietary branding or PII.
+
+---
+
 ## [v4.1.0] - Configurable Production Tracker & Monthly Window Training Engine
 
 ### 🚀 Features Added

@@ -11,9 +11,36 @@ import sys
 import os
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
+import zipfile
+import xml.etree.ElementTree as ET
 
 EXCLUDE_WORDS = {"N", "S", "E", "W", "END", "CLEAR", "EMPTY", "BO", "OS", "SWITCH"}
+
+def get_file_timestamp(file_path):
+    """Extracts UTC ISO timestamp from Excel metadata, file mtime, or current UTC time."""
+    ext = os.path.splitext(file_path)[1].lower() if file_path else ""
+    if ext in ['.xlsx', '.xls']:
+        try:
+            with zipfile.ZipFile(file_path, "r") as z:
+                if "docProps/core.xml" in z.namelist():
+                    tree = ET.fromstring(z.read("docProps/core.xml"))
+                    ns = {"dcterms": "http://purl.org/dc/terms/"}
+                    mod_elem = tree.find(".//dcterms:modified", ns)
+                    if mod_elem is not None and mod_elem.text:
+                        text = mod_elem.text.strip()
+                        if not text.endswith("Z") and "+" not in text and "-" not in text[10:]:
+                            text += "Z"
+                        return text
+        except Exception:
+            pass
+    try:
+        mtime = os.path.getmtime(file_path)
+        dt = datetime.fromtimestamp(mtime, timezone.utc)
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        pass
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def extract_switch_os(track_id, text):
     found = []
@@ -157,23 +184,31 @@ def load_sheet_matrix(file_path):
 
 def parse_file(file_path):
     matrix_or_json = load_sheet_matrix(file_path)
+    file_ts = get_file_timestamp(file_path)
     if isinstance(matrix_or_json, list) and len(matrix_or_json) > 0 and isinstance(matrix_or_json[0], dict):
         return matrix_or_json
     svg_caps = extract_svg_capacities()
-    return parse_matrix(matrix_or_json, svg_caps)
+    return parse_matrix(matrix_or_json, svg_caps, file_ts)
 
-def parse_matrix(rows, svg_caps=None):
+def parse_matrix(rows, svg_caps=None, file_ts=None):
     if not rows:
         return []
     if svg_caps is None:
         svg_caps = {}
+    if file_ts is None:
+        file_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # If sheet contains {ID} curly track tags anywhere in top 40 rows, prioritize grid parser
+    has_curly_tracks = any(re.search(r"\{[A-Za-z0-9]+\}", str(cell or "")) for row in rows[:40] for cell in row)
+    if has_curly_tracks:
+        return parse_grid_layout(rows, svg_caps, file_ts)
 
     for r_idx, r in enumerate(rows[:5]):
         h_row = [str(cell or '').strip().lower() for cell in r]
         if any('track' in h for h in h_row) and any('car' in h or 'count' in h or 'commodity' in h for h in h_row):
-            return parse_standard_table(rows, r_idx, h_row, svg_caps)
+            return parse_standard_table(rows, r_idx, h_row, svg_caps, file_ts)
 
-    return parse_grid_layout(rows, svg_caps)
+    return parse_grid_layout(rows, svg_caps, file_ts)
 
 def extract_cars_from_text(track_id, raw_text):
     if not raw_text or raw_text.upper() in ["CLEAR", "EMPTY"]:
@@ -204,7 +239,7 @@ def extract_cars_from_text(track_id, raw_text):
                 break
     return sum(nums) if nums else 0
 
-def parse_standard_table(rows, header_row_idx, header, svg_caps):
+def parse_standard_table(rows, header_row_idx, header, svg_caps, file_ts=None):
     track_col = next(i for i, h in enumerate(header) if 'track' in h)
     car_col = next((i for i, h in enumerate(header) if 'car' in h or 'count' in h or 'qty' in h), None)
     cap_col = next((i for i, h in enumerate(header) if 'cap' in h), None)
@@ -213,6 +248,8 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
     notes_col = next((i for i, h in enumerate(header) if 'note' in h or 'status' in h), None)
 
     now = datetime.now()
+    if file_ts is None:
+        file_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     tracks = []
 
     for row in rows[header_row_idx + 1:]:
@@ -225,11 +262,14 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
         if not track_id:
             continue
 
-        cars_val = row[car_col] if (car_col is not None and len(row) > car_col) else 0
-        try:
-            cars = int(float(cars_val or 0))
-        except:
-            cars = 0
+        if car_col is not None and len(row) > car_col:
+            cars_val = row[car_col]
+            try:
+                cars = int(float(cars_val or 0))
+            except:
+                cars = extract_cars_from_text(track_id, f"{comm} {notes}")
+        else:
+            cars = extract_cars_from_text(track_id, f"{comm} {notes}")
 
         cap_val = row[cap_col] if (cap_col is not None and len(row) > cap_col) else None
         if cap_val is not None:
@@ -245,8 +285,8 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
         date_val = row[date_col] if (date_col is not None and len(row) > date_col) else None
 
         is_clear = (cars == 0) or (comm.upper() in ['CLEAR', 'EMPTY']) or (notes.upper() in ['CLEAR', 'EMPTY'])
-        is_bad_order = bool(re.search(r"(B\\.O|BAD ORDER|O\.S\.?)", f"{comm} {notes}", re.I)) and (track_id != "22")
-        is_blend = bool(re.search(r"BLEND", f"{comm} {notes}", re.I))
+        is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", f"{comm} {notes}", re.I)) and (track_id != "22")
+        is_blend = bool(re.search(r" BLEND ", f"{comm} {notes}", re.I))
 
         dwell_days = 0
         dwell_warning = False
@@ -256,7 +296,7 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
             dwell_days = (now - date_val).days
             oldest_date_str = date_val.strftime('%Y-%m-%d')
         elif isinstance(date_val, str) and date_val:
-            d_match = re.search(r"(\\d{1,2})/(\\d{1,2})", date_val)
+            d_match = re.search(r"(\d{1,2})/(\d{1,2})", date_val)
             if d_match:
                 mo, da = int(d_match.group(1)), int(d_match.group(2))
                 try:
@@ -289,13 +329,13 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps):
             "dwell_warning": dwell_warning,
             "oldest_inbound_date": oldest_date_str,
             "os_switches": os_sw,
-            "updated_at": now.strftime('%Y-%m-%dT%H:%M:%S')
+            "updated_at": file_ts
         })
 
     tracks.sort(key=lambda x: (0 if x["id"].isdigit() else 1, int(x["id"]) if x["id"].isdigit() else x["id"]))
     return tracks
 
-def parse_grid_layout(rows, svg_caps):
+def parse_grid_layout(rows, svg_caps, file_ts=None):
     now = datetime.now()
     shift_date = now
     for row in rows[:10]:
@@ -304,10 +344,8 @@ def parse_grid_layout(rows, svg_caps):
                 shift_date = cell
                 break
 
-    if shift_date.hour == 0 and shift_date.minute == 0 and shift_date.second == 0:
-        updated_at_dt = datetime.combine(shift_date.date(), now.time())
-    else:
-        updated_at_dt = shift_date
+    if file_ts is None:
+        file_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     track_positions = []
     for r_idx, row in enumerate(rows[:100]):
@@ -330,7 +368,9 @@ def parse_grid_layout(rows, svg_caps):
     stop_sections = ["BOF", "O.S.", "RO:", "SUPERVISOR", "SHIFT", "COMPANY", "SITE", "STATE"]
 
     for c_idx, tps in by_col.items():
-        content_cols = [c_idx + 1] if c_idx == 0 else [c for c in range(c_idx + 1, c_idx + 6)]
+        next_cols = [c for c in by_col.keys() if c > c_idx]
+        max_c = min(next_cols) if next_cols else (c_idx + 6)
+        content_cols = [c for c in range(c_idx + 1, max_c)]
 
         for i, tp in enumerate(tps):
             start_r = tp["row"]
@@ -413,7 +453,7 @@ def parse_grid_layout(rows, svg_caps):
                 "dwell_warning": dwell_warning,
                 "oldest_inbound_date": oldest_date_str,
                 "os_switches": os_sw,
-                "updated_at": updated_at_dt.strftime("%Y-%m-%dT%H:%M:%S")
+                "updated_at": file_ts
             })
 
     tracks.sort(key=lambda x: (0 if x["id"].isdigit() else 1, int(x["id"]) if x["id"].isdigit() else x["id"]))

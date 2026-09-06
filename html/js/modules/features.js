@@ -20,10 +20,14 @@ export let cachedFeatures = {
         reminders: true,
         anniversaries: true,
         safety_videos: true,
-        track_map: true,
+        track_map: false,
         mobile_qr: true
     }
 };
+
+export function isTrackMapActive() {
+    return cachedFeatures.features?.track_map === true;
+}
 
 export async function fetchFeatures() {
     try {
@@ -55,10 +59,33 @@ export function applyFeatureFlags() {
     const equipGrid = document.getElementById('equipment-masonry');
     if (equipGrid) equipGrid.style.display = (f.equipment_status !== false) ? 'block' : 'none';
 
-    // 3. 365-Day Daily Toolbox Talk Slide
-    const toolboxSlide = document.querySelector('.announcement-slide');
-    if (toolboxSlide) {
-        toolboxSlide.style.display = (f.toolbox_talk !== false) ? 'flex' : 'none';
+    // 3. Track Map vs Daily Toolbox Talk Widget
+    const isDesktop = body.classList.contains('desktop-mode');
+    const isTrackMapOn = f.track_map === true;
+    body.dataset.featuresTrackMap = isTrackMapOn ? 'true' : 'false';
+    body.classList.toggle('feature-track-map', isTrackMapOn);
+    const trackMapWidget = document.getElementById('widget-trackmap');
+    const toolboxWidget = document.getElementById('toolbox-widget-container') || document.querySelector('.announcement-slide');
+
+    if (trackMapWidget) {
+        trackMapWidget.style.display = isTrackMapOn ? 'flex' : 'none';
+    }
+    if (toolboxWidget) {
+        if (isDesktop) {
+            toolboxWidget.style.display = (!isTrackMapOn && f.toolbox_talk !== false) ? 'flex' : 'none';
+        } else {
+            toolboxWidget.style.display = (f.toolbox_talk !== false) ? 'flex' : 'none';
+        }
+    }
+
+    // Dynamic Desktop Nav Link Title
+    const navTrackMapLink = document.getElementById('desktop-nav-trackmap');
+    if (navTrackMapLink) {
+        if (isTrackMapOn) {
+            navTrackMapLink.innerHTML = '<i class="fa-solid fa-train"></i> Track Map & Reminders';
+        } else {
+            navTrackMapLink.innerHTML = '<i class="fa-solid fa-bullhorn"></i> Toolbox Talk & Reminders';
+        }
     }
 
     // 4. Reminders & Announcements
@@ -82,7 +109,7 @@ export function applyFeatureFlags() {
     // 7. Recalculate OSHA, Blend & Shift slot allocations in weather sidebar & header
     allocateSlots(activeAlertCount);
 
-    // 8. Background Texture Style (Issue #9)
+    // 8. Background Texture Style
     const urlParams = new URLSearchParams(window.location.search);
     const bgOverride = urlParams.get('bg');
     const activeBg = (bgOverride || cachedFeatures.bg_style || 'dots').toLowerCase().trim();
@@ -92,6 +119,7 @@ export function applyFeatureFlags() {
     // --- Adaptive Mosaic Classes & Slide Toggles ---
     const viewSafety = document.getElementById('view-safety');
     const viewAnnouncements = document.getElementById('view-announcements');
+    const isHandoffActive = body.classList.contains('handoff-mode');
 
     // Check if View 1 Sidebar is completely empty
     const noSidebar = (f.osha_counter === false) && (f.production_tracker === false) && (f.shift_tracker === false);
@@ -105,19 +133,20 @@ export function applyFeatureFlags() {
     const noToolbox = (f.toolbox_talk === false);
     const viewSafetyEmpty = noToolbox && !hasPanels;
     if (viewSafety) {
-        if (viewSafetyEmpty) {
-            viewSafety.setAttribute('data-disabled', 'true');
-        } else {
+        if (isHandoffActive) {
             viewSafety.removeAttribute('data-disabled');
+        } else if (!isTrackMapOn && !viewSafetyEmpty) {
+            // When track map is OFF in normal mode, display Daily Toolbox Talk & Milestones
+            viewSafety.removeAttribute('data-disabled');
+        } else {
+            viewSafety.setAttribute('data-disabled', 'true');
         }
     }
 
     // Check View 3 (Track Map & Reminders) Active Status
-    const noTrackMap = (f.track_map === false);
-    const noReminders = (f.reminders === false);
-    const viewAnnEmpty = noTrackMap && noReminders;
     if (viewAnnouncements) {
-        if (viewAnnEmpty) {
+        if (!isTrackMapOn) {
+            // When track map is OFF, skip Track Map slide
             viewAnnouncements.setAttribute('data-disabled', 'true');
         } else {
             viewAnnouncements.removeAttribute('data-disabled');

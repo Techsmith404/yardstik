@@ -24,6 +24,9 @@ services:
     ports:
       - "1337:5000"
     volumes:
+      # Sync host timezone to docker container so node/python have the exact correct time
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       - ./control-panel/runners:/app/conf/runners
       - ./control-panel/scripts:/app/scripts
       - ./control-panel/public:/app/public

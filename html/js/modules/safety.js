@@ -1,5 +1,5 @@
 // Novara Safety Curriculum & Action Required Video Parser Module
-import { siteConfig } from './config.js';
+import { siteConfig, isDesktopMode } from './config.js';
 
 let safetyScrollPos = 0;
 let safetyScrollDirection = 1;
@@ -30,8 +30,10 @@ export function startSafetyScroll() {
             
             // Stop animation if the panel or view rotated away
             const pSaf = document.getElementById('panel-safety');
+            const viewSaf = document.getElementById('view-safety');
             const viewAnn = document.getElementById('view-announcements');
-            if (list.offsetParent === null || !pSaf || pSaf.style.opacity === '0' || !viewAnn || !viewAnn.classList.contains('active')) {
+            const isViewActive = (viewSaf && viewSaf.classList.contains('active')) || (viewAnn && viewAnn.classList.contains('active')) || isDesktopMode;
+            if (list.offsetParent === null || !pSaf || pSaf.style.opacity === '0' || !isViewActive) {
                 return; 
             }
             

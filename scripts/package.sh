@@ -17,14 +17,19 @@ sudo docker save kiosk-webserver:latest > kiosk-webserver.tar
 # 3. Create the deployment zip file
 echo "[3/3] Creating deployment archive (../kiosk-deployment.zip)..."
 rm -f ../kiosk-deployment.zip
-zip -r ../kiosk-deployment.zip \
-  docker-compose.yml \
-  kiosk-webserver.tar \
-  employee_list.xlsx \
-  scripts/ \
-  html/ \
-  control-panel/ \
+ZIP_TARGETS=(
+  docker-compose.yml
+  kiosk-webserver.tar
+  scripts/
+  html/
+  control-panel/
   nginx.conf
+)
+if [ -f employee_list.xlsx ]; then
+  ZIP_TARGETS+=(employee_list.xlsx)
+fi
+
+zip -r ../kiosk-deployment.zip "${ZIP_TARGETS[@]}"
 
 echo "[cleanup] Removing temporary tar archive..."
 rm kiosk-webserver.tar

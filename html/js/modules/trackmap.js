@@ -689,11 +689,9 @@ let lastTracksUpdated = null;
 
 function formatAsOfTimestamp(dateInput) {
     if (!dateInput) return "";
-    let d;
-    if (typeof dateInput === 'number') {
-        d = new Date(dateInput);
-    } else if (typeof dateInput === 'string') {
-        const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+    let d = new Date(dateInput);
+    if (isNaN(d.getTime())) {
+        const match = String(dateInput).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
         if (match) {
             d = new Date(
                 parseInt(match[1], 10),
@@ -703,11 +701,7 @@ function formatAsOfTimestamp(dateInput) {
                 parseInt(match[5], 10),
                 match[6] ? parseInt(match[6], 10) : 0
             );
-        } else {
-            d = new Date(dateInput);
         }
-    } else {
-        d = new Date(dateInput);
     }
     if (isNaN(d.getTime())) return "";
     

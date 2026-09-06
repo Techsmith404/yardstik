@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operations Dashboard - Mobile</title>
-    <!-- Include marked.js for Markdown parsing -->
+    <!-- FontAwesome & Marked.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
             --text-color: #f8fafc;
+            --text-secondary: #94a3b8;
             --brand-blue: #3b82f6;
             --accent: #8b5cf6;
             --success: #10b981;
@@ -74,6 +76,26 @@
         }
         .safety-person img {
             width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+        }
+        .reminder-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--brand-blue);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .reminder-card.high {
+            border-left-color: var(--warning);
+            background: rgba(245, 158, 11, 0.05);
+        }
+        .reminder-card.critical {
+            border-left-color: var(--danger);
+            background: rgba(239, 68, 68, 0.08);
+        }
+        .reminder-card h3 {
+            margin: 0 0 6px 0;
+            font-size: 1.05rem;
         }
     </style>
 </head>
@@ -338,6 +360,7 @@
                     if (hasHash && !displayVal.startsWith('#')) {
                         displayVal = '#' + displayVal;
                     }
+                    const displayLabel = rawTrackerLabel.replace(/#/g, '').replace(/\s+/g, ' ').trim();
                     const updatedEpoch = data.production_tracker_updated_at || data.blend_recipe_updated_at;
                     let isRecent = false;
                     if (updatedEpoch) {
@@ -645,29 +668,51 @@
                     const container = document.getElementById('tracks-content');
                     const statsEl = document.getElementById('mobile-track-stats');
                     if (!tracks || !tracks.length) {
-                        container.innerHTML = '<div style="color: #94a3b8; grid-column: span 2; text-align: center;">No tracks found.</div>';
+                        container.innerHTML = '<div style="color: #94a3b8; grid-column: span 2; text-align: center; padding: 15px;">No tracks found.</div>';
+                        if (statsEl) statsEl.textContent = '';
                         return;
                     }
                     let total = 0;
                     let clear = 0;
                     let html = '';
+                    let updatedDateStr = '';
                     tracks.forEach(t => {
+                        if (!t) return;
+                        if (!updatedDateStr && t.updated_at) updatedDateStr = t.updated_at;
                         total += (t.cars || 0);
                         if (t.is_clear) clear++;
                         const border = t.is_clear ? '#10b981' : (t.is_bad_order ? '#ef4444' : (t.is_blend ? '#00f0ff' : (t.dwell_warning ? '#f59e0b' : '#3b82f6')));
                         html += `
                             <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${border}; border-radius: 8px; padding: 8px;">
                                 <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 2px;">
-                                    <span>${t.name}</span>
-                                    <span style="color: ${border}; font-size: 0.85rem;">${t.is_clear ? 'CLEAR' : t.cars + ' Cars'}</span>
+                                    <span>${t.name || ('Track ' + t.id)}</span>
+                                    <span style="color: ${border}; font-size: 0.85rem;">${t.is_clear ? 'CLEAR' : (t.cars || 0) + ' Cars'}</span>
                                 </div>
-                                <div style="font-size: 0.75rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.commodity || 'Empty'}</div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.commodity || (t.is_clear ? 'Empty' : '')}</div>
                                 ${t.dwell_warning ? `<div style="font-size: 0.7rem; color: #f59e0b; margin-top: 2px;">⚠️ ${t.dwell_days}d Dwell</div>` : ''}
                             </div>
                         `;
                     });
                     container.innerHTML = html;
-                    if (statsEl) statsEl.textContent = `${total} Cars | ${clear} Clear`;
+                    if (statsEl) {
+                        let asOfText = '';
+                        if (updatedDateStr) {
+                            try {
+                                const d = new Date(updatedDateStr);
+                                if (!isNaN(d.getTime())) {
+                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                    const dd = String(d.getDate()).padStart(2, '0');
+                                    let hours = d.getHours();
+                                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                                    hours = hours % 12 || 12;
+                                    const hh = String(hours).padStart(2, '0');
+                                    const min = String(d.getMinutes()).padStart(2, '0');
+                                    asOfText = ` • As of ${mm}-${dd} ${hh}:${min} ${ampm}`;
+                                }
+                            } catch (e) {}
+                        }
+                        statsEl.textContent = `${total} Cars | ${clear} Clear${asOfText}`;
+                    }
                 }
             } catch (e) {
                 console.warn("Could not fetch mobile tracks:", e);

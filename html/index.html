@@ -5,28 +5,9 @@
     <title>Break Room Kiosk</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles-v2.css?v=4.3" id="theme-stylesheet">
+    <link rel="stylesheet" href="css/styles-v2.css?v=5.0" id="theme-stylesheet">
 </head>
 <body>
-    <!-- Desktop Top Navigation Bar (Visible in Desktop Mode Only) -->
-    <div id="desktop-nav-bar" class="desktop-nav-bar" style="display: none;">
-        <div class="desktop-nav-brand">
-            <span class="desktop-badge">DESKTOP PORTAL</span>
-            <h1 class="desktop-title" id="desktop-title" style="display: flex; align-items: center; gap: 8px;">
-                <span id="theme-icon-desktop-left" class="theme-icon"></span>
-                <span id="desktop-title-text">Operations Dashboard</span>
-                <span id="theme-icon-desktop-right" class="theme-icon"></span>
-            </h1>
-        </div>
-        <div class="desktop-nav-links">
-            <a href="#view-production" class="desktop-nav-btn"><i class="fa-solid fa-truck-ramp-box"></i> Equipment & Status</a>
-            <a href="#view-safety" class="desktop-nav-btn"><i class="fa-solid fa-shield-halved"></i> Safety & Milestones</a>
-            <a href="#view-announcements" class="desktop-nav-btn"><i class="fa-solid fa-train"></i> Track Map & Reminders</a>
-        </div>
-        <div class="desktop-nav-actions">
-            <a href="?view=kiosk" class="desktop-nav-btn switch-mode-btn" title="Switch to TV Kiosk Slide Mode"><i class="fa-solid fa-tv"></i> TV Slide Mode</a>
-        </div>
-    </div>
 
     <!-- Weather FX Overlays -->
     <canvas id="weather-canvas" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 2s ease;"></canvas>
@@ -112,8 +93,8 @@
         </div>
     </div>
 
-    <!-- Slide 2: Safety Stand-down & Milestones (Enabled in Shift Handoff Mode) -->
-    <div id="view-safety" class="kiosk-view" data-duration="30000" data-disabled="true">
+    <!-- Slide 2: Safety Stand-down & Milestones (Enabled when Track Map is OFF or in Handoff Mode) -->
+    <div id="view-safety" class="kiosk-view" data-duration="40000">
         <div class="widget announcement-slide" id="toolbox-widget-container" style="flex: 1 1 55%; display: flex; flex-direction: column; overflow: hidden; margin: 0; min-height: 0;">
             <h3 style="display: flex; align-items: center; justify-content: space-between;">
                 <span>DAILY TOOLBOX TALK</span>
@@ -123,8 +104,13 @@
                 <img id="slow-slide-img" src="" alt="Daily Safety Stand-down" style="max-width: 100%; max-height: 100%; object-fit: contain;">
             </div>
         </div>
-        <div class="side-stats" style="display: flex; flex-direction: column; gap: 25px;">
-            <div id="rotating-panels-wrapper" style="flex: 1; position: relative; overflow: hidden; margin: 0; display: flex;">
+        <div class="side-stats" id="safety-side-stats" style="display: flex; flex-direction: column; gap: 25px;">
+            <!-- Reminders Widget (Visible in normal mode when track map is disabled) -->
+            <div id="safety-reminders-container" class="widget" style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 id="safety-reminders-title">Reminders</h3>
+                <div id="safety-reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px;">Loading...</div>
+            </div>
+            <div id="rotating-panels-wrapper" style="flex: 1 1 0%; position: relative; overflow: hidden; margin: 0; display: flex; min-height: 0;">
                 <!-- Anniversary Panel -->
                 <div class="widget anniversary-panel" id="panel-anniversaries" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease;">
                     <h3 id="anniversary-title">Upcoming Anniversaries</h3>
@@ -153,7 +139,7 @@
     </div>
 
     <!-- Slide 3: Yard Track Map & Reminders -->
-    <div id="view-announcements" class="kiosk-view" data-duration="40000">
+    <div id="view-announcements" class="kiosk-view" data-duration="40000" data-disabled="true">
         <div class="widget" id="widget-trackmap" style="flex: 1 1 65%; display: flex; flex-direction: column; overflow: hidden; margin: 0; min-height: 0;">
             <h3 style="display: flex; align-items: center; justify-content: space-between;">
                 <span style="display: inline-flex; align-items: center; gap: 8px;">
@@ -169,9 +155,9 @@
             </div>
         </div>
         <div class="side-stats" id="reminders-side-stats" style="display: flex; flex-direction: column; gap: 25px;">
-            <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+            <div id="reminders-widget-container" class="widget" style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
                 <h3 id="reminders-title">Reminders</h3>
-                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px; flex: 1; overflow-y: auto;">Loading...</div>
+                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px;">Loading...</div>
             </div>
         </div>
     </div>
@@ -189,6 +175,6 @@
     <img id="mobile-qr-img" src="" alt="Mobile Dashboard QR" style="position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 2px solid rgba(255,255,255,0.35); border-radius: 8px; z-index: 1000; opacity: 0.8; transition: opacity 0.3s; display: none;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
 
 
-    <script type="module" src="js/app.js?v=4.3"></script>
+    <script type="module" src="js/app.js?v=5.0"></script>
 </body>
 </html>

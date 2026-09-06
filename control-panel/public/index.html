@@ -37,8 +37,13 @@
         <main class="main-content">
             <header class="top-bar">
                 <h2 id="current-script-title">Dashboard</h2>
-                <div class="user-status">
-                    <span class="pulse"></span> System Online
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="btn-changelog" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(56, 189, 248, 0.08); color: #38bdf8; cursor: pointer;">
+                        <i class="fa-solid fa-sparkles"></i> What's New (v4.2)
+                    </button>
+                    <div class="user-status">
+                        <span class="pulse"></span> System Online
+                    </div>
                 </div>
             </header>
 
@@ -588,7 +593,8 @@
                             <p style="margin: 4px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Upload daily track check spreadsheets, custom SVG track drawings, or edit car counts live.</p>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <a href="/api/tracks/template" class="btn btn-secondary" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Standard Template</a>
+                            <a href="/api/tracks/template-excel" class="btn btn-secondary" style="text-decoration: none;" download="example-track-check.xlsx" title="Download starter Excel track check"><i class="fa-solid fa-file-excel" style="color: #22c55e;"></i> Starter Excel (.xlsx)</a>
+                            <a href="/api/tracks/template" class="btn btn-secondary" style="text-decoration: none;" download="standard_track_check_template.csv" title="Download simple CSV track check"><i class="fa-solid fa-file-csv" style="color: #38bdf8;"></i> CSV Template</a>
                             <button id="btn-save-tracks" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
                         </div>
                     </div>
@@ -700,6 +706,50 @@
             </div>
         </main>
 
+    </div>
+
+    <!-- What's New & Setup Guide Modal -->
+    <div id="modal-changelog" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-sparkles" style="color: #38bdf8;"></i> What's New in Yardstik v4.2</h3>
+                <button class="modal-close-btn" id="btn-close-changelog" title="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px; padding: 12px 16px; background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px;">
+                    <strong style="color: #38bdf8; font-size: 1rem;">🚂 Interactive Yard Track Map & Shift Handoff Mode</strong>
+                    <p style="margin: 6px 0 0 0; font-size: 0.88rem; color: #cbd5e1;">
+                        Yardstik v4.2 introduces real-time SVG yard track mapping, multi-column Excel spreadsheet ingestion, automated car classification, and dedicated Shift Handoff view modes.
+                    </p>
+                </div>
+
+                <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-sliders" style="color: #a78bfa;"></i> Getting Started at Deployed Locations</h4>
+                <ol style="padding-left: 20px; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 8px; color: #cbd5e1; font-size: 0.88rem;">
+                    <li><strong>Feature Toggle:</strong> The Track Map slide is disabled by default to ensure existing locations continue operating smoothly without configuration changes. To enable it, navigate to <em>Extras & Themes</em> and turn on <strong>Yard Track Map Engine</strong>.</li>
+                    <li><strong>Upload Track Check:</strong> In <em>Track Management</em>, upload your facility's daily <code>.xlsx</code> or <code>.csv</code> track check file, or download the pre-configured starter spreadsheet below.</li>
+                    <li><strong>Custom Vector SVG:</strong> Optionally upload a custom vector SVG map of your facility layout (with track elements matching track IDs). The system ships with a high-resolution 11-track starter layout.</li>
+                    <li><strong>Commodity Rules:</strong> Customize keyword classification rules and color-coded dashes to match your facility's specific commodities and railcar assignments.</li>
+                    <li><strong>Shift Handoff Mode:</strong> Use <code>?mode=handoff</code> in the Kiosk URL to lock the display onto the Track Map or rotate all operational slides simultaneously during shift turnover meetings.</li>
+                </ol>
+
+                <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-shield-halved" style="color: #22c55e;"></i> Safe Fallbacks & Resiliency</h4>
+                <p style="margin: 0 0 16px 0; font-size: 0.88rem; color: #cbd5e1;">
+                    When Track Map is disabled, the Kiosk automatically rotates Slide 1 (Overview) and Slide 2 (Daily Toolbox Talk & Safety Milestones), ensuring zero disruption to existing workflows.
+                </p>
+
+                <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+                    <a href="/api/tracks/template-excel" class="btn btn-secondary" download="example-track-check.xlsx" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-file-excel" style="color: #22c55e;"></i> Download Starter Spreadsheet (.xlsx)
+                    </a>
+                    <a href="/api/tracks/template" class="btn btn-secondary" download="standard_track_check_template.csv" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-file-csv" style="color: #38bdf8;"></i> Download CSV Template
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btn-dismiss-changelog">Got it, let's go!</button>
+            </div>
+        </div>
     </div>
 
     <!-- Loading Overlay -->

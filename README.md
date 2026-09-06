@@ -1,6 +1,6 @@
 # 🚀 YardStik — Industrial Operations Dashboard & Break Room Kiosk System
 
-[![Version](https://img.shields.io/badge/version-v4.1.0-blue.svg)](https://github.com/TechSmith404/yardstik/releases)
+[![Version](https://img.shields.io/badge/version-v4.2.0-blue.svg)](https://github.com/TechSmith404/yardstik/releases)
 [![Docker](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Ubuntu Frame](https://img.shields.io/badge/wayland-Ubuntu%20Frame-E95420.svg?logo=ubuntu&logoColor=white)](https://mir-server.io/ubuntu-frame)
 [![Node.js](https://img.shields.io/badge/node.js-v20-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -17,7 +17,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ## 📸 Screenshots & Visual Showcase
 
 ### 📺 View 1: Live Operations & Production Tracking (TV Kiosk Slide)
-> *Auto-rotating 40s TV view showcasing multi-category equipment status, mobile crane scale audits, active blend recipes, daylight/moon progression, shift handoff countdowns, and dynamic emergency weather slots.*
+> *Auto-rotating TV view showcasing multi-category equipment status, mobile crane scale audits, active blend recipes, daylight/moon progression, shift handoff countdowns, and dynamic emergency weather slots.*
 
 <p align="center">
   <img src="docs/images/tv-kiosk-operations.png" alt="TV Kiosk Operations View" width="95%" />
@@ -25,8 +25,8 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 ---
 
-### 📢 View 2: Daily Toolbox Talks & Safety Records (TV Kiosk Slide)
-> *Auto-rotating 40s TV view featuring high-visibility Daily Toolbox Talks, dynamic Markdown reminder cards, upcoming employee milestones/anniversaries, and OSHA safety video completion trackers.*
+### 📢 View 2: Daily Toolbox Talks & Safety Records (TV Kiosk / Handoff Mode)
+> *Auto-rotating TV view featuring high-visibility Daily Toolbox Talks, dynamic Markdown reminder cards, upcoming employee milestones/anniversaries, and OSHA safety video completion trackers.*
 
 <p align="center">
   <img src="docs/images/tv-kiosk-announcements.png" alt="TV Kiosk Announcements View" width="95%" />
@@ -34,8 +34,17 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 ---
 
+### 🚂 View 3: Interactive Yard Track Map & Reminders (TV Kiosk / Handoff Mode)
+> *High-visibility vector SVG yard track map with live car counts, capacity gauges, color-coded commodity dashes, and high-priority operations reminder cards.*
+
+<p align="center">
+  <img src="docs/images/tv-kiosk-track-map.png" alt="TV Kiosk Track Map View" width="95%" />
+</p>
+
+---
+
 ### 🖥️ Desktop Unified Supervisor Dashboard (`?view=desktop`)
-> *Single-page scrollable operations center for office PCs and plant supervisors. Displays all operational widgets, equipment rosters, and employee records simultaneously with a glassmorphism sticky navigation bar.*
+> *Single-page scrollable operations center for office PCs and plant supervisors. Displays all operational widgets, track layouts, equipment rosters, and employee records simultaneously with a glassmorphism sticky navigation bar.*
 
 <p align="center">
   <img src="docs/images/desktop-portal.png" alt="Desktop Unified Dashboard" width="95%" />
@@ -44,7 +53,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 📱 Mobile Floor Portal (`mobile.html`)
-> *Lightweight, mobile-responsive web portal accessible by scanning the break room TV\'s on-screen QR code. Enables shop floor personnel to inspect equipment status, blend recipes, and training notices on the go.*
+> *Lightweight, mobile-responsive web portal accessible by scanning the break room TV's on-screen QR code. Enables shop floor personnel to inspect equipment status, track map occupancy, blend recipes, and training notices on the go.*
 
 <p align="center">
   <img src="docs/images/mobile-portal.png" alt="Mobile Floor Portal" width="45%" />
@@ -53,7 +62,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 🎛️ Bespoke Node.js Control Panel (`:1337`)
-> *Centralized dark-mode administrative suite featuring real-time equipment status toggling, EasyMDE Markdown reminder editing, script runner terminal with live SSE streaming, and visual theme styling.*
+> *Centralized dark-mode administrative suite featuring real-time equipment status toggling, track check upload & live editing, commodity classification rules, EasyMDE Markdown reminder editing, script runner terminal with live SSE streaming, and visual theme styling.*
 
 <p align="center">
   <img src="docs/images/control-panel.png" alt="Control Panel Suite" width="95%" />
@@ -63,28 +72,34 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 ## 🌟 Key Capabilities & Architectural Highlights
 
-### 1. 🖥️ Multi-Display Presentation Architecture
-* **Kiosk TV Mode (`localhost:8080/?view=kiosk`):** Designed for unattended plant TVs. Automatically cycles between **View 1 (Operations)** and **View 2 (Announcements & Safety)** every 40 seconds with smooth hardware-accelerated transitions and zero screen burn-in risk.
+### 1. 🖥️ Multi-Display & Shift Handoff Presentation Architecture
+* **Kiosk TV Mode (`localhost:8080/?view=kiosk`):** Designed for unattended plant TVs. Automatically cycles active operational slides every 40 seconds with smooth hardware-accelerated transitions and zero screen burn-in risk.
+* **Shift Handoff Mode (`localhost:8080/?mode=handoff`):** Purpose-built for shift turnover briefings and supervisor handoffs. Seamlessly rotates all 3 operational slides (Slide 1: Operations Overview, Slide 2: Daily Toolbox Talks & Safety, Slide 3: Yard Track Map & Reminders).
 * **Desktop Unified Mode (`localhost:8080/?view=desktop`):** Auto-detected on LAN office computers. Eliminates slide rotation, rendering all plant data in a single unified, scrollable dashboard with sticky section anchors.
-* **Mobile QR Portal (`localhost:8080/mobile.html`):** Instantly accessible by scanning the dynamic on-screen QR code. Includes multi-tier offline caching and touch-friendly controls.
+* **Mobile QR Portal (`localhost:8080/mobile.html`):** Instantly accessible by scanning the dynamic on-screen QR code. Includes multi-tier offline caching, touch-friendly controls, and live track check inspections.
 
-### 2. ⚖️ Equipment Status & Weekly Audit Protocol
+### 2. 🚂 Interactive Yard Track Map & Spreadsheet Ingestion
+* **Real-Time Vector SVG Canvas:** Dynamic SVG yard map visualization with pan/zoom support, animated capacity progress bars, and colored railcar indicators.
+* **Multi-Column Excel & CSV Parser:** Robust Python ingestion engine (`parse_track_check.py`) capable of parsing complex multi-track spreadsheets, extracting modified timestamps in UTC, and converting them to browser local time.
+* **Commodity Rules & Visual Classification:** Customizable keyword matching and color assignments (Hot Rail, DLs, Blend, Scrap, Outbound Empty, Bad Order) managed directly from the Control Panel.
+
+### 3. ⚖️ Equipment Status & Weekly Audit Protocol
 * **Categorized Equipment Roster:** Engines, Cat Trucks, Overhead Cranes, Mobile Cranes, and Mobile Equipment with instant status badges (**`OK`**, **`OS` / Out of Service**, **`PM` / Maintenance Scheduled**) and custom issue notes.
-* **Mobile Crane Scale & Blend Audit Tracking:** Live scale health tracking (**`SCALE OK`** / **`SCALE OS`**) paired with weekly blend compliance checkboxes (**`Audit: ✅/❌`**).
+* **Mobile Crane Scale & Blend Audit Tracking:** Live scale health tracking (**`SCALE OK`** / **`SCALE OS`**) paired with weekly audit checkboxes (**`Audit: ✅/❌`**).
 * **Automated Sunday 11:00 PM Reset Engine:** A failproof, three-tier automated audit reset system running server-side background daemons, cloud self-healing, and client timestamp verification to guarantee audit resets every Sunday at 11:00 PM without manual overhead.
 
-### 3. 🌦️ Dynamic Weather Engine & Emergency Protocol
+### 4. 🌦️ Dynamic Weather Engine & Emergency Protocol
 * **NWS Emergency Slot Allocation:** National Weather Service severe weather warnings (Tornado, Severe Thunderstorm, Flash Flood, Winter Storm, High Wind) dynamically commandeer base widget slots with pulsing emergency indicators.
 * **Xweather Real-Time Lightning Protocol:** Tracks lightning strikes within a 10-mile radius, automatically activating safety warnings and initiating a live second-by-second countdown to the 30-minute OSHA "All-Clear".
-* **Upstash Redis Serverless Edge Cache:** High-performance caching layer (120s TTL) with automated key-exhaustion rotation across backup API credentials to guarantee zero quota outages.
+* **Upstash Redis Serverless Edge Cache:** High-performance caching layer (120s TTL) with automated key-exhaustion rotation across backup API credentials to guarantee zero quota outages (WIP).
 * **Daylight & Moon Astronomy Tracker:** Accurately visualizes real-time sun arc elevation during the day, smoothly converting into a nocturnal blue moon with a sunrise countdown after dusk.
 * **Hardware-Accelerated Canvas FX:** Realistic particle simulations for rain, heavy snowfall, drifting fog banks, and lightning flashes that dynamically activate based on live weather conditions.
 
-### 4. 🎂 Employee Recognition & Safety Compliance Tracking
+### 5. 🎂 Employee Recognition & Safety Compliance Tracking
 * **Automated Seniority & Milestone Engine:** Calculates upcoming work anniversaries with support for historical legacy hire dates and relative countdown badges (`Today!`, `Tomorrow`, `in X days`).
 * **Action Required: Safety Videos:** Scans Novara/LMS training rosters to identify overdue or expiring monthly safety training modules, highlighting missing certifications by employee name.
 
-### 5. 📝 Dynamic Markdown Reminders & Magic Words Engine
+### 6. 📝 Dynamic Markdown Reminders & Magic Words Engine
 * **EasyMDE Web Editor:** Live in-browser Markdown authoring tool parsing `#` H1 slide delimiters.
 * **Markdown Magic Words:** Injects dynamic layouts and behaviors directly from simple markup tags:
 
@@ -101,7 +116,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 | `!EXPIRE YYYY-MM-DD-HH` | Automatically purges and unpublishes the slide after the specified hour passes. | `!EXPIRE 2026-09-01-08` |
 | `!QR <url>` | Generates an embedded high-contrast QR code for instant employee scanning. | `!QR https://plant-portal.com` |
 
-### 6. 🎨 Themes, Shifts & Visual Customization
+### 7. 🎨 Themes, Shifts & Visual Customization
 * **Per-Shift Dedication:** Automatically switches accent themes and dedication badges based on active shift schedules (A, B, C, or D shift).
 * **Seasonal Auto-Overlays:** Optional automatic holiday themes (Winter snowfall, Halloween, Independence Day, New Year).
 * **Industrial Pattern Styles:** Switchable background textures including *Cross-hatch Machined*, *Industrial Carbon*, *Micro Dots*, and *Clean Dark Minimal*.
@@ -263,4 +278,4 @@ This software, source code, architecture, and associated assets are the propriet
 * **Authorized Pilot Evaluation:** Authorized solely for single-facility operational deployment and internal evaluation at the designated pilot facility.
 * **Commercial Deployment & Enterprise Licensing:** Multi-plant installations, redistribution, white-labeling, or enterprise rollouts require an executed software licensing agreement or commercial services contract.
 
-For commercial licensing, enterprise multi-plant deployments, or custom software development, contact: **TechSmith404**.
+For commercial licensing, enterprise multi-plant deployments, or custom software development, contact: **cody.smith@techsmith404.com**.

@@ -22,7 +22,7 @@
         "reminders": true,
         "anniversaries": true,
         "safety_videos": true,
-        "track_map": true,
+        "track_map": false,
         "mobile_qr": true
     }
 }

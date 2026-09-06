@@ -475,10 +475,12 @@ body.feature-no-mobile-qr #mobile-qr-img {
 }
 
 #reminders-content,
-.desktop-reminder-body {
+.desktop-reminder-body,
+.reminder-body {
     display: flex;
     flex-direction: column;
     width: 100%;
+    overflow-x: hidden !important;
 }
 
 #reminders-content hr,
@@ -1668,23 +1670,201 @@ body.handoff-mode #header-blend {
     display: flex !important;
 }
 
+/* Hide all scrollbars globally on Kiosk TV modes */
+body:not(.desktop-mode),
+body:not(.desktop-mode) * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+body:not(.desktop-mode)::-webkit-scrollbar,
+body:not(.desktop-mode) *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
 body.handoff-mode #osha-widget-container,
 body.handoff-mode #blend-widget-container,
 body.handoff-mode #filler-widgets-container {
     display: none !important;
 }
 
+/* Handoff Mode - Slide 1 Fullscreen Equipment Status Centered */
+body.handoff-mode:not(.weather-alert-active) #view-production {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.handoff-mode:not(.weather-alert-active) #view-production .header-widget {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+body.handoff-mode:not(.weather-alert-active) #view-production #equipment-dashboard-container {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
 body.handoff-mode:not(.weather-alert-active) #view-production .side-stats {
     display: none !important;
 }
 
-body.handoff-mode:not(.weather-alert-active) #view-production #equipment-dashboard-container {
-    grid-column: span 4 !important;
+body.handoff-mode:not(.weather-alert-active) #equipment-scroll-wrapper {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
 }
 
 body.handoff-mode:not(.weather-alert-active) #equipment-masonry {
     column-count: 3 !important;
+    column-gap: 30px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-right: 10px !important;
+    margin: 0 !important;
 }
+
+body.handoff-mode:not(.weather-alert-active) .equipment-category {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 20px !important;
+}
+
+/* Kiosk Mode - Slide 2 (Safety, Reminders & Milestones) */
+body:not(.desktop-mode) #view-safety .side-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 25px !important;
+    height: 100% !important;
+}
+
+body:not(.desktop-mode) #view-safety #safety-reminders-container {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin: 0 !important;
+}
+
+body:not(.desktop-mode) #view-safety #rotating-panels-wrapper {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    position: relative !important;
+    display: flex !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+}
+
+/* Handoff Mode - Slide 2 when Track Map is ENABLED (Reminders are shown on Slide 3) */
+body.handoff-mode.feature-track-map:not(.desktop-mode) #view-safety #safety-reminders-container,
+body.handoff-mode[data-features-track-map="true"]:not(.desktop-mode) #view-safety #safety-reminders-container {
+    display: none !important;
+}
+
+body.handoff-mode.feature-track-map:not(.desktop-mode) #view-safety #rotating-panels-wrapper,
+body.handoff-mode[data-features-track-map="true"]:not(.desktop-mode) #view-safety #rotating-panels-wrapper {
+    flex: 1 1 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    position: relative !important;
+    display: flex !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+}
+
+/* Normal Kiosk Mode - Slide 3 (Track Map & Reminders when Track Map is ON) */
+body:not(.desktop-mode):not(.handoff-mode) #view-announcements .side-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 25px !important;
+    height: 100% !important;
+}
+
+body:not(.desktop-mode):not(.handoff-mode) #view-announcements #reminders-widget-container {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin: 0 !important;
+}
+
+body:not(.desktop-mode):not(.handoff-mode) #view-announcements #rotating-panels-wrapper {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    position: relative !important;
+    display: flex !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+}
+
+/* Handoff Mode - Slide 3 Side Stats and Full Screen Track Map */
+body.handoff-mode:not(.desktop-mode) #view-announcements:has(.side-stats.no-reminders),
+body.handoff-mode:not(.desktop-mode) #view-announcements.no-reminders {
+    grid-template-columns: 1fr !important;
+}
+
+body.handoff-mode:not(.desktop-mode) #view-announcements .side-stats {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 25px !important;
+    overflow: visible !important;
+    flex: 1 1 35% !important;
+    height: 100% !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+}
+
+body.handoff-mode:not(.desktop-mode) #view-announcements .side-stats.no-reminders,
+body.handoff-mode:not(.desktop-mode) #view-announcements.no-reminders .side-stats {
+    display: none !important;
+}
+
+.reminder-widget-card,
+body.handoff-mode .reminder-widget-card {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    overflow: visible !important;
+}
+
+.reminder-widget-card .reminder-body,
+body.handoff-mode .reminder-widget-card .reminder-body {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.reminder-widget-card .reminder-body p:last-child {
+    margin-bottom: 0 !important;
+}
+
 
 
 

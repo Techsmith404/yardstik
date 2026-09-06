@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Dashboard - Desktop Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles-v2.css?v=4.5" id="theme-stylesheet">
+</head>
+<body class="desktop-mode desktop-portal">
+    <!-- Desktop Top Navigation Bar -->
+    <div id="desktop-nav-bar" class="desktop-nav-bar">
+        <div class="desktop-nav-brand">
+            <span class="desktop-badge">DESKTOP PORTAL</span>
+            <h1 class="desktop-title" id="desktop-title">
+                <span id="theme-icon-desktop-left" class="theme-icon"></span>
+                <span id="desktop-title-text">Operations Dashboard</span>
+                <span id="theme-icon-desktop-right" class="theme-icon"></span>
+            </h1>
+        </div>
+        <div class="desktop-nav-links">
+            <a href="#view-production" class="desktop-nav-btn"><i class="fa-solid fa-truck-ramp-box"></i> Equipment & Status</a>
+            <a href="#panel-anniversaries" class="desktop-nav-btn"><i class="fa-solid fa-shield-halved"></i> Safety & Milestones</a>
+            <a href="#view-announcements" class="desktop-nav-btn" id="desktop-nav-trackmap"><i class="fa-solid fa-train"></i> Track Map & Reminders</a>
+        </div>
+        <div class="desktop-nav-actions">
+            <button id="btn-desktop-changelog" class="desktop-nav-btn" style="border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); color: #38bdf8; cursor: pointer;" title="What's New in v4.2"><i class="fa-solid fa-sparkles"></i> What's New</button>
+            <a href="index.html?view=kiosk" class="desktop-nav-btn switch-mode-btn" title="Switch to TV Slide Mode"><i class="fa-solid fa-tv"></i> TV Slide Mode</a>
+        </div>
+    </div>
+
+    <!-- Weather FX Overlays -->
+    <canvas id="weather-canvas" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 2s ease;"></canvas>
+    <div id="dark-overlay" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; pointer-events: none; opacity: 0; background: rgba(0,10,20,0.5); transition: opacity 2s ease;"></div>
+    <div id="vignette-overlay" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1s ease;"></div>
+
+    <!-- Row 1: Production & Metrics Grid -->
+    <div id="view-production" class="kiosk-view">
+        <div class="widget header-widget">
+            <h2 id="header-title-container" style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0;">
+                <span id="theme-icon-left" class="theme-icon" style="display: inline-flex; align-items: center;"></span>
+                <span id="header-dashboard-title">Operations Dashboard</span>
+                <span id="theme-icon-right" class="theme-icon" style="display: inline-flex; align-items: center;"></span>
+            </h2>
+            
+            <div id="weather-display">Loading Weather...</div>
+            <div id="clock"></div>
+        </div>
+
+        <div class="widget main-slide" id="equipment-dashboard-container" style="display: flex; flex-direction: column; overflow: hidden; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid rgba(255,255,255,0.1); margin-bottom: 20px; padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.8rem; border: none; padding: 0;">Equipment Status</h3>
+                <div id="lightning-container" style="display: flex; justify-content: flex-end; align-items: center; min-height: 60px;"></div>
+            </div>
+            <div id="equipment-scroll-wrapper" style="overflow-y: auto; flex: 1; scroll-behavior: smooth;">
+                <div id="equipment-masonry" style="column-count: 2; column-gap: 20px; padding-right: 10px;">
+                    <div style="color: var(--text-secondary);">Loading Equipment...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-stats">
+            <div id="dynamic-alerts-container" style="display: flex; flex-direction: column; gap: 15px; flex-shrink: 0;"></div>
+            
+            <div class="widget" id="osha-widget-container" style="flex-shrink: 1; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(105, 165, 121, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Days since last OSHA recordable:</h3>
+                <div class="osha-number" id="osha-counter" style="font-size: clamp(3.5rem, 5vw, 6.5rem);">..</div>
+            </div>
+            
+            <div class="widget" id="blend-widget-container" style="flex-shrink: 1; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(77, 166, 255, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                <h3 id="blend-widget-title" style="font-size: clamp(1rem, 1.2vw, 1.2rem);">Active Blend Recipe:</h3>
+                <div class="osha-number" id="blend-recipe-display" style="color: var(--brand-blue); text-shadow: 0 0 25px rgba(77, 166, 255, 0.35); font-size: clamp(3.5rem, 5vw, 6.5rem);">..</div>
+            </div>
+            
+            <div id="filler-widgets-container" style="display: flex; flex-direction: column; gap: 15px; flex-shrink: 1; min-height: 0;">
+                <div class="widget" id="daylight-widget" style="padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;">
+                    <canvas id="daylight-canvas" width="220" height="110" style="width: 100%; max-width: 220px;"></canvas>
+                    <div id="daylight-text" style="text-align: center; margin-top: 10px; font-weight: 600; font-size: 1rem; color: var(--text-secondary); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Loading Sun Data...</div>
+                </div>
+                <div class="widget" id="shift-widget" style="padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="font-size: 1rem; text-align: center; margin-bottom: 12px; letter-spacing: 0.05em;" id="shift-name">Shift Tracker</h3>
+                    <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.4); border-radius: 5px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+                        <div id="shift-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4da6ff, #a855f7); box-shadow: 0 0 15px #4da6ff; transition: width 1s ease-in-out;"></div>
+                    </div>
+                    <div id="shift-text" style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">Loading Shift...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Yard Track Map / Toolbox Talk & Reminders Overview Grid -->
+    <div id="view-announcements" class="kiosk-view">
+        <!-- Left Column: Track Map or Toolbox Talk & Milestones -->
+        <div id="announcements-col-left">
+            <div class="widget" id="widget-trackmap" style="display: flex; flex-direction: column; overflow: hidden; margin: 0;">
+                <h3 style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span id="theme-icon-slide-left" class="theme-icon"></span>
+                        <span>YARD TRACK MAP</span>
+                        <span id="trackmap-asof" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8; text-transform: none; letter-spacing: normal; margin-left: 6px;"></span>
+                        <span id="theme-icon-slide-right" class="theme-icon"></span>
+                    </span>
+                    <span id="trackmap-stats-summary" style="display: inline-flex; align-items: center;"></span>
+                </h3>
+                <div id="trackmap-viewport" style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
+                    <!-- Dynamically rendered SVG Track Map -->
+                </div>
+            </div>
+
+            <!-- Daily Toolbox Talk Widget (Shown when Track Map is Disabled) -->
+            <div class="widget announcement-slide" id="toolbox-widget-container" style="display: none; flex-direction: column; overflow: hidden; margin: 0; min-height: 420px;">
+                <h3 style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>DAILY TOOLBOX TALK</span>
+                    <span id="toolbox-slide-number" style="font-size: 0.9em; opacity: 0.8; font-weight: normal;"></span>
+                </h3>
+                <div style="flex: 1; min-height: 350px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                    <img id="slow-slide-img" src="" alt="Daily Safety Stand-down" style="max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;" onclick="if(this.src) window.open(this.src, '_blank')">
+                </div>
+            </div>
+
+            <div class="widget anniversary-panel" id="panel-anniversaries">
+                <h3 id="anniversary-title">Upcoming Anniversaries</h3>
+                <ul id="anniversaries-list" style="margin: 0; padding: 0; list-style: none;">
+                    <li>Loading milestones...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Reminders & Safety Videos -->
+        <div class="side-stats">
+            <div id="desktop-reminders-list" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+                <!-- Dynamic Reminder Cards Rendered Here -->
+            </div>
+
+            <div class="widget safety-panel" id="panel-safety">
+                <h3 id="safety-title" style="color: #ef4444; border-bottom-color: rgba(239, 68, 68, 0.3);">Action Required: Safety Videos</h3>
+                <ul id="safety-list" style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; align-content: start;">
+                    <li style="color: var(--text-secondary); font-style: italic; padding: 15px;">Loading safety curriculum...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- What's New Modal Dialog -->
+    <div id="modal-changelog" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 9999;">
+        <div class="modal-card" style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; max-width: 720px; width: 90%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); color: #e2e8f0;">
+            <div style="padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-sparkles" style="color: #38bdf8;"></i> What's New in Yardstik v4.2
+                </h3>
+                <button id="btn-close-changelog" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 24px; overflow-y: auto; font-size: 0.92rem; line-height: 1.6;">
+                <div style="margin-bottom: 20px; padding: 12px 16px; background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px;">
+                    <strong style="color: #38bdf8; font-size: 1rem;">🚂 Interactive Yard Track Map & Shift Handoff Mode</strong>
+                    <p style="margin: 6px 0 0 0; font-size: 0.88rem; color: #cbd5e1;">
+                        Yardstik v4.2 introduces real-time SVG yard track mapping, multi-column Excel spreadsheet ingestion, automated car classification, and dedicated Shift Handoff view modes.
+                    </p>
+                </div>
+
+                <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-sliders" style="color: #a78bfa;"></i> Getting Started at Deployed Locations</h4>
+                <ol style="padding-left: 20px; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 8px; color: #cbd5e1; font-size: 0.88rem;">
+                    <li><strong>Feature Toggle:</strong> The Track Map slide is disabled by default to ensure existing locations continue operating smoothly without configuration changes. To enable it, navigate to <em>Extras & Themes</em> in the Control Panel and turn on <strong>Yard Track Map Engine</strong>.</li>
+                    <li><strong>Upload Track Check:</strong> In the Control Panel (<em>Track Management</em>), upload your facility's daily <code>.xlsx</code> or <code>.csv</code> track check file, or download the starter spreadsheet template.</li>
+                    <li><strong>Custom Vector SVG:</strong> Optionally upload a custom vector SVG map of your facility layout. The system ships with a high-resolution 11-track starter layout.</li>
+                    <li><strong>Commodity Rules:</strong> Customize keyword classification rules and color-coded dashes to match your facility's specific commodities and railcar assignments.</li>
+                    <li><strong>Shift Handoff Mode:</strong> Use <code>?mode=handoff</code> in the Kiosk URL to rotate all operational slides during shift turnover meetings.</li>
+                </ol>
+
+                <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-shield-halved" style="color: #22c55e;"></i> Safe Fallbacks & Resiliency</h4>
+                <p style="margin: 0 0 16px 0; font-size: 0.88rem; color: #cbd5e1;">
+                    When Track Map is disabled, the Kiosk automatically rotates Slide 1 (Overview) and Slide 2 (Daily Toolbox Talk & Safety Milestones), ensuring zero disruption to existing workflows.
+                </p>
+            </div>
+            <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="btn-dismiss-changelog" class="desktop-nav-btn" style="cursor: pointer; padding: 8px 18px; border-radius: 6px; background: #38bdf8; color: #000; font-weight: 600; border: none;">Got it, let's go!</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/desktop.js?v=4.5"></script>
+</body>
+</html>

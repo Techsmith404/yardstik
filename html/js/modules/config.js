@@ -2,38 +2,83 @@
 const urlParams = new URLSearchParams(window.location.search);
 const viewParam = (urlParams.get('view') || '').toLowerCase();
 
-// 1. Mobile Phone Redirect (if on smartphone or ?view=mobile)
+// 1. Device Routing (Mobile, Desktop Portal, Kiosk TV)
 export const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-export function initMobileRedirect() {
-    if (viewParam === 'mobile' || (!viewParam && isMobileDevice)) {
+export function initDeviceRouting() {
+    if (viewParam === 'mobile' || (!viewParam && isMobileDevice && !window.location.pathname.endsWith('desktop.html'))) {
         if (!window.location.pathname.endsWith('mobile.html')) {
             const targetUrl = new URL('mobile.html', window.location.href);
             urlParams.forEach((val, key) => {
                 if (key !== 'view') targetUrl.searchParams.set(key, val);
             });
             window.location.href = targetUrl.href;
+            return true;
+        }
+    } else if (viewParam === 'desktop') {
+        if (!window.location.pathname.endsWith('desktop.html')) {
+            const targetUrl = new URL('desktop.html', window.location.href);
+            urlParams.forEach((val, key) => {
+                if (key !== 'view') targetUrl.searchParams.set(key, val);
+            });
+            window.location.href = targetUrl.href;
+            return true;
         }
     }
+    return false;
 }
+export const initMobileRedirect = initDeviceRouting;
 
 // 2. Desktop vs Kiosk vs Handoff Mode Evaluation
 export const isExplicitHandoff = viewParam === 'handoff' || urlParams.get('handoff') === 'true' || urlParams.has('handoff') || urlParams.get('mode') === 'handoff' || urlParams.get('mock') === 'handoff';
 export const isExplicitKiosk = viewParam === 'kiosk';
-export const isExplicitDesktop = viewParam === 'desktop';
-export const isLocalhostKiosk = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isExplicitDesktop && !isExplicitHandoff;
+export const isExplicitDesktop = viewParam === 'desktop' || (typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html'));
+export const isLocalhostKiosk = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isExplicitDesktop && !isExplicitHandoff;
 
-export const isKioskMode = isExplicitKiosk || isLocalhostKiosk;
-export const isDesktopMode = !isKioskMode && !isExplicitHandoff;
+export const isKioskMode = isExplicitKiosk || isLocalhostKiosk || (!isExplicitDesktop && !window.location.pathname.endsWith('desktop.html'));
+export const isDesktopMode = isExplicitDesktop || (typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html'));
 export let isHandoffActive = isExplicitHandoff;
 
 if (isExplicitHandoff && typeof document !== 'undefined' && document.body) {
     document.body.classList.add('handoff-mode');
 }
 
+export function syncKioskPanels(activeView) {
+    if (isDesktopMode) return;
+
+    const rotWrapper = document.getElementById('rotating-panels-wrapper');
+    if (!rotWrapper) return;
+
+    if (isHandoffActive) {
+        // In Handoff Mode, rotating panels permanently belong to Slide 2 (#view-safety)
+        const safetySideStats = document.querySelector('#view-safety .side-stats');
+        if (safetySideStats && rotWrapper.parentElement !== safetySideStats) {
+            safetySideStats.appendChild(rotWrapper);
+        }
+        return;
+    }
+
+    if (activeView) {
+        const sideStats = activeView.querySelector('.side-stats');
+        if (sideStats && rotWrapper.parentElement !== sideStats) {
+            sideStats.appendChild(rotWrapper);
+        }
+        return;
+    }
+
+    const currentActiveView = document.querySelector('.kiosk-view.active');
+    const targetSideStats = currentActiveView ? currentActiveView.querySelector('.side-stats') : (document.querySelector('#view-safety .side-stats') || document.querySelector('#view-announcements .side-stats'));
+    if (targetSideStats && rotWrapper.parentElement !== targetSideStats) {
+        targetSideStats.appendChild(rotWrapper);
+    }
+}
+
 export function setupHandoffLayout(active = isHandoffActive) {
+    if (isDesktopMode) return; // Desktop view is never modified by handoff mode
     isHandoffActive = active;
     const viewSafety = document.getElementById('view-safety');
+    const viewAnnouncements = document.getElementById('view-announcements');
+
     if (active) {
         document.body.classList.add('handoff-mode');
         if (viewSafety) viewSafety.removeAttribute('data-disabled');
@@ -51,45 +96,21 @@ export function setupHandoffLayout(active = isHandoffActive) {
         } else {
             document.body.classList.remove('weather-alert-active');
         }
+        syncKioskPanels();
     } else if (!isExplicitHandoff) {
         document.body.classList.remove('handoff-mode', 'weather-alert-active');
-        if (viewSafety) viewSafety.setAttribute('data-disabled', 'true');
         const hOsha = document.getElementById('header-osha');
         const hBlend = document.getElementById('header-blend');
         const hTitle = document.getElementById('header-title-container');
         if (hOsha) hOsha.style.display = 'none';
         if (hBlend) hBlend.style.display = 'none';
         if (hTitle) hTitle.style.display = 'flex';
+        syncKioskPanels();
     }
 }
 
 export function setupDesktopLayout() {
-    if (isDesktopMode && !isExplicitHandoff) {
-        document.body.classList.add('desktop-mode');
-        const navBar = document.getElementById('desktop-nav-bar');
-        if (navBar) navBar.style.display = 'flex';
-
-        const setupDesktopColumns = () => {
-            const trackWidget = document.getElementById('widget-trackmap') || document.querySelector('.announcement-slide');
-            const panelAnn = document.getElementById('panel-anniversaries');
-            const viewAnn = document.getElementById('view-announcements');
-            if (trackWidget && panelAnn && viewAnn) {
-                let leftCol = document.getElementById('announcements-col-left');
-                if (!leftCol) {
-                    leftCol = document.createElement('div');
-                    leftCol.id = 'announcements-col-left';
-                    viewAnn.insertBefore(leftCol, viewAnn.firstChild);
-                }
-                leftCol.appendChild(trackWidget);
-                leftCol.appendChild(panelAnn);
-            }
-        };
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', setupDesktopColumns);
-        } else {
-            setupDesktopColumns();
-        }
-    }
+    // Retained for backward compatibility
 }
 
 // 3. Site Configuration & Live Reload Engine

@@ -96,7 +96,8 @@ export async function getAnniversaries() {
                 const panelEl = document.getElementById('panel-anniversaries');
                 const titleEl = document.getElementById('anniversary-title');
                 const titleH = titleEl ? titleEl.offsetHeight : 50;
-                const maxH = panelEl ? (panelEl.clientHeight - titleH - 30) : 390;
+                const clientH = (panelEl && panelEl.clientHeight > 100) ? panelEl.clientHeight : 390;
+                const maxH = clientH - titleH - 30;
 
                 let items = Array.from(list.children);
                 let hiddenCount = 0;

@@ -1927,4 +1927,26 @@ document.addEventListener('DOMContentLoaded', () => {
     clearConsoleBtn.addEventListener('click', () => {
         consoleOutput.innerHTML = '';
     });
+
+    // What's New Modal Logic
+    const btnChangelog = document.getElementById('btn-changelog');
+    const modalChangelog = document.getElementById('modal-changelog');
+    const btnCloseChangelog = document.getElementById('btn-close-changelog');
+    const btnDismissChangelog = document.getElementById('btn-dismiss-changelog');
+
+    function openChangelogModal() {
+        if (modalChangelog) modalChangelog.classList.add('active');
+    }
+    function closeChangelogModal() {
+        if (modalChangelog) modalChangelog.classList.remove('active');
+    }
+
+    if (btnChangelog) btnChangelog.addEventListener('click', openChangelogModal);
+    if (btnCloseChangelog) btnCloseChangelog.addEventListener('click', closeChangelogModal);
+    if (btnDismissChangelog) btnDismissChangelog.addEventListener('click', closeChangelogModal);
+    if (modalChangelog) {
+        modalChangelog.addEventListener('click', (e) => {
+            if (e.target === modalChangelog) closeChangelogModal();
+        });
+    }
 });

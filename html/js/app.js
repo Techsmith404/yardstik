@@ -1,4 +1,4 @@
-import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, fetchSiteConfig, checkVersion, isDesktopMode, isHandoffActive } from './modules/config.js';
+import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, syncKioskPanels, fetchSiteConfig, checkVersion, isDesktopMode, isHandoffActive } from './modules/config.js';
 import { fetchShifts, startClockLoop } from './modules/clock.js';
 import { updateTrackers } from './modules/trackers.js';
 import { getWeather } from './modules/weather.js';
@@ -10,15 +10,14 @@ import { fetchReminders, advanceReminderSlide } from './modules/reminders.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
 import { initSeasonalTheme, applyTheme, getSeasonalTheme } from './modules/theme.js';
-import { fetchFeatures } from './modules/features.js';
+import { fetchFeatures, isTrackMapActive } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 initMobileRedirect();
 setupHandoffLayout();
-fetchFeatures().then(() => {
-    initSeasonalTheme();
-});
+await fetchFeatures();
+initSeasonalTheme();
 setupDesktopLayout();
 
 // 2. Start Synchronized Digital Clock & Engine Loop
@@ -77,12 +76,14 @@ const slideParam = (urlParams.get('slide') || '').toLowerCase();
 if (slideParam) {
     if (slideParam === '1' || slideParam === 'production' || slideParam === 'equipment') {
         currentView = 0;
-    } else if (slideParam === 'safety' || slideParam === 'milestones') {
+    } else if (slideParam === 'safety' || slideParam === 'milestones' || slideParam === 'toolbox') {
         currentView = 1;
     } else if (slideParam === 'announcements' || slideParam === 'trackmap' || slideParam === 'reminders') {
         currentView = 2;
     } else if (slideParam === '2') {
-        currentView = isHandoffActive ? 1 : 2;
+        // If track map is disabled or in handoff mode, Slide 2 is the Safety / Toolbox Talk slide (index 1).
+        // If track map is enabled, Slide 2 is the Yard Track Map & Reminders slide (index 2).
+        currentView = (isTrackMapActive() && !isHandoffActive) ? 2 : 1;
     } else if (slideParam === '3') {
         currentView = 2;
     } else {
@@ -112,6 +113,48 @@ if (isDesktopMode) {
         pSaf.style.opacity = '1';
     }
 } else {
+    function triggerRotatingPanelsAnimation(checkView, durationMs) {
+        syncKioskPanels(checkView);
+        const rotWrapper = document.getElementById('rotating-panels-wrapper');
+        if (!rotWrapper || !checkView || !checkView.contains(rotWrapper)) return;
+
+        const pAnn = document.getElementById('panel-anniversaries');
+        const pSaf = document.getElementById('panel-safety');
+        
+        if (pAnn && pSaf) {
+            if (panelRotationTimeout) clearTimeout(panelRotationTimeout);
+            
+            // Snap panels to starting positions immediately
+            pAnn.style.transition = 'none';
+            pSaf.style.transition = 'none';
+            pAnn.style.transformOrigin = 'top left';
+            pAnn.style.transform = 'translateY(0) translateX(0) rotate(0deg)';
+            pAnn.style.opacity = '1';
+            pSaf.style.transform = 'translateX(120%)';
+            pSaf.style.opacity = '0';
+            
+            // Re-enable smooth transition on the next paint frame
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    pAnn.style.transition = 'transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease';
+                    pSaf.style.transition = 'transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease';
+                    
+                    // Trigger the animation exactly halfway through the slide's duration
+                    panelRotationTimeout = setTimeout(() => {
+                        if (checkView.classList.contains('active')) {
+                            pAnn.style.transform = 'translateY(120%) rotate(-12deg)';
+                            pAnn.style.opacity = '0';
+                            pSaf.style.transform = 'translateX(0)';
+                            pSaf.style.opacity = '1';
+                            
+                            startSafetyScroll();
+                        }
+                    }, durationMs / 2);
+                });
+            });
+        }
+    }
+
     views.forEach(v => v.classList.remove('active'));
     if (views[currentView] && views[currentView].getAttribute('data-disabled') === 'true') {
         currentView = (currentView + 1) % views.length;
@@ -119,6 +162,12 @@ if (isDesktopMode) {
     if (views[currentView]) {
         views[currentView].classList.add('active');
         if (views[currentView].id === 'view-special') views[currentView].style.display = 'flex';
+        let initialMs = parseInt(views[currentView].getAttribute('data-duration')) || 40000;
+        if (isHandoffActive) initialMs = 60000;
+        if (isShort) initialMs = 10000;
+        advanceReminderSlide();
+        syncKioskPanels(views[currentView]);
+        triggerRotatingPanelsAnimation(views[currentView], initialMs);
     }
 
     // In Kiosk TV Mode: cycle views on timed slide loop
@@ -142,61 +191,26 @@ if (isDesktopMode) {
             ms = 60000;
         }
         
-        if (checkView.id === 'view-safety') {
-            // Dynamic Sub-Panel Rotation on Slide 2 (Anniversaries -> Safety Videos)
-            const pAnn = document.getElementById('panel-anniversaries');
-            const pSaf = document.getElementById('panel-safety');
-            
-            if (pAnn && pSaf) {
-                if (panelRotationTimeout) clearTimeout(panelRotationTimeout);
-                
-                // Snap panels to starting positions immediately
-                pAnn.style.transition = 'none';
-                pSaf.style.transition = 'none';
-                pAnn.style.transformOrigin = 'top left';
-                pAnn.style.transform = 'translateY(0) translateX(0) rotate(0deg)';
-                pAnn.style.opacity = '1';
-                pSaf.style.transform = 'translateX(120%)';
-                pSaf.style.opacity = '0';
-                
-                // Re-enable smooth transition on the next paint frame
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        pAnn.style.transition = 'transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease';
-                        pSaf.style.transition = 'transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.8s ease';
-                        
-                        // Trigger the animation exactly halfway through the slide's duration
-                        panelRotationTimeout = setTimeout(() => {
-                            if (checkView.classList.contains('active')) {
-                                pAnn.style.transform = 'translateY(120%) rotate(-12deg)';
-                                pAnn.style.opacity = '0';
-                                pSaf.style.transform = 'translateX(0)';
-                                pSaf.style.opacity = '1';
-                                
-                                startSafetyScroll();
-                            }
-                        }, ms / 2);
-                    });
-                });
-            }
-        }
-
-        if (checkView.id === 'view-announcements') {
+        if (checkView.id === 'view-announcements' || checkView.id === 'view-safety') {
             const overrideMs = advanceReminderSlide();
             if (overrideMs && !isHandoffActive) ms = overrideMs;
         }
         
         if (isShort) ms = 10000;
+
+        syncKioskPanels(checkView);
+        triggerRotatingPanelsAnimation(checkView, ms);
         
         currentView = (currentView + 1) % views.length;
         setTimeout(cycleViews, ms);
     }
     
     // Start the loop dynamically based on the first view's requested duration
-    if (views.length > 0) {
-        let initialDelay = parseInt(views[0].getAttribute('data-duration')) || 40000;
+    if (views.length > 0 && views[currentView]) {
+        let initialDelay = parseInt(views[currentView].getAttribute('data-duration')) || 40000;
         if (isHandoffActive) initialDelay = 60000;
         if (isShort) initialDelay = 10000;
+        currentView = (currentView + 1) % views.length;
         setTimeout(cycleViews, initialDelay);
     }
 }

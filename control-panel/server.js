@@ -625,6 +625,20 @@ app.get('/api/tracks/template', (req, res) => {
     res.send(csvContent);
 });
 
+app.get('/api/tracks/template-excel', (req, res) => {
+    const candidates = [
+        path.join(__dirname, 'public', 'example-track-check.xlsx'),
+        path.join('/data', 'example-track-check.xlsx'),
+        path.join(__dirname, '../html/assets/data', 'example-track-check.xlsx')
+    ];
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            return res.download(p, 'example-track-check.xlsx');
+        }
+    }
+    res.status(404).json({ error: 'Excel starter template not found.' });
+});
+
 // ── Commodity Rules & Classification API ────────────────────────────────────
 const COMMODITY_RULES_PATH = '/data/commodity_rules.json';
 const DEFAULT_COMMODITY_RULES = {

@@ -67,22 +67,104 @@ export function startRemindersScroll() {
 
 export function renderMultipleRemindersWidgets() {
     const parentContainer = document.getElementById('reminders-side-stats') || document.querySelector('#view-announcements .side-stats');
-    if (!parentContainer) return null;
+    const trackWidget = document.getElementById('widget-trackmap');
+    const viewAnn = document.getElementById('view-announcements');
 
     const now = Date.now();
     const activeList = remindersList.filter(r => !r.expireTime || now <= r.expireTime);
 
+    // Also keep #safety-reminders updated for Slide 2
+    const safetyTitle = document.getElementById('safety-reminders-title');
+    const safetyContent = document.getElementById('safety-reminders-content');
+    const safetyContainer = document.getElementById('safety-reminders-container');
+
     if (activeList.length === 0) {
-        parentContainer.innerHTML = `
-            <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0;">
+        if (safetyTitle) safetyTitle.innerText = "Reminders";
+        if (safetyContent) safetyContent.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>';
+        if (safetyContainer) {
+            safetyContainer.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+            safetyContainer.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            safetyContainer.style.animation = 'none';
+        }
+
+        if (!parentContainer) return null;
+
+        if (isHandoffActive) {
+            // Full screen track map during handoff mode if no active reminders!
+            if (viewAnn) viewAnn.classList.add('no-reminders');
+            parentContainer.classList.add('no-reminders');
+            parentContainer.style.setProperty('display', 'none', 'important');
+            return null;
+        } else {
+            if (viewAnn) viewAnn.classList.remove('no-reminders');
+            parentContainer.classList.remove('no-reminders');
+            parentContainer.style.display = 'flex';
+            if (trackWidget) {
+                trackWidget.style.flex = '1 1 65%';
+                trackWidget.style.width = '';
+            }
+            let singleBox = document.getElementById('reminders-widget-container');
+            if (!singleBox) {
+                singleBox = document.createElement('div');
+                singleBox.id = 'reminders-widget-container';
+                singleBox.className = 'widget';
+                singleBox.style.cssText = 'flex: 1 1 50%; min-height: 0; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0;';
+                parentContainer.insertBefore(singleBox, parentContainer.firstChild);
+            }
+            singleBox.innerHTML = `
                 <h3 id="reminders-title">Reminders</h3>
                 <div id="reminders-content" style="color: var(--text-muted); font-style: italic; font-size: 0.95rem; padding-right: 5px; flex: 1;">No active reminders.</div>
-            </div>
-        `;
-        return null;
+            `;
+            return null;
+        }
     }
 
-    let widgetsHtml = '';
+    // Populate #safety-reminders with the first active reminder
+    if (safetyTitle && safetyContent && safetyContainer) {
+        const firstReminder = activeList[0];
+        safetyTitle.innerText = firstReminder.title;
+        if (firstReminder.priority === 'critical') {
+            safetyContainer.style.border = '1px solid #ff0033';
+            safetyContainer.style.boxShadow = '0 0 20px rgba(255, 0, 51, 0.6)';
+            safetyContainer.style.animation = 'pulse-border-glow 1.5s infinite alternate';
+            safetyContainer.style.setProperty('--quote-border-color', '#ff0033');
+        } else if (firstReminder.priority === 'high') {
+            safetyContainer.style.border = '1px solid var(--neon-amber)';
+            safetyContainer.style.boxShadow = '0 0 15px rgba(255, 170, 0, 0.4)';
+            safetyContainer.style.animation = 'pulse-border-glow 2.5s infinite alternate ease-in-out';
+            safetyContainer.style.setProperty('--quote-border-color', 'var(--neon-amber)');
+        } else {
+            safetyContainer.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+            safetyContainer.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            safetyContainer.style.animation = 'none';
+            safetyContainer.style.setProperty('--quote-border-color', 'rgba(128, 138, 148, 0.6)');
+        }
+        if (firstReminder.splitList) safetyContent.classList.add('split-list');
+        else safetyContent.classList.remove('split-list');
+        if (firstReminder.isLarge) safetyContent.classList.add('large-text');
+        else safetyContent.classList.remove('large-text');
+        if (firstReminder.isCenter) safetyContent.classList.add('center-text');
+        else safetyContent.classList.remove('center-text');
+        safetyContent.innerHTML = marked.parse(firstReminder.body.trim());
+    }
+
+    if (!parentContainer) return null;
+
+    // Active reminders exist
+    if (viewAnn) viewAnn.classList.remove('no-reminders');
+    parentContainer.classList.remove('no-reminders');
+    parentContainer.style.display = 'flex';
+    if (trackWidget) {
+        trackWidget.style.flex = '1 1 65%';
+        trackWidget.style.width = '';
+    }
+
+    // Remove existing reminder cards while keeping panel-safety in desktop mode
+    const existingCards = parentContainer.querySelectorAll('.reminder-widget-card, #reminders-widget-container');
+    existingCards.forEach(c => c.remove());
+
+    const panelSaf = document.getElementById('panel-safety');
+
     activeList.forEach((r) => {
         const parsedBody = marked.parse(r.body.trim());
         let priorityBadge = '';
@@ -105,52 +187,58 @@ export function renderMultipleRemindersWidgets() {
             quoteBorderColor = 'var(--neon-amber)';
         }
 
-        widgetsHtml += `
-            <div class="widget reminder-widget-card" style="flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; border: ${widgetBorder}; box-shadow: ${widgetShadow}; animation: ${widgetAnim}; --quote-border-color: ${quoteBorderColor}; padding: 25px 30px;">
-                <h3 style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; font-size: 1.25rem;">
-                    <span>${r.title}</span>
-                    ${priorityBadge}
-                </h3>
-                <div class="reminder-body ${r.splitList ? 'split-list' : ''} ${r.isLarge ? 'large-text' : ''} ${r.isCenter ? 'center-text' : ''}" style="color: var(--text-primary); font-size: 0.95rem; flex: 1; overflow-y: auto;">
-                    ${parsedBody}
-                </div>
+        const card = document.createElement('div');
+        card.className = 'widget reminder-widget-card';
+        card.style.cssText = `flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: visible; margin: 0; border: ${widgetBorder}; box-shadow: ${widgetShadow}; animation: ${widgetAnim}; --quote-border-color: ${quoteBorderColor}; padding: 25px 30px;`;
+        card.innerHTML = `
+            <h3 style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; font-size: 1.25rem;">
+                <span>${r.title}</span>
+                ${priorityBadge}
+            </h3>
+            <div class="reminder-body ${r.splitList ? 'split-list' : ''} ${r.isLarge ? 'large-text' : ''} ${r.isCenter ? 'center-text' : ''}" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px;">
+                ${parsedBody}
             </div>
         `;
+
+        if (panelSaf && panelSaf.parentElement === parentContainer) {
+            parentContainer.insertBefore(card, panelSaf);
+        } else {
+            parentContainer.appendChild(card);
+        }
     });
 
-    parentContainer.innerHTML = widgetsHtml;
     const hasLong = activeList.some(r => r.isLong);
     return hasLong ? 120000 : null;
 }
 
 export function advanceSingleReminderSlide() {
     const parentContainer = document.getElementById('reminders-side-stats') || document.querySelector('#view-announcements .side-stats');
-    if (!parentContainer) return null;
-
-    let container = document.getElementById('reminders-widget-container');
-    if (!container || parentContainer.children.length !== 1 || !document.getElementById('reminders-content')) {
-        parentContainer.innerHTML = `
-            <div id="reminders-widget-container" class="widget" style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank')" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 0 30px rgba(139, 92, 246, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
-                <h3 id="reminders-title">Reminders</h3>
-                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px; flex: 1; overflow-y: auto;">Loading...</div>
-            </div>
-        `;
-        container = document.getElementById('reminders-widget-container');
+    const trackWidget = document.getElementById('widget-trackmap');
+    if (parentContainer) {
+        parentContainer.style.display = 'flex';
+        if (trackWidget) {
+            trackWidget.style.flex = '1 1 65%';
+            trackWidget.style.width = '';
+        }
+        const cards = parentContainer.querySelectorAll('.reminder-widget-card');
+        cards.forEach(c => c.remove());
     }
 
     const now = Date.now();
     const activeList = remindersList.filter(r => !r.expireTime || now <= r.expireTime);
 
+    const titleEls = document.querySelectorAll('#reminders-title, #safety-reminders-title');
+    const contentContainers = document.querySelectorAll('#reminders-content, #safety-reminders-content');
+    const containers = document.querySelectorAll('#reminders-widget-container, #safety-reminders-container');
+
     if (activeList.length === 0) {
-        const titleEl = document.getElementById('reminders-title');
-        const contentEl = document.getElementById('reminders-content');
-        if (titleEl) titleEl.innerText = "Reminders";
-        if (contentEl) contentEl.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>';
-        if (container) {
+        titleEls.forEach(el => el.innerText = "Reminders");
+        contentContainers.forEach(el => el.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>');
+        containers.forEach(container => {
             container.style.border = '1px solid rgba(255, 255, 255, 0.12)';
             container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
             container.style.animation = 'none';
-        }
+        });
         return null;
     }
 
@@ -159,14 +247,12 @@ export function advanceSingleReminderSlide() {
     }
 
     const reminder = activeList[currentReminderIndex];
-    const titleEl = document.getElementById('reminders-title');
-    const contentContainer = document.getElementById('reminders-content');
 
-    if (titleEl) {
-        titleEl.innerText = reminder.title;
-    }
+    titleEls.forEach(el => {
+        el.innerText = reminder.title;
+    });
 
-    if (container) {
+    containers.forEach(container => {
         if (reminder.priority === 'critical') {
             container.style.border = '1px solid #ff0033';
             container.style.boxShadow = '0 0 20px rgba(255, 0, 51, 0.6)';
@@ -183,9 +269,9 @@ export function advanceSingleReminderSlide() {
             container.style.animation = 'none';
             container.style.setProperty('--quote-border-color', 'rgba(128, 138, 148, 0.6)');
         }
-    }
+    });
 
-    if (contentContainer) {
+    contentContainers.forEach(contentContainer => {
         if (reminder.splitList) contentContainer.classList.add('split-list');
         else contentContainer.classList.remove('split-list');
 
@@ -197,7 +283,7 @@ export function advanceSingleReminderSlide() {
 
         const htmlContent = marked.parse(reminder.body.trim());
         contentContainer.innerHTML = htmlContent;
-    }
+    });
 
     currentReminderIndex = (currentReminderIndex + 1) % activeList.length;
     startRemindersScroll();
@@ -319,13 +405,10 @@ export async function fetchReminders() {
         }
     } catch (e) {
         remindersList = [];
-        const content = document.getElementById('reminders-content');
-        if (content) content.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No active reminders.</span>';
-        const container = document.getElementById('reminders-widget-container');
-        if (container) {
-            container.style.border = '1px solid rgba(255, 255, 255, 0.12)';
-            container.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
-            container.style.animation = 'none';
+        if (isDesktopMode || isHandoffActive) {
+            renderDesktopReminders();
+        } else {
+            advanceSingleReminderSlide();
         }
     }
 }
