@@ -98,7 +98,7 @@
     "name": "Track 6",
     "cars": 5,
     "capacity": 12,
-    "commodity": "5 - DIRECT LOAD SHEETS",
+    "commodity": "5 - DOWNLOAD SHEETS",
     "notes": "SWITCH O.S. AT S/END",
     "status": "occupied",
     "is_clear": false,

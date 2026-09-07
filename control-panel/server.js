@@ -668,10 +668,10 @@ const DEFAULT_COMMODITY_RULES = {
         },
         {
             id: "dl",
-            name: "DL (Direct Load / Scrap)",
+            name: "DL (Download / Scrap)",
             color: "#c084fc",
-            keywords: ["DL", "DL'S", "DLS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
-            description: "Direct load scrap, slitter, sheets, baler scrap, P&S, and shred."
+            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            description: "Download scrap, slitter, sheets, baler scrap, P&S, and shred."
         },
         {
             id: "ob_empty",

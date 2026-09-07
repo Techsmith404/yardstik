@@ -36,10 +36,10 @@ export let commodityRules = {
         },
         {
             id: "dl",
-            name: "DL (Direct Load / Scrap)",
+            name: "DL (Download / Scrap)",
             color: "#c084fc",
-            keywords: ["DL", "DL'S", "DLS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
-            description: "Direct load scrap, slitter, sheets, baler scrap, P&S, and shred."
+            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            description: "Download scrap, slitter, sheets, baler scrap, P&S, and shred."
         },
         {
             id: "ob_empty",
@@ -361,32 +361,37 @@ export function getTrackCommodityBreakdown(track) {
     }
 
     // Clean dates like 8/30 or 12/31
-    let cleaned = textToParse.replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, "");
-    // Clean engine tags like #1210
-    cleaned = cleaned.replace(/#\d+/g, "");
-    // Clean O.S switch phrases
-    cleaned = cleaned.replace(/(?:SWITCH\s+)?O\.?S\.?\s*(?:AT\s+[\w/-]+|[\w/-]+\s+SWITCH)?/gi, "");
-    // Protect P&S from being split
-    cleaned = cleaned.replace(/\bP\s*&\s*S\b/gi, "P&S");
+    let cleaned = textToParse
+        .replace(/[–—]/g, "-")
+        .replace(/[‘’]/g, "'")
+        .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, "")
+        .replace(/#\d+/g, "")
+        .replace(/(?:SWITCH\s+)?O\.?S\.?\s*(?:AT\s+[\w/-]+|[\w/-]+\s+SWITCH)?/gi, "")
+        .replace(/\bP\s*&\s*S\b/gi, "__P_AND_S__");
 
-    // Check for parenthetical breakdown e.g. "13 - DL (7 - P&S, 6 - SHRED)"
-    const parenMatch = cleaned.match(/\(([^)]+)\)/);
-    let candidateText = cleaned;
-    if (parenMatch) {
-        const inside = parenMatch[1];
+    // Check for prefix parenthetical breakdown e.g. "10 - DL'S (5 - SHEETS + 5 - P&S)"
+    cleaned = cleaned.replace(/(\d+)\s*(?:[-–:]|\s+)?([A-Za-z0-9'’\/&\s]+?)?\s*\(([^)]+)\)/g, (match, pCount, pLabel, inside) => {
+        const prefixNum = parseInt(pCount, 10);
         const insideNums = (inside.match(/\b\d+\b/g) || []).map(Number);
         const insideSum = insideNums.reduce((a, b) => a + b, 0);
-        if (insideSum === totalCars) {
-            candidateText = inside;
+        if (insideSum === prefixNum) {
+            return inside;
         }
+        return match;
+    });
+
+    // Unprefixed parenthetical check: "(5 - SHEETS + 5 - P&S)"
+    const singleParen = cleaned.match(/^\s*\(([^)]+)\)\s*$/);
+    if (singleParen) {
+        cleaned = singleParen[1];
     }
 
-    // Split into chunks by +, ;, comma, AND, newline, or number-dash pattern
-    const rawChunks = candidateText.split(/[,;+]|\band\b|\n|(?<=[A-Za-z\/])\s+(?=\d+\s*[-–:])/i);
+    // Split into chunks by +, ;, &, comma, AND, newline, or number-dash pattern
+    const rawChunks = cleaned.split(/[,;+&]|\band\b|\n|(?<=[A-Za-z\/])\s+(?=\d+\s*[-–:])/i);
     const segments = [];
 
     for (const rawChunk of rawChunks) {
-        let ch = rawChunk.trim();
+        let ch = rawChunk.replace(/__P_AND_S__/g, "P&S").trim();
         if (!ch) continue;
 
         const { dir, cleanText } = extractDirectionFromText(ch);
@@ -397,7 +402,7 @@ export function getTrackCommodityBreakdown(track) {
         const m1 = textToMatch.match(/^(\d+)\s*(?:[-–:]|\bOF\b)?\s*(.+)$/i);
         if (m1) {
             const cnt = parseInt(m1[1], 10);
-            const desc = m1[2].trim();
+            const desc = m1[2].replace(/[()]/g, "").replace(/\s+/g, " ").trim();
             if (desc && cnt > 0) {
                 const cat = getCommodityCategoryForText(desc);
                 segments.push({ count: cnt, category: cat, color: cat.color, desc: desc, dir: dir });
@@ -407,7 +412,7 @@ export function getTrackCommodityBreakdown(track) {
             const m2 = textToMatch.match(/^(.+?)\s*[-–:]?\s*(\d+)$/);
             if (m2) {
                 const cnt = parseInt(m2[2], 10);
-                const desc = m2[1].trim();
+                const desc = m2[1].replace(/[()]/g, "").replace(/\s+/g, " ").trim();
                 if (desc && cnt > 0 && isNaN(Number(desc))) {
                     const cat = getCommodityCategoryForText(desc);
                     segments.push({ count: cnt, category: cat, color: cat.color, desc: desc, dir: dir });
@@ -610,11 +615,15 @@ export function calculateGlobalYardCarScale(svg, trackMap, carHostElementMap) {
     const ratios = [];
     if (carHostElementMap && trackMap) {
         Object.keys(carHostElementMap).forEach(trackId => {
-            const el = carHostElementMap[trackId];
+            const hostOrHosts = carHostElementMap[trackId];
             const data = trackMap[trackId];
-            const cap = (data && data.capacity) ? data.capacity : parseInt(el.getAttribute("data-capacity") || "0", 10);
+            const hosts = Array.isArray(hostOrHosts) ? hostOrHosts : [hostOrHosts];
+            const cap = (data && data.capacity) ? data.capacity : parseInt(hosts[0]?.getAttribute("data-capacity") || "0", 10);
             if (cap >= 3) {
-                const totalLen = getElementExactLength(el);
+                let totalLen = 0;
+                hosts.forEach(el => {
+                    totalLen += getElementExactLength(el);
+                });
                 if (totalLen > 20) {
                     ratios.push(totalLen / cap);
                 }
@@ -903,12 +912,12 @@ function bindSvgInteractivity(container, isTheater = false) {
 
     Object.keys(trackSegmentsByTrackId).forEach(rawId => {
         const segs = trackSegmentsByTrackId[rawId];
-        const explicitCarSeg = segs.find(el => isExplicitCarElement(el));
-        if (explicitCarSeg) {
-            carHostElementMap[rawId] = explicitCarSeg;
+        const explicitCarSegs = segs.filter(el => isExplicitCarElement(el));
+        if (explicitCarSegs.length > 0) {
+            carHostElementMap[rawId] = explicitCarSegs;
         } else {
             const mainSeg = segs.find(el => (el.id && /^track[-_]/i.test(el.id)) || (!/curve/i.test(el.id || ""))) || segs[0];
-            carHostElementMap[rawId] = mainSeg;
+            carHostElementMap[rawId] = [mainSeg];
         }
     });
 
@@ -921,7 +930,7 @@ function bindSvgInteractivity(container, isTheater = false) {
     // Calculate uniform yard car scale (derived from minimum track capacity ratio or scale rule)
     const globalYardScale = calculateGlobalYardCarScale(svg, trackMap, carHostElementMap);
 
-    // 1. Hook Track Lines & Curves (e.g. track-23, ncurve-25, scurve-27, track segments with class 'cars' or 'track')
+    // 1. Hook Track Lines & Curves (style track bed lines and attach click handlers)
     trackLineElements.forEach(el => {
         const rawId = extractTrackIdFromElement(el);
         if (!rawId) return;
@@ -941,55 +950,6 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.style.setProperty("stroke", bedColor, "important");
             el.style.setProperty("stroke-width", "2.8px", "important");
 
-            // If this element is the designated host segment for cars, create overlay path(s)
-            const isCarHost = (el === carHostElementMap[rawId]);
-            if (isCarHost && data.cars > 0 && !data.is_clear) {
-                const breakdown = getTrackCommodityBreakdown(data);
-                const sortedBreakdown = sortBreakdownByDirection(breakdown, el);
-                const carColors = [];
-                sortedBreakdown.forEach(seg => {
-                    for (let k = 0; k < seg.count; k++) {
-                        carColors.push(seg.color);
-                    }
-                });
-                const primaryCat = getCommodityCategory(data);
-                while (carColors.length < data.cars) {
-                    carColors.push(primaryCat.color);
-                }
-                if (carColors.length > data.cars) {
-                    carColors.length = data.cars;
-                }
-
-                const uniqueColors = [...new Set(carColors)];
-                uniqueColors.forEach(col => {
-                    const overlay = el.cloneNode(true);
-                    overlay.removeAttribute("id");
-                    overlay.classList.remove("yard-track-line", "cars", "car-zone", "car-zone-guide");
-                    overlay.classList.add("train-car-overlay");
-
-                    const dashPattern = getMultiCarDasharray(el, carColors, col, globalYardScale);
-
-                    overlay.style.setProperty("stroke", col, "important");
-                    overlay.style.setProperty("stroke-width", `${globalYardScale.strokeWidth.toFixed(1)}px`, "important");
-                    overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
-                    overlay.style.setProperty("stroke-linecap", "butt", "important");
-                    overlay.style.setProperty("fill", "none", "important");
-                    overlay.style.pointerEvents = "auto";
-                    overlay.style.cursor = "pointer";
-                    overlay.style.filter = `drop-shadow(0 0 5px ${col})`;
-
-                    overlay.onclick = (e) => {
-                        if (hasDraggedMap) return;
-                        e.stopPropagation();
-                        showTrackModal(data);
-                    };
-                    overlay.onmouseenter = (e) => showTrackHoverTooltip(e, data);
-                    overlay.onmouseleave = hideTrackHoverTooltip;
-
-                    el.parentNode.insertBefore(overlay, el.nextSibling);
-                });
-            }
-
             el.onclick = (e) => {
                 if (hasDraggedMap) return;
                 e.stopPropagation();
@@ -998,6 +958,101 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.onmouseenter = (e) => showTrackHoverTooltip(e, data);
             el.onmouseleave = hideTrackHoverTooltip;
         }
+    });
+
+    // 2. Render Car Overlays across Host Segments (supports multi-segment tracks with gap/clearance)
+    Object.keys(carHostElementMap).forEach(rawId => {
+        const data = trackMap[rawId];
+        if (!data || data.cars <= 0 || data.is_clear) return;
+
+        const hostSegs = carHostElementMap[rawId];
+        if (!hostSegs || hostSegs.length === 0) return;
+
+        const trackCap = data.capacity || 20;
+
+        // Calculate length of each host segment and total car zone length
+        const segLengths = hostSegs.map(el => getElementExactLength(el));
+        const totalCarZoneLen = segLengths.reduce((a, b) => a + b, 0);
+
+        // Calculate capacity for each segment proportional to its length
+        let allocatedCapSum = 0;
+        const segCapacities = segLengths.map((len, idx) => {
+            if (idx === segLengths.length - 1) {
+                return Math.max(1, trackCap - allocatedCapSum);
+            }
+            const c = Math.max(1, Math.round(trackCap * (len / (totalCarZoneLen || 1))));
+            allocatedCapSum += c;
+            return c;
+        });
+
+        // Distribute data.cars across segments (fill first segment to capacity, then overflow)
+        let remCars = data.cars;
+        const segCarCounts = segCapacities.map((cap, idx) => {
+            if (idx === segCapacities.length - 1) {
+                const c = remCars;
+                remCars = 0;
+                return c;
+            }
+            const c = Math.min(remCars, cap);
+            remCars -= c;
+            return c;
+        });
+
+        // Build full carColors array sorted by direction
+        const breakdown = getTrackCommodityBreakdown(data);
+        const sortedBreakdown = sortBreakdownByDirection(breakdown, hostSegs[0]);
+        const carColors = [];
+        sortedBreakdown.forEach(seg => {
+            for (let k = 0; k < seg.count; k++) {
+                carColors.push(seg.color);
+            }
+        });
+        const primaryCat = getCommodityCategory(data);
+        while (carColors.length < data.cars) {
+            carColors.push(primaryCat.color);
+        }
+        if (carColors.length > data.cars) {
+            carColors.length = data.cars;
+        }
+
+        // Slice carColors for each segment and render overlays
+        let colorOffset = 0;
+        hostSegs.forEach((el, segIdx) => {
+            const countForSeg = segCarCounts[segIdx];
+            if (countForSeg <= 0) return;
+
+            const segColors = carColors.slice(colorOffset, colorOffset + countForSeg);
+            colorOffset += countForSeg;
+
+            const uniqueColors = [...new Set(segColors)];
+            uniqueColors.forEach(col => {
+                const overlay = el.cloneNode(true);
+                overlay.removeAttribute("id");
+                overlay.classList.remove("yard-track-line", "cars", "car-zone", "car-zone-guide");
+                overlay.classList.add("train-car-overlay");
+
+                const dashPattern = getMultiCarDasharray(el, segColors, col, globalYardScale);
+
+                overlay.style.setProperty("stroke", col, "important");
+                overlay.style.setProperty("stroke-width", `${globalYardScale.strokeWidth.toFixed(1)}px`, "important");
+                overlay.style.setProperty("stroke-dasharray", dashPattern, "important");
+                overlay.style.setProperty("stroke-linecap", "butt", "important");
+                overlay.style.setProperty("fill", "none", "important");
+                overlay.style.pointerEvents = "auto";
+                overlay.style.cursor = "pointer";
+                overlay.style.filter = `drop-shadow(0 0 5px ${col})`;
+
+                overlay.onclick = (e) => {
+                    if (hasDraggedMap) return;
+                    e.stopPropagation();
+                    showTrackModal(data);
+                };
+                overlay.onmouseenter = (e) => showTrackHoverTooltip(e, data);
+                overlay.onmouseleave = hideTrackHoverTooltip;
+
+                el.parentNode.insertBefore(overlay, el.nextSibling);
+            });
+        });
     });
 
     // 2. Hook Labels / Badges (e.g. label-21, label-21-2, label-68, etc.)
@@ -1010,7 +1065,7 @@ function bindSvgInteractivity(container, isTheater = false) {
         if (data) {
             const cap = data.capacity || 20;
             const commCat = getCommodityCategory(data);
-            const badgeColor = data.is_clear ? "#22c55e" : (data.is_bad_order ? "#ef4444" : commCat.color);
+            const badgeColor = data.is_clear ? "#22c55e" : (data.is_bad_order ? "#ef4444" : (data.is_blend ? "#00f0ff" : (data.dwell_warning ? "#f59e0b" : commCat.color)));
 
             if (data.is_clear) el.classList.add("badge-clear");
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
@@ -1022,28 +1077,41 @@ function bindSvgInteractivity(container, isTheater = false) {
             const rect = el.querySelector("rect");
 
             if (textEl && rect) {
+                const origX = parseFloat(rect.getAttribute("data-orig-x") || rect.getAttribute("x") || 0);
+                const origW = parseFloat(rect.getAttribute("data-orig-w") || rect.getAttribute("width") || 36);
+                const origY = parseFloat(rect.getAttribute("data-orig-y") || rect.getAttribute("y") || 0);
+                const origH = parseFloat(rect.getAttribute("data-orig-h") || rect.getAttribute("height") || 18);
+
+                if (!rect.hasAttribute("data-orig-x")) {
+                    rect.setAttribute("data-orig-x", origX);
+                    rect.setAttribute("data-orig-w", origW);
+                    rect.setAttribute("data-orig-y", origY);
+                    rect.setAttribute("data-orig-h", origH);
+                }
+
+                const centerX = origX + (origW / 2);
+                const centerY = origY + (origH / 2);
+
+                textEl.setAttribute("x", centerX);
+                textEl.setAttribute("y", centerY);
+                textEl.removeAttribute("transform");
+
                 if (data.cars > 0) {
                     textEl.textContent = `${rawId} (${data.cars})`;
                 } else {
                     textEl.textContent = `${rawId}`;
                 }
 
-                const origX = parseFloat(rect.getAttribute("data-orig-x") || rect.getAttribute("x"));
-                const origW = parseFloat(rect.getAttribute("data-orig-w") || rect.getAttribute("width"));
-                if (!rect.hasAttribute("data-orig-x")) {
-                    rect.setAttribute("data-orig-x", origX);
-                    rect.setAttribute("data-orig-w", origW);
-                }
-                const centerX = origX + (origW / 2);
+                textEl.setAttribute("text-anchor", "middle");
+                textEl.setAttribute("dominant-baseline", "central");
+
                 const newWidth = data.cars > 0 ? Math.max(origW, 36) : origW;
                 rect.setAttribute("width", newWidth);
                 rect.setAttribute("x", centerX - (newWidth / 2));
 
-                if (!data.is_clear && !data.is_bad_order && !data.is_blend && !data.dwell_warning) {
-                    rect.style.stroke = badgeColor;
-                    rect.style.fill = `rgba(${hexToRgb(badgeColor)}, 0.25)`;
-                    textEl.style.fill = badgeColor;
-                }
+                rect.style.stroke = badgeColor;
+                rect.style.fill = `rgba(${hexToRgb(badgeColor)}, 0.25)`;
+                textEl.style.fill = badgeColor;
             }
 
             el.style.cursor = "pointer";
@@ -1258,9 +1326,11 @@ export function showTrackModal(track) {
     if (breakdown.length > 1) {
         commodityBadges = breakdown.map(b => {
             const dirLabel = b.dir ? ` [${b.dir}/END]` : "";
+            const cleanDesc = (b.desc || "").replace(/[()]/g, "").trim();
+            const descSpan = cleanDesc && cleanDesc.toUpperCase() !== b.category.name.toUpperCase() ? ` <small style="opacity: 0.85;">(${cleanDesc})</small>` : "";
             return `
             <span class="modal-status-badge" style="background: rgba(${hexToRgb(b.color)}, 0.18); color: ${b.color}; border: 1px solid ${b.color};">
-                📦 ${b.count}x ${b.category.name}${dirLabel} <small style="opacity: 0.85;">(${b.desc})</small>
+                📦 ${b.count}x ${b.category.name}${dirLabel}${descSpan}
             </span>
         `;
         }).join("");

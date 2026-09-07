@@ -1343,20 +1343,20 @@ svg .tank {
 g.badge-rect, .badge-rect {
     transition: fill 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
 }
-.badge-clear .badge-rect { fill: rgba(16, 185, 129, 0.25) !important; stroke: #10b981 !important; }
-.badge-clear .badge-text { fill: #10b981 !important; }
+.badge-clear rect, .badge-clear .badge-rect { fill: rgba(16, 185, 129, 0.25) !important; stroke: #10b981 !important; }
+.badge-clear text, .badge-clear .badge-text { fill: #10b981 !important; }
 
-.badge-bad-order .badge-rect { fill: rgba(239, 68, 68, 0.3) !important; stroke: #ef4444 !important; }
-.badge-bad-order .badge-text { fill: #ef4444 !important; }
+.badge-bad-order rect, .badge-bad-order .badge-rect { fill: rgba(239, 68, 68, 0.3) !important; stroke: #ef4444 !important; }
+.badge-bad-order text, .badge-bad-order .badge-text { fill: #ef4444 !important; }
 
-.badge-blend .badge-rect { fill: rgba(0, 240, 255, 0.25) !important; stroke: #00f0ff !important; }
-.badge-blend .badge-text { fill: #00f0ff !important; }
+.badge-blend rect, .badge-blend .badge-rect { fill: rgba(0, 240, 255, 0.25) !important; stroke: #00f0ff !important; }
+.badge-blend text, .badge-blend .badge-text { fill: #00f0ff !important; }
 
-.badge-dwell .badge-rect { fill: rgba(245, 158, 11, 0.3) !important; stroke: #f59e0b !important; }
-.badge-dwell .badge-text { fill: #f59e0b !important; }
+.badge-dwell rect, .badge-dwell .badge-rect { fill: rgba(245, 158, 11, 0.3) !important; stroke: #f59e0b !important; }
+.badge-dwell text, .badge-dwell .badge-text { fill: #f59e0b !important; }
 
-.badge-occ .badge-rect { fill: rgba(56, 189, 248, 0.25); stroke: #38bdf8; }
-.badge-occ .badge-text { fill: #38bdf8; }
+.badge-occ rect, .badge-occ .badge-rect { fill: rgba(56, 189, 248, 0.25); stroke: #38bdf8; }
+.badge-occ text, .badge-occ .badge-text { fill: #38bdf8; }
 
 /* Track Map Fullscreen Theater Mode */
 .clickable-trackmap {

@@ -401,11 +401,11 @@ def parse_grid_layout(rows, svg_caps, file_ts=None):
                 notes = raw_lines[0]
             else:
                 if raw_lines[0].strip().upper() in ["CLEAR", "EMPTY"]:
-                    comm = ", ".join(raw_lines[1:])
+                    comm = ", ".join(raw_lines[1:]) if len(raw_lines) > 1 else "Empty"
                     notes = ", ".join(raw_lines[1:])
                 else:
-                    comm = raw_lines[0]
-                    notes = ", ".join(raw_lines[1:])
+                    comm = ", ".join(raw_lines)
+                    notes = ", ".join(raw_lines)
 
             full_text = " ".join(raw_lines).strip()
 
