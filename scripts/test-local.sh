@@ -30,7 +30,7 @@ if [ ! -f /opt/kiosk-data/config.json ]; then
     if [ -f ./config.template.json ]; then
         sudo cp ./config.template.json /opt/kiosk-data/config.json
     else
-        echo '{"site_name":"Local Test Kiosk","site_id":"local-test","latitude":41.6045,"longitude":-87.1311,"timezone":"America/Chicago","vercel_api_url":"","admin_username":"admin","admin_password_hash":"admin"}' | sudo tee /opt/kiosk-data/config.json > /dev/null
+        echo '{"site_name":"Local Test Kiosk","site_id":"local-test","latitude":41.6045,"longitude":-87.1311,"timezone":"America/Chicago","vercel_api_url":"","admin_username":"admin","admin_password":"admin"}' | sudo tee /opt/kiosk-data/config.json > /dev/null
     fi
 fi
 

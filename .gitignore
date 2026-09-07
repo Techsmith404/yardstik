@@ -13,6 +13,7 @@ __pycache__/
 
 # Legacy & Temp
 script-server/
+code-review/
 .agents/
 *.bak
 *.tmp

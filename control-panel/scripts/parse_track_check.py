@@ -262,6 +262,9 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps, file_ts=None):
         if not track_id:
             continue
 
+        comm = str(row[comm_col] or '').strip() if (comm_col is not None and len(row) > comm_col) else ''
+        notes = str(row[notes_col] or '').strip() if (notes_col is not None and len(row) > notes_col) else ''
+
         if car_col is not None and len(row) > car_col:
             cars_val = row[car_col]
             try:
@@ -280,8 +283,6 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps, file_ts=None):
         else:
             capacity = svg_caps.get(track_id, 20)
 
-        comm = str(row[comm_col] or '').strip() if (comm_col is not None and len(row) > comm_col) else ''
-        notes = str(row[notes_col] or '').strip() if (notes_col is not None and len(row) > notes_col) else ''
         date_val = row[date_col] if (date_col is not None and len(row) > date_col) else None
 
         is_clear = (cars == 0) or (comm.upper() in ['CLEAR', 'EMPTY']) or (notes.upper() in ['CLEAR', 'EMPTY'])

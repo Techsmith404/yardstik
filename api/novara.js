@@ -42,8 +42,13 @@ module.exports = async function handler(req, res) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: apiKey })
         });
-        const usersData = await usersReq.json();
-        if (!usersData.ok || !usersData.users) {
+        let usersData;
+        try {
+            usersData = await usersReq.json();
+        } catch (e) {
+            return res.status(500).json({ success: false, error: 'Failed to parse Users API response' });
+        }
+        if (!usersData || !usersData.ok || !usersData.users) {
             return res.status(500).json({ success: false, error: 'Invalid Users API response format' });
         }
 

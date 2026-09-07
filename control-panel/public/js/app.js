@@ -1,4 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
+    function escapeHtml(unsafe) {
+        if (unsafe == null) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
     const navMenu = document.getElementById('script-nav');
     const welcomeView = document.getElementById('welcome-view');
     const scriptView = document.getElementById('script-view');
@@ -167,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display: flex; align-items: center; gap: 8px; width: 60%;">
                     <div class="category-drag-handle" title="Drag to reorder category" style="cursor: grab;"><i class="fa-solid fa-grip-vertical"></i></div>
                     <i class="fa-solid fa-folder" style="color: var(--accent); font-size: 1.1rem;"></i>
-                    <input type="text" class="equipment-category-input" value="${cat.name}" onchange="updateCategoryName(${cIdx}, this.value)" placeholder="Category Name (e.g. Engines, Cranes)">
+                    <input type="text" class="equipment-category-input" value="${escapeHtml(cat.name)}" onchange="updateCategoryName(${cIdx}, this.value)" placeholder="Category Name (e.g. Engines, Cranes)">
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="addEquipmentItem(${cIdx})"><i class="fa-solid fa-plus"></i> Add Item</button>
@@ -273,11 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const nameAndAuditCell = isMobileCranes ? `
                         <div class="unit-name-audit-group" style="display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0;">
-                            <input type="text" class="form-control input-unit-name" value="${item.name}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'name', this.value)" placeholder="Unit # / Name (e.g. MH65)" style="flex: 1; min-width: 0;">
+                            <input type="text" class="form-control input-unit-name" value="${escapeHtml(item.name)}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'name', this.value)" placeholder="Unit # / Name (e.g. MH65)" style="flex: 1; min-width: 0;">
                             ${auditHtml}
                         </div>
                     ` : `
-                        <input type="text" class="form-control input-unit-name" value="${item.name}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'name', this.value)" placeholder="Unit # / Name (e.g. 1564)">
+                        <input type="text" class="form-control input-unit-name" value="${escapeHtml(item.name)}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'name', this.value)" placeholder="Unit # / Name (e.g. 1564)">
                     `;
 
                     itemRow.innerHTML = `
@@ -289,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <option value="OS" ${item.status === 'OS' ? 'selected' : ''}>Out of Service</option>
                             <option value="PM" ${item.status === 'PM' ? 'selected' : ''}>Issue / PM</option>
                         </select>
-                        <input type="text" class="form-control" value="${item.reason || ''}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'reason', this.value)" placeholder="Reason or maintenance notes...">
+                        <input type="text" class="form-control" value="${escapeHtml(item.reason || '')}" onchange="updateEquipmentItem(${cIdx}, ${iIdx}, 'reason', this.value)" placeholder="Reason or maintenance notes...">
                         <button class="btn danger" style="padding: 6px 10px;" title="Delete Item" onclick="removeEquipmentItem(${cIdx}, ${iIdx})"><i class="fa-solid fa-trash-can"></i></button>
                     `;
 
@@ -570,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="shift-card-header">
                     <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                         <i class="fa-solid fa-grip-vertical shift-drag-handle" style="color: var(--text-secondary); cursor: grab; font-size: 1.1rem;" title="Drag to reorder"></i>
-                        <input type="text" class="shift-name-input" value="${shift.name || ''}" placeholder="Shift Name (e.g. Day Shift)" onchange="updateShiftField(${sIdx}, 'name', this.value)">
+                        <input type="text" class="shift-name-input" value="${escapeHtml(shift.name || '')}" placeholder="Shift Name (e.g. Day Shift)" onchange="updateShiftField(${sIdx}, 'name', this.value)">
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <button class="btn secondary" style="font-size: 0.85rem; padding: 6px 10px;" onclick="toggleShiftSplit(${sIdx})">
@@ -807,10 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
             row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
             row.innerHTML = `
                 <td style="padding: 6px 8px;">
-                    <input type="text" class="form-control seniority-name-input" value="${name}" placeholder="e.g. Harold Hamilton" style="font-size: 0.85rem; padding: 6px 8px;">
+                    <input type="text" class="form-control seniority-name-input" value="${escapeHtml(name)}" placeholder="e.g. Harold Hamilton" style="font-size: 0.85rem; padding: 6px 8px;">
                 </td>
                 <td style="padding: 6px 8px;">
-                    <input type="date" class="form-control seniority-date-input" value="${dateVal}" style="font-size: 0.85rem; padding: 6px 8px; font-family: monospace;">
+                    <input type="date" class="form-control seniority-date-input" value="${escapeHtml(dateVal)}" style="font-size: 0.85rem; padding: 6px 8px; font-family: monospace;">
                 </td>
                 <td style="padding: 6px 8px; text-align: center;">
                     <button class="btn danger" style="padding: 4px 8px; font-size: 0.8rem;" title="Delete Record"><i class="fa-solid fa-trash-can"></i></button>
@@ -983,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             label.style.marginBottom = '8px';
                             label.innerHTML = `
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong style="color: #fff; font-size: 0.95rem;">${shift.name}</strong>
+                                    <strong style="color: #fff; font-size: 0.95rem;">${escapeHtml(shift.name)}</strong>
                                     <span style="font-size: 0.75rem; color: var(--brand-blue, #38bdf8); font-weight: bold; background: rgba(56, 189, 248, 0.1); padding: 2px 6px; border-radius: 4px;">${shift.start} - ${shift.end}</span>
                                 </div>
                                 <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.3;">${schedText}</div>
@@ -1265,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
             tr.innerHTML = `
                 <td style="padding: 8px 10px;">
-                    <input type="text" class="form-control form-control-sm track-input-id" value="${t.id}" style="font-weight: bold; width: 75px; text-align: center;">
+                    <input type="text" class="form-control form-control-sm track-input-id" value="${escapeHtml(t.id)}" style="font-weight: bold; width: 75px; text-align: center;">
                 </td>
                 <td style="padding: 8px 10px;">
                     <input type="number" class="form-control form-control-sm track-input-cars" value="${t.cars || 0}" min="0" style="width: 70px; text-align: center; color: #38bdf8; font-weight: bold;">
@@ -1274,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" class="form-control form-control-sm track-input-cap" value="${t.capacity || 20}" min="1" style="width: 70px; text-align: center; color: #a78bfa; font-weight: bold;">
                 </td>
                 <td style="padding: 8px 10px;">
-                    <input type="text" class="form-control form-control-sm track-input-comm" value="${t.commodity || ''}" placeholder="Contents / Notes..." style="width: 100%;">
+                    <input type="text" class="form-control form-control-sm track-input-comm" value="${escapeHtml(t.commodity || '')}" placeholder="Contents / Notes..." style="width: 100%;">
                 </td>
                 <td style="padding: 8px 10px;">
                     <input type="date" class="form-control form-control-sm track-input-date" value="${t.oldest_inbound_date || ''}" style="width: 130px; font-size: 0.8rem;">
@@ -1658,8 +1667,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="commodity-card-header">
                     <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                         <span class="category-bullet" style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${cat.color || '#38bdf8'}; box-shadow: 0 0 8px ${cat.color || '#38bdf8'};"></span>
-                        <input type="text" class="commodity-name-input" value="${cat.name || ''}" placeholder="Category Name (e.g. UP / Hot Rail)">
-                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px;">ID: ${cat.id}</span>
+                        <input type="text" class="commodity-name-input" value="${escapeHtml(cat.name || '')}" placeholder="Category Name (e.g. UP / Hot Rail)">
+                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px;">ID: ${escapeHtml(cat.id)}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <button class="btn btn-secondary btn-move-up" title="Move Up (Higher Priority)" style="padding: 5px 8px;" ${catIdx === 0 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
@@ -1678,7 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div style="margin-bottom: 12px;">
-                    <input type="text" class="form-control form-control-sm commodity-desc-input" value="${cat.description || ''}" placeholder="Description / commodity contents (optional)" style="font-size: 0.85rem; padding: 4px 10px; width: 100%;">
+                    <input type="text" class="form-control form-control-sm commodity-desc-input" value="${escapeHtml(cat.description || '')}" placeholder="Description / commodity contents (optional)" style="font-size: 0.85rem; padding: 4px 10px; width: 100%;">
                 </div>
                 <div>
                     <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -1735,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     chip.style.background = hexToRgba(cat.color || '#38bdf8', 0.15);
                     chip.style.color = cat.color || '#38bdf8';
                     chip.innerHTML = `
-                        <span>${kw}</span>
+                        <span>${escapeHtml(kw)}</span>
                         <span class="keyword-chip-remove" title="Remove keyword">&times;</span>
                     `;
                     chip.querySelector('.keyword-chip-remove').onclick = () => {
@@ -1905,8 +1914,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const timestamp = new Date().toLocaleTimeString();
             let log = `\n[${timestamp}] Executed: ${activeScript.name}\n`;
             
-            if (data.output) log += data.output + '\n';
-            if (data.error) log += `<span class="error">${data.error}</span>\n`;
+            if (data.output) log += escapeHtml(data.output) + '\n';
+            if (data.error) log += `<span class="error">${escapeHtml(data.error)}</span>\n`;
             if (data.success) {
                 log += `<span style="color: var(--success);">✔ Script completed successfully.</span>\n`;
             } else {

@@ -213,9 +213,9 @@ export async function getWeather() {
         if (mock === 'chill') { apparentTemp = -10; currentTemp = 5; }
         if (mock === 'storm' || mock === 'lightning') { weatherCode = 95; currentWind = 45; }
         if (mock === 'tornado') { weatherCode = 99; currentWind = 75; }
-        if (mock === 'rain') { precipProb[2] = 85; precipAmount[2] = 0.2; precipAmount[3] = 0.3; precipAmount[4] = 0.1; data.daily.precipitation_sum = [0.6]; }
-        if (mock === 'snow') { precipProb[1] = 90; snowAmount[1] = 1.2; snowAmount[2] = 3.5; apparentTemp = 15; data.daily.snowfall_sum = [4.7]; }
-        if (mock === 'clear') { apparentTemp = 75; currentWind = 5; weatherCode = 0; precipProb.fill(0); precipAmount.fill(0); snowAmount.fill(0); }
+        if (mock === 'rain') { precipProb[2] = 85; precipAmount[2] = 0.2; precipAmount[3] = 0.3; precipAmount[4] = 0.1; if (!data.daily) data.daily = {}; data.daily.precipitation_sum = [0.6]; }
+        if (mock === 'snow') { precipProb[1] = 90; snowAmount[1] = 1.2; snowAmount[2] = 3.5; apparentTemp = 15; if (!data.daily) data.daily = {}; data.daily.snowfall_sum = [4.7]; }
+        if (mock === 'clear') { apparentTemp = 75; currentWind = 5; weatherCode = 0; if (precipProb) precipProb.fill(0); if (precipAmount) precipAmount.fill(0); if (snowAmount) snowAmount.fill(0); }
         // --------------------------
         
         // Setup Dynamic Alerts Container

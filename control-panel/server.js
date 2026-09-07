@@ -392,7 +392,7 @@ app.post('/api/seniority', express.json(), (req, res) => {
 
 // We accept any file uploads. Multer handles it.
 app.post('/api/execute/:id', upload.any(), (req, res) => {
-    const scriptId = req.params.id;
+    const scriptId = path.basename(req.params.id);
     const configPath = path.join(RUNNERS_DIR, `${scriptId}.json`);
     
     if (!fs.existsSync(configPath)) {
@@ -566,11 +566,9 @@ app.post('/api/tracks/upload', uploadTrack.single('file'), (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
         const uploadedPath = req.file.path;
-        const parserScript = path.join(__dirname, '../scripts/parse_track_check.py');
-        const fallbackScript = path.join(__dirname, 'scripts/parse_track_check.py');
-        const scriptToUse = fs.existsSync(parserScript) ? parserScript : fallbackScript;
+        const parserScript = path.join(__dirname, 'scripts/parse_track_check.py');
 
-        const py = spawn('python3', [scriptToUse, uploadedPath, TRACKS_PATH]);
+        const py = spawn('python3', [parserScript, uploadedPath, TRACKS_PATH]);
         let stderr = '';
         py.stderr.on('data', (d) => stderr += d.toString());
         py.on('close', (code) => {
@@ -599,6 +597,10 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
         if (!content.includes('<svg') && !content.includes('</svg>')) {
             fs.unlinkSync(uploadedPath);
             return res.status(400).json({ error: 'File is not a valid SVG drawing' });
+        }
+        if (content.toLowerCase().includes('<script')) {
+            fs.unlinkSync(uploadedPath);
+            return res.status(400).json({ error: 'SVG contains script tags which are not allowed' });
         }
         fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
         const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');

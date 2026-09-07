@@ -172,7 +172,9 @@ if (isDesktopMode) {
 
     // In Kiosk TV Mode: cycle views on timed slide loop
     function cycleViews() {
+        if (views.length === 0) return;
         const checkView = views[currentView];
+        if (!checkView) return;
         if (checkView.getAttribute('data-disabled') === 'true') {
             currentView = (currentView + 1) % views.length;
             setTimeout(cycleViews, 0);

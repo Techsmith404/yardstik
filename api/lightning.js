@@ -60,8 +60,14 @@ module.exports = async (req, res) => {
     }
 
     // Normalize coordinates to 3 decimals to maximize global cache hit rate across all clients
-    const lat = parseFloat(req.query.lat || '41.6045').toFixed(3);
-    const lon = parseFloat(req.query.lon || '-87.1311').toFixed(3);
+    let latNum = parseFloat(req.query.lat);
+    if (isNaN(latNum)) latNum = 41.6045;
+    const lat = latNum.toFixed(3);
+    
+    let lonNum = parseFloat(req.query.lon);
+    if (isNaN(lonNum)) lonNum = -87.1311;
+    const lon = lonNum.toFixed(3);
+    
     const radius = req.query.radius || '10mi';
     const cacheKey = `xweather:cache:${lat}:${lon}:${radius}`;
 
@@ -126,7 +132,12 @@ module.exports = async (req, res) => {
         try {
             const url = `https://data.api.xweather.com/lightning/closest?p=${lat},${lon}&radius=${radius}&client_id=${key.id}&client_secret=${key.secret}`;
             const fetchRes = await fetch(url);
-            const data = await fetchRes.json();
+            let data;
+            try {
+                data = await fetchRes.json();
+            } catch (e) {
+                throw new Error('Invalid JSON response from Xweather');
+            }
 
             // If this key hit its quota, mark as exhausted for 10 days in Redis and failover
             if (data.error && (data.error.code === 'maxhits' || data.error.code === 'access_denied' || data.error.code === 'limit_exceeded')) {

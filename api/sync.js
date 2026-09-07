@@ -125,6 +125,9 @@ module.exports = async function handler(req, res) {
         if (!file) {
             return res.status(400).json({ error: 'Missing ?file= query parameter.' });
         }
+        if (file.includes('/') || file.includes('\\') || file.includes('..')) {
+            return res.status(400).json({ error: 'Invalid file parameter.' });
+        }
 
         // Cache response on Edge for 5s (fast sync, low latency)
         res.setHeader('Cache-Control', 'public, max-age=5, s-maxage=5, stale-while-revalidate=15');

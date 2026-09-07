@@ -6,7 +6,7 @@
     {
       "name": "YYYY-MM-DD",
       "param": "-d",
-      "type": "string",
+      "type": "text",
       "description": "Format: YYYY-MM-DD",
       "required": true
     }
