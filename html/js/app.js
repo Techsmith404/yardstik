@@ -16,9 +16,10 @@ import { fetchTracks } from './modules/trackmap.js';
 // 1. Initialize Device Modes, Themes, Features & Layouts
 initMobileRedirect();
 setupHandoffLayout();
-await fetchFeatures();
-initSeasonalTheme();
-setupDesktopLayout();
+fetchFeatures().then(() => {
+    initSeasonalTheme();
+    setupDesktopLayout();
+});
 
 // 2. Start Synchronized Digital Clock & Engine Loop
 startClockLoop([updateLightningWidget]);
