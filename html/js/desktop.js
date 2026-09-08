@@ -1,4 +1,4 @@
-import { fetchSiteConfig, checkVersion } from './modules/config.js';
+import { fetchSiteConfig, checkVersion, initDeviceRouting } from './modules/config.js';
 import { fetchShifts, startClockLoop } from './modules/clock.js';
 import { updateTrackers } from './modules/trackers.js';
 import { getWeather } from './modules/weather.js';
@@ -11,13 +11,18 @@ import { fetchFeatures } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 
-// 1. Initialize Themes & Features
-fetchFeatures().then(() => {
-    initSeasonalTheme();
-});
+// 1. Device Routing (Redirects phones to mobile.html)
+if (initDeviceRouting()) {
+    // Redirect triggered, stop further initialization
+} else {
+    // 2. Initialize Themes & Features
+    fetchFeatures().then(() => {
+        initSeasonalTheme();
+    });
 
-// 2. Start Synchronized Clock & Lightning
-startClockLoop([updateLightningWidget]);
+    // 3. Start Synchronized Clock & Lightning
+    startClockLoop([updateLightningWidget]);
+}
 
 // 3. Operational Data Feeds
 fetchSiteConfig(() => {

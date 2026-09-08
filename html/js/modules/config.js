@@ -1,35 +1,69 @@
 // Mode Detection & Site Configuration Module
-const urlParams = new URLSearchParams(window.location.search);
+const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 const viewParam = (urlParams.get('view') || '').toLowerCase();
 
-// 1. Device Routing (Mobile, Desktop Portal, Kiosk TV)
-export const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+// 1. Mobile & Device Detection
+export function checkIsMobileDevice() {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || navigator.vendor || (typeof window !== 'undefined' && window.opera) || '';
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(ua);
+    const isTouch = (typeof window !== 'undefined' && ('ontouchstart' in window)) || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
+    const isSmallScreen = typeof window !== 'undefined' && (window.innerWidth < 768 || (window.screen && window.screen.width < 768));
+    return isMobileUA || (isTouch && isSmallScreen);
+}
 
+export const isMobileDevice = checkIsMobileDevice();
+
+// 2. Intelligent Device Routing (Mobile, Desktop Portal, Localhost Kiosk TV)
 export function initDeviceRouting() {
-    if (viewParam === 'mobile' || (!viewParam && isMobileDevice && !window.location.pathname.endsWith('desktop.html'))) {
-        if (!window.location.pathname.endsWith('mobile.html')) {
-            const targetUrl = new URL('mobile.html', window.location.href);
-            urlParams.forEach((val, key) => {
-                if (key !== 'view') targetUrl.searchParams.set(key, val);
-            });
-            window.location.href = targetUrl.href;
-            return true;
-        }
-    } else if (viewParam === 'desktop') {
-        if (!window.location.pathname.endsWith('desktop.html')) {
-            const targetUrl = new URL('desktop.html', window.location.href);
-            urlParams.forEach((val, key) => {
-                if (key !== 'view') targetUrl.searchParams.set(key, val);
-            });
-            window.location.href = targetUrl.href;
-            return true;
-        }
+    if (typeof window === 'undefined' || typeof location === 'undefined') return false;
+
+    const currentPath = window.location.pathname;
+    const isDesktopPage = currentPath.endsWith('desktop.html');
+    const isMobilePage = currentPath.endsWith('mobile.html');
+    const isIndexPage = !isDesktopPage && !isMobilePage;
+
+    const currentHost = (window.location.hostname || '').toLowerCase();
+    const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1';
+    const isMobile = checkIsMobileDevice();
+
+    function redirectTo(targetPage) {
+        if (currentPath.endsWith(targetPage)) return false;
+        const targetUrl = new URL(targetPage, window.location.href);
+        urlParams.forEach((val, key) => {
+            if (key !== 'view') targetUrl.searchParams.set(key, val);
+        });
+        window.location.replace(targetUrl.href);
+        return true;
     }
+
+    // A. Explicit ?view= query parameter overrides
+    if (viewParam === 'mobile') {
+        return redirectTo('mobile.html');
+    }
+    if (viewParam === 'desktop') {
+        return redirectTo('desktop.html');
+    }
+    if (viewParam === 'kiosk' || viewParam === 'handoff' || urlParams.get('handoff') === 'true' || urlParams.has('handoff')) {
+        return redirectTo('index.html');
+    }
+
+    // B. Mobile devices redirect to mobile.html (unless explicitly in another mode)
+    if (isMobile) {
+        return redirectTo('mobile.html');
+    }
+
+    // C. Non-localhost desktop network requests to root / or index.html route to desktop.html (e.g. hostname.local or LAN IP)
+    if (isIndexPage && !isLocalhost) {
+        return redirectTo('desktop.html');
+    }
+
+    // D. Localhost on root/index.html stays on Kiosk TV view
     return false;
 }
 export const initMobileRedirect = initDeviceRouting;
 
-// 2. Desktop vs Kiosk vs Handoff Mode Evaluation
+// 3. Desktop vs Kiosk vs Handoff Mode Evaluation
 export const isExplicitHandoff = viewParam === 'handoff' || urlParams.get('handoff') === 'true' || urlParams.has('handoff') || urlParams.get('mode') === 'handoff' || urlParams.get('mock') === 'handoff';
 export const isExplicitKiosk = viewParam === 'kiosk';
 export const isExplicitDesktop = viewParam === 'desktop' || (typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html'));
@@ -156,8 +190,10 @@ export async function fetchSiteConfig(onLoaded) {
         // Dynamically generate QR code pointing to this site's mobile view
         const qrImg = document.getElementById('mobile-qr-img');
         if (qrImg) {
-            const baseUrl = (siteConfig.vercel_api_url || window.location.origin).replace(/\/+$/, '');
-            const targetUrl = `${baseUrl}/mobile.html`;
+            const baseUrl = (siteConfig.vercel_api_url || siteConfig.kiosk_url || siteConfig.local_url || window.location.origin).replace(/\/+$/, '');
+            const siteId = siteConfig.site_id || '';
+            const siteParam = siteId ? `?site=${encodeURIComponent(siteId)}` : '';
+            const targetUrl = `${baseUrl}/mobile.html${siteParam}`;
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(targetUrl)}`;
         }
 
