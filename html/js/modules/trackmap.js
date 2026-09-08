@@ -386,8 +386,11 @@ export function getTrackCommodityBreakdown(track) {
         cleaned = singleParen[1];
     }
 
-    // Split into chunks by +, ;, &, comma, AND, newline, or number-dash pattern
-    const rawChunks = cleaned.split(/[,;+&]|\band\b|\n|(?<=[A-Za-z\/])\s+(?=\d+\s*[-–:])/i);
+    // Delimit adjacent cuts like "5 - SHEETS 3 - UP"
+    cleaned = cleaned.replace(/([A-Za-z\/])\s+(\d+\s*[-–:])/g, "$1 + $2");
+
+    // Split into chunks by +, ;, &, comma, AND, or newline
+    const rawChunks = cleaned.split(/[,;+&]|\band\b|\n/i);
     const segments = [];
 
     for (const rawChunk of rawChunks) {

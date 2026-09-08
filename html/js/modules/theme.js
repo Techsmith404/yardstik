@@ -1,6 +1,7 @@
 // Dynamic Seasonal Holiday Stylesheets & Vector Icon Manager Module
 import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
 import { renderEquipmentDashboard } from './equipment.js';
+import { cachedFeatures } from './features.js';
 
 const themeIcons = {
     halloween: {
@@ -42,8 +43,6 @@ export function getHolidayEquipmentIcon() {
     const currentTheme = getSeasonalTheme();
     return holidayEquipmentIcons[currentTheme] || '';
 }
-
-import { cachedFeatures } from './features.js';
 
 export function getSeasonalTheme(date = new Date()) {
     const urlParams = new URLSearchParams(window.location.search);
