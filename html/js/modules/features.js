@@ -2,6 +2,7 @@
 import { allocateSlots, activeAlertCount } from './weather.js';
 import { startWeatherAnimation } from './fx.js';
 import { updateLightningWidget } from './lightning.js';
+import { syncKioskPanels } from './config.js';
 
 export let cachedFeatures = {
     theme_mode: "auto",
@@ -152,4 +153,7 @@ export function applyFeatureFlags() {
             viewAnnouncements.removeAttribute('data-disabled');
         }
     }
+
+    // Ensure rotating milestone/safety panels are attached to appropriate slide (never slide 1)
+    syncKioskPanels();
 }

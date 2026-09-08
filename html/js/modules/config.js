@@ -58,7 +58,8 @@ export function syncKioskPanels(activeView) {
         return;
     }
 
-    if (activeView) {
+    // In normal kiosk mode, rotating panels only belong to Slide 2 (view-safety) or Slide 3 (view-announcements), NEVER Slide 1 (view-production)
+    if (activeView && (activeView.id === 'view-announcements' || activeView.id === 'view-safety')) {
         const sideStats = activeView.querySelector('.side-stats');
         if (sideStats && rotWrapper.parentElement !== sideStats) {
             sideStats.appendChild(rotWrapper);
@@ -66,8 +67,10 @@ export function syncKioskPanels(activeView) {
         return;
     }
 
-    const currentActiveView = document.querySelector('.kiosk-view.active');
-    const targetSideStats = currentActiveView ? currentActiveView.querySelector('.side-stats') : (document.querySelector('#view-safety .side-stats') || document.querySelector('#view-announcements .side-stats'));
+    // Fallback placement when activeView is view-production or initializing:
+    const isTrackMapOn = typeof document !== 'undefined' && document.body && (document.body.classList.contains('feature-track-map') || document.body.dataset.featuresTrackMap === 'true');
+    const targetSelector = isTrackMapOn ? '#view-announcements .side-stats' : '#view-safety .side-stats';
+    const targetSideStats = document.querySelector(targetSelector) || document.querySelector('#view-safety .side-stats') || document.querySelector('#view-announcements .side-stats');
     if (targetSideStats && rotWrapper.parentElement !== targetSideStats) {
         targetSideStats.appendChild(rotWrapper);
     }
