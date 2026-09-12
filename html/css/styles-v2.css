@@ -412,9 +412,26 @@ body.feature-no-trackmap #widget-trackmap {
     display: none !important;
 }
 
-/* QR Code Toggle */
+/* QR Code Overlay & Feature Toggle */
+body.feature-no-mobile-qr #mobile-qr-container,
 body.feature-no-mobile-qr #mobile-qr-img {
     display: none !important;
+}
+
+#mobile-qr-container {
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+#mobile-qr-container:hover {
+    transform: scale(1.04);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+#mobile-qr-img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 .announcement-slide {
@@ -788,6 +805,7 @@ body.desktop-mode #vignette-overlay {
     height: 100vh !important;
 }
 
+body.desktop-mode #mobile-qr-container,
 body.desktop-mode #mobile-qr-img {
     display: none !important;
 }

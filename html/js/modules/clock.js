@@ -4,6 +4,38 @@ import { setupHandoffLayout, isExplicitHandoff } from './config.js';
 
 export let cachedShifts = [];
 let lastTrackedShiftName = '__INIT__';
+let timeOffsetMs = 0;
+let hasSimulatedTime = false;
+
+export function initTimeSimulation() {
+    if (typeof window !== 'undefined' && window.location) {
+        const params = new URLSearchParams(window.location.search);
+        const timeParam = params.get('time') || params.get('mockTime');
+        const dateParam = params.get('date') || params.get('mockDate');
+        if (timeParam || dateParam) {
+            const target = new Date();
+            if (dateParam) {
+                const parts = dateParam.split('-').map(Number);
+                if (parts.length === 3 && !isNaN(parts[0])) target.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            }
+            if (timeParam) {
+                const parts = timeParam.split(':').map(Number);
+                if (parts.length >= 2 && !isNaN(parts[0])) target.setHours(parts[0], parts[1], parts[2] || 0, 0);
+            }
+            timeOffsetMs = target.getTime() - Date.now();
+            hasSimulatedTime = true;
+        }
+    }
+}
+
+initTimeSimulation();
+
+export function getCurrentDate() {
+    if (hasSimulatedTime) {
+        return new Date(Date.now() + timeOffsetMs);
+    }
+    return new Date();
+}
 
 export async function fetchShifts() {
     try {
@@ -18,7 +50,7 @@ export async function fetchShifts() {
 export function updateShiftTracker() {
     if (!cachedShifts || cachedShifts.length === 0) return;
     try {
-        const now = new Date();
+        const now = getCurrentDate();
         const dayMap = { "Sun": 0, "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6 };
         // Calculate precisely down to the second/fraction for ultra-smooth progress bars
         const currentMinsOfWeek = now.getDay() * 24 * 60 + now.getHours() * 60 + now.getMinutes() + (now.getSeconds() / 60);
@@ -54,7 +86,7 @@ export function updateShiftTracker() {
                         testMins += 10080; 
                     }
                     
-                    if (testMins >= startMinsWeek && testMins <= endMinsWeek) {
+                    if (testMins >= startMinsWeek && testMins < endMinsWeek) {
                         activeShift = shift;
                         const totalDuration = endMinsWeek - startMinsWeek;
                         const elapsed = testMins - startMinsWeek;
@@ -101,6 +133,7 @@ export function updateShiftTracker() {
             if (sProg) sProg.style.width = shiftProgress + '%';
             if (sText) sText.innerText = timeRemainingStr;
         } else {
+            setupHandoffLayout(false);
             const sName = document.getElementById('shift-name');
             const sProg = document.getElementById('shift-progress');
             const sText = document.getElementById('shift-text');
@@ -182,7 +215,7 @@ export function startClockLoop(syncCallbacks = []) {
     setInterval(() => {
         const clockEl = document.getElementById('clock');
         if (clockEl) {
-            clockEl.innerText = new Date().toLocaleString('en-US', { 
+            clockEl.innerText = getCurrentDate().toLocaleString('en-US', { 
                 weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' 
             });
         }

@@ -110,14 +110,22 @@ export function syncKioskPanels(activeView) {
     }
 }
 
+let prevHandoffActive = null;
+
 export function setupHandoffLayout(active = isHandoffActive) {
     if (isDesktopMode) return; // Desktop view is never modified by handoff mode
-    isHandoffActive = active;
+    const effectiveActive = isExplicitHandoff ? true : Boolean(active);
+    const hasChanged = prevHandoffActive !== null && prevHandoffActive !== effectiveActive;
+    isHandoffActive = effectiveActive;
+    prevHandoffActive = effectiveActive;
+
     const viewSafety = document.getElementById('view-safety');
     const viewAnnouncements = document.getElementById('view-announcements');
 
-    if (active) {
-        document.body.classList.add('handoff-mode');
+    if (effectiveActive) {
+        if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.add('handoff-mode');
+        }
         if (viewSafety) viewSafety.removeAttribute('data-disabled');
         const hOsha = document.getElementById('header-osha');
         const hBlend = document.getElementById('header-blend');
@@ -129,19 +137,41 @@ export function setupHandoffLayout(active = isHandoffActive) {
         // Check if weather alerts are active
         const alertsContainer = document.getElementById('dynamic-alerts-container');
         if (alertsContainer && alertsContainer.children.length > 0) {
-            document.body.classList.add('weather-alert-active');
+            if (typeof document !== 'undefined' && document.body) {
+                document.body.classList.add('weather-alert-active');
+            }
         } else {
-            document.body.classList.remove('weather-alert-active');
+            if (typeof document !== 'undefined' && document.body) {
+                document.body.classList.remove('weather-alert-active');
+            }
+        }
+        if (hasChanged) {
+            if (typeof window !== 'undefined' && typeof window.applyFeatureFlags === 'function') {
+                window.applyFeatureFlags();
+            }
         }
         syncKioskPanels();
     } else if (!isExplicitHandoff) {
-        document.body.classList.remove('handoff-mode', 'weather-alert-active');
+        if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.remove('handoff-mode', 'weather-alert-active');
+        }
         const hOsha = document.getElementById('header-osha');
         const hBlend = document.getElementById('header-blend');
         const hTitle = document.getElementById('header-title-container');
         if (hOsha) hOsha.style.display = 'none';
         if (hBlend) hBlend.style.display = 'none';
         if (hTitle) hTitle.style.display = 'flex';
+
+        if (hasChanged) {
+            // Restore proper data-disabled and layout slots via applyFeatureFlags
+            if (typeof window !== 'undefined' && typeof window.applyFeatureFlags === 'function') {
+                window.applyFeatureFlags();
+            }
+            // Trigger reminder layout cleanup if advanceReminderSlide is registered
+            if (typeof window !== 'undefined' && typeof window.advanceReminderSlide === 'function') {
+                window.advanceReminderSlide();
+            }
+        }
         syncKioskPanels();
     }
 }
@@ -188,13 +218,17 @@ export async function fetchSiteConfig(onLoaded) {
         console.warn('Using default site configuration:', e);
     } finally {
         // Dynamically generate QR code pointing to this site's mobile view
+        const qrContainer = document.getElementById('mobile-qr-container');
         const qrImg = document.getElementById('mobile-qr-img');
         if (qrImg) {
             const baseUrl = (siteConfig.vercel_api_url || siteConfig.kiosk_url || siteConfig.local_url || window.location.origin).replace(/\/+$/, '');
             const siteId = siteConfig.site_id || '';
             const siteParam = siteId ? `?site=${encodeURIComponent(siteId)}` : '';
             const targetUrl = `${baseUrl}/mobile.html${siteParam}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(targetUrl)}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&ecc=L&margin=1&data=${encodeURIComponent(targetUrl)}`;
+            if (qrContainer && typeof document !== 'undefined' && document.body && !document.body.classList.contains('feature-no-mobile-qr') && !document.body.classList.contains('desktop-mode')) {
+                qrContainer.style.display = 'flex';
+            }
         }
 
         if (typeof onLoaded === 'function') {

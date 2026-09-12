@@ -1,4 +1,6 @@
 #!/bin/sh
+set -eu
+DATA_DIR="${DATA_DIR:-/data}"
 label=""
 val=""
 
@@ -14,12 +16,13 @@ done
 # SECURITY: Pass val and label as environment variables instead of interpolating them into the
 # Python code string. Directly embedding $val/$label inside '''$val''' allows triple-quote
 # escape injection — an attacker who controls the value could execute arbitrary Python code.
-BLEND_VAL="$val" BLEND_LABEL="$label" python3 - <<'PYEOF'
+BLEND_VAL="$val" BLEND_LABEL="$label" DATA_DIR="$DATA_DIR" python3 - <<'PYEOF'
 import json
 import time
 import os
 
-path = '/data/trackers.json'
+data_dir = os.environ.get('DATA_DIR', '/data')
+path = os.path.join(data_dir, 'trackers.json')
 try:
     with open(path, 'r') as f:
         data = json.load(f)
@@ -43,5 +46,5 @@ with open(path, 'w') as f:
     json.dump(data, f, indent=4)
 PYEOF
 
-date +%s > /data/version.txt
+date +%s > "$DATA_DIR/version.txt"
 echo "Successfully updated Production Tracker in trackers.json and refreshed the kiosk."

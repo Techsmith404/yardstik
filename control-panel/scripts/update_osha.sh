@@ -1,4 +1,7 @@
 #!/bin/sh
+set -eu
+DATA_DIR="${DATA_DIR:-/data}"
+date=""
 while getopts d: flag
 do
     case "${flag}" in
@@ -11,9 +14,10 @@ if ! echo "$date" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
     echo "Error: Invalid date format. Expected YYYY-MM-DD."
     exit 1
 fi
-OSHA_DATE="$date" python3 - <<'PYEOF'
+OSHA_DATE="$date" DATA_DIR="$DATA_DIR" python3 - <<'PYEOF'
 import json, os
-path = '/data/trackers.json'
+data_dir = os.environ.get('DATA_DIR', '/data')
+path = os.path.join(data_dir, 'trackers.json')
 try:
     with open(path, 'r') as f:
         data = json.load(f)
@@ -26,5 +30,5 @@ if d:
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
 PYEOF
-date +%s > /data/version.txt
+date +%s > "$DATA_DIR/version.txt"
 echo "Successfully updated trackers.json and refreshed the kiosk."

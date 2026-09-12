@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const CONFIG_PATH = process.env.CONFIG_PATH || '/opt/config.json';
+const DATA_DIR = process.env.DATA_DIR || '/data';
 
 // Dynamic Auth helper: reads credentials from config.json (or env var).
 // SECURITY: No hardcoded fallback password. If no password is configured,
@@ -46,7 +47,7 @@ async function syncToCloud() {
         const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json', 'track-map.svg', 'commodity_rules.json'];
 
         syncFiles.forEach(f => {
-            const p = path.join('/data', f);
+            const p = path.join(DATA_DIR, f);
             if (fs.existsSync(p)) {
                 try {
                     const raw = fs.readFileSync(p, 'utf8');
@@ -93,7 +94,7 @@ function executeTrackParser(uploadedPath) {
         py.on('close', (code) => {
             try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
             if (code === 0) {
-                fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+                fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
                 syncToCloud();
                 let parsed = [];
                 try {
@@ -131,7 +132,7 @@ app.use((req, res, next) => {
 
 // Serve the frontend UI
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/assets/data', express.static('/data'));
+app.use('/assets/data', express.static(DATA_DIR));
 
 // Set up multer for file uploads (50 MB size cap to prevent disk-exhaustion DoS)
 const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
@@ -161,7 +162,7 @@ app.get('/api/scripts', (req, res) => {
 // Production Trackers Endpoints
 app.get('/api/trackers', (req, res) => {
     try {
-        const trackersPath = '/data/trackers.json';
+        const trackersPath = path.join(DATA_DIR, 'trackers.json');
         if (fs.existsSync(trackersPath)) {
             const data = JSON.parse(fs.readFileSync(trackersPath, 'utf8'));
             res.json(data);
@@ -174,7 +175,7 @@ app.get('/api/trackers', (req, res) => {
 });
 
 // Features & Theme Toggles Endpoints
-const FEATURES_PATH = '/data/features.json';
+const FEATURES_PATH = process.env.FEATURES_PATH || path.join(DATA_DIR, 'features.json');
 
 app.get('/api/features', (req, res) => {
     try {
@@ -212,7 +213,7 @@ app.post('/api/features', (req, res) => {
     try {
         const data = req.body;
         fs.writeFileSync(FEATURES_PATH, JSON.stringify(data, null, 4), 'utf8');
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true, message: 'Features & theme configuration saved successfully.' });
     } catch (err) {
@@ -222,7 +223,7 @@ app.post('/api/features', (req, res) => {
 });
 
 // Native Markdown Editor Endpoints
-const REMINDERS_PATH = '/data/reminders.md'; // Mapped from ./html/assets/data
+const REMINDERS_PATH = process.env.REMINDERS_PATH || path.join(DATA_DIR, 'reminders.md'); // Mapped from ./html/assets/data
 
 app.get('/api/reminders', (req, res) => {
     try {
@@ -255,7 +256,7 @@ app.post('/api/reminders', express.text({type: '*/*'}), (req, res) => {
         });
         
         fs.writeFileSync(REMINDERS_PATH, body, 'utf8');
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true, message: 'Reminders saved successfully.' });
     } catch (err) {
@@ -264,7 +265,7 @@ app.post('/api/reminders', express.text({type: '*/*'}), (req, res) => {
 });
 
 // Native Equipment Editor Endpoints
-const EQUIPMENT_PATH = '/data/equipment.json'; // Mapped from ./html/assets/data
+const EQUIPMENT_PATH = process.env.EQUIPMENT_PATH || path.join(DATA_DIR, 'equipment.json'); // Mapped from ./html/assets/data
 
 function getLatestSunday11PMEpoch(date = new Date()) {
     const d = new Date(date);
@@ -313,7 +314,7 @@ function checkAndPerformAuditReset() {
             console.log('[Audit Engine] Sunday 11:00 PM weekly audit reset executed. Resetting all Mobile Cranes audits to false.');
             fs.writeFileSync(EQUIPMENT_PATH, JSON.stringify(data, null, 2), 'utf8');
             try {
-                fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+                fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
             } catch {}
             return true;
         }
@@ -331,7 +332,7 @@ app.get('/api/equipment', (req, res) => {
             if (processWeeklyAuditReset(data)) {
                 fs.writeFileSync(EQUIPMENT_PATH, JSON.stringify(data, null, 2), 'utf8');
                 try {
-                    fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+                    fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
                 } catch {}
                 syncToCloud();
             }
@@ -352,7 +353,7 @@ app.post('/api/equipment', express.json(), (req, res) => {
         
         // Bump version.txt to instantly refresh Kiosk TVs
         try {
-            fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+            fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
         } catch (vErr) {
             console.error('Failed to bump version.txt', vErr);
         }
@@ -365,7 +366,7 @@ app.post('/api/equipment', express.json(), (req, res) => {
 });
 
 // Native Shift Schedule Editor Endpoints
-const SHIFTS_PATH = '/data/shifts.json';
+const SHIFTS_PATH = process.env.SHIFTS_PATH || path.join(DATA_DIR, 'shifts.json');
 
 app.get('/api/shifts', (req, res) => {
     try {
@@ -385,7 +386,7 @@ app.post('/api/shifts', express.json(), (req, res) => {
     try {
         fs.writeFileSync(SHIFTS_PATH, JSON.stringify(req.body, null, 2), 'utf8');
         try {
-            fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+            fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
         } catch (vErr) {
             console.error('Failed to bump version.txt', vErr);
         }
@@ -397,7 +398,7 @@ app.post('/api/shifts', express.json(), (req, res) => {
 });
 
 // Native Seniority Overrides API Endpoints
-const SENIORITY_PATH = '/data/seniority.json';
+const SENIORITY_PATH = process.env.SENIORITY_PATH || path.join(DATA_DIR, 'seniority.json');
 
 app.get('/api/seniority', (req, res) => {
     try {
@@ -416,7 +417,7 @@ app.post('/api/seniority', express.json(), (req, res) => {
     try {
         fs.writeFileSync(SENIORITY_PATH, JSON.stringify(req.body, null, 2), 'utf8');
         try {
-            fs.writeFileSync('/data/version.txt', Math.floor(Date.now() / 1000).toString(), 'utf8');
+            fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
         } catch (vErr) {}
         syncToCloud();
         res.json({ success: true, message: 'Seniority records saved and synced successfully.' });
@@ -507,8 +508,9 @@ app.post('/api/execute/:id', upload.any(), (req, res) => {
 // Special Event API
 app.get('/api/special-event', (req, res) => {
     try {
-        if (fs.existsSync('/data/special.json')) {
-            const data = fs.readFileSync('/data/special.json', 'utf8');
+        const specialPath = path.join(DATA_DIR, 'special.json');
+        if (fs.existsSync(specialPath)) {
+            const data = fs.readFileSync(specialPath, 'utf8');
             res.json(JSON.parse(data));
         } else {
             res.status(404).json({ error: 'No special event found' });
@@ -521,8 +523,9 @@ app.get('/api/special-event', (req, res) => {
 app.post('/api/special-event', upload.single('image'), (req, res) => {
     try {
         let currentData = {};
-        if (fs.existsSync('/data/special.json')) {
-            currentData = JSON.parse(fs.readFileSync('/data/special.json', 'utf8'));
+        const specialPath = path.join(DATA_DIR, 'special.json');
+        if (fs.existsSync(specialPath)) {
+            currentData = JSON.parse(fs.readFileSync(specialPath, 'utf8'));
         }
         
         currentData.title = req.body.title || '';
@@ -538,13 +541,13 @@ app.post('/api/special-event', upload.single('image'), (req, res) => {
                 try { fs.unlinkSync(req.file.path); } catch {}
                 return res.status(400).json({ error: 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.' });
             }
-            const imgPath = `/data/special_img${ext}`;
+            const imgPath = path.join(DATA_DIR, `special_img${ext}`);
             fs.copyFileSync(req.file.path, imgPath);
             currentData.image = `assets/data/special_img${ext}`;
         }
         
-        fs.writeFileSync('/data/special.json', JSON.stringify(currentData, null, 2));
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(specialPath, JSON.stringify(currentData, null, 2));
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true, image: currentData.image });
     } catch (e) {
@@ -554,15 +557,16 @@ app.post('/api/special-event', upload.single('image'), (req, res) => {
 
 app.delete('/api/special-event', (req, res) => {
     try {
-        if (fs.existsSync('/data/special.json')) {
-            const data = JSON.parse(fs.readFileSync('/data/special.json', 'utf8'));
+        const specialPath = path.join(DATA_DIR, 'special.json');
+        if (fs.existsSync(specialPath)) {
+            const data = JSON.parse(fs.readFileSync(specialPath, 'utf8'));
             if (data.image) {
-                const imgPath = '/data/' + data.image.split('/').pop();
+                const imgPath = path.join(DATA_DIR, data.image.split('/').pop());
                 if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
             }
-            fs.unlinkSync('/data/special.json');
+            fs.unlinkSync(specialPath);
         }
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true });
     } catch (e) {
@@ -571,8 +575,8 @@ app.delete('/api/special-event', (req, res) => {
 });
 
 // ── Track Management & Track Check API ──────────────────────────────────────
-const TRACKS_PATH = '/data/tracks.json';
-const TRACK_MAP_PATH = '/data/track-map.svg';
+const TRACKS_PATH = process.env.TRACKS_PATH || path.join(DATA_DIR, 'tracks.json');
+const TRACK_MAP_PATH = process.env.TRACK_MAP_PATH || path.join(DATA_DIR, 'track-map.svg');
 
 const trackStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -606,7 +610,7 @@ app.post('/api/tracks', express.json(), (req, res) => {
             return res.status(400).json({ error: 'Expected array of tracks' });
         }
         fs.writeFileSync(TRACKS_PATH, JSON.stringify(tracks, null, 2), 'utf8');
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true, count: tracks.length });
     } catch (e) {
@@ -670,16 +674,18 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
             return res.status(400).json({ error: 'SVG contains javascript: URIs which are not allowed' });
         }
         fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
-        const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');
-        if (fs.existsSync(path.dirname(localImgPath))) {
-            try { fs.writeFileSync(localImgPath, content, 'utf8'); } catch {}
-        }
-        const localDataPath = path.join(__dirname, '../html/assets/data/track-map.svg');
-        if (fs.existsSync(path.dirname(localDataPath))) {
-            try { fs.writeFileSync(localDataPath, content, 'utf8'); } catch {}
+        if (process.env.NODE_ENV !== 'test') {
+            const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');
+            if (fs.existsSync(path.dirname(localImgPath))) {
+                try { fs.writeFileSync(localImgPath, content, 'utf8'); } catch {}
+            }
+            const localDataPath = path.join(__dirname, '../html/assets/data/track-map.svg');
+            if (fs.existsSync(path.dirname(localDataPath))) {
+                try { fs.writeFileSync(localDataPath, content, 'utf8'); } catch {}
+            }
         }
         try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         res.json({ success: true, message: 'Track map SVG uploaded successfully.' });
     } catch (e) {
@@ -697,7 +703,7 @@ app.get('/api/tracks/template', (req, res) => {
 app.get('/api/tracks/template-excel', (req, res) => {
     const candidates = [
         path.join(__dirname, 'public', 'example-track-check.xlsx'),
-        path.join('/data', 'example-track-check.xlsx'),
+        path.join(DATA_DIR, 'example-track-check.xlsx'),
         path.join(__dirname, '../html/assets/data', 'example-track-check.xlsx')
     ];
     for (const p of candidates) {
@@ -709,7 +715,7 @@ app.get('/api/tracks/template-excel', (req, res) => {
 });
 
 // ── Commodity Rules & Classification API ────────────────────────────────────
-const COMMODITY_RULES_PATH = '/data/commodity_rules.json';
+const COMMODITY_RULES_PATH = process.env.COMMODITY_RULES_PATH || path.join(DATA_DIR, 'commodity_rules.json');
 const DEFAULT_COMMODITY_RULES = {
     categories: [
         {
@@ -787,18 +793,15 @@ app.post('/api/commodity-rules', express.json(), (req, res) => {
         if (fs.existsSync(path.dirname(COMMODITY_RULES_PATH))) {
             fs.writeFileSync(COMMODITY_RULES_PATH, formattedJson, 'utf8');
         }
-        // Write to local repo data path if present
-        const localPath = path.join(__dirname, '../html/assets/data/commodity_rules.json');
-        if (fs.existsSync(path.dirname(localPath))) {
-            fs.writeFileSync(localPath, formattedJson, 'utf8');
-        }
-        
-        // Bump version.txt to instantly refresh Kiosks
-        try {
-            if (fs.existsSync('/data')) fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        // Write to local repo data path if present and not running unit tests
+        if (process.env.NODE_ENV !== 'test') {
+            const localPath = path.join(__dirname, '../html/assets/data/commodity_rules.json');
+            if (fs.existsSync(path.dirname(localPath))) {
+                fs.writeFileSync(localPath, formattedJson, 'utf8');
+            }
             const localVer = path.join(__dirname, '../html/assets/data/version.txt');
             if (fs.existsSync(path.dirname(localVer))) fs.writeFileSync(localVer, Date.now().toString(), 'utf8');
-        } catch {}
+        }
 
         syncToCloud();
         res.json({ success: true, count: payload.categories.length });
@@ -856,10 +859,10 @@ app.post('/api/site-config', express.json(), (req, res) => {
         // Also save sanitized config to /data/config.json so the kiosk frontend reads it cleanly
         const safeFrontendConfig = { ...updated };
         delete safeFrontendConfig.admin_password;
-        fs.writeFileSync('/data/config.json', JSON.stringify(safeFrontendConfig, null, 2), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'config.json'), JSON.stringify(safeFrontendConfig, null, 2), 'utf8');
 
         // Bump version.txt so the kiosk reloads and picks up the new config
-        fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
         syncToCloud();
         
         const returnConfig = { ...updated };
@@ -870,11 +873,22 @@ app.post('/api/site-config', express.json(), (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Control Panel Server running on port ${PORT}`);
-    checkAndPerformAuditReset();
-    setTimeout(syncToCloud, 3000);
-    setInterval(syncToCloud, 5 * 60 * 1000);
-    setInterval(checkAndPerformAuditReset, 60 * 1000); // Check every 60s for Sunday 11:00 PM audit reset
-});
+if (require.main === module) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Control Panel Server running on port ${PORT}`);
+        checkAndPerformAuditReset();
+        setTimeout(syncToCloud, 3000);
+        setInterval(syncToCloud, 5 * 60 * 1000);
+        setInterval(checkAndPerformAuditReset, 60 * 1000); // Check every 60s for Sunday 11:00 PM audit reset
+    });
+}
+
+module.exports = {
+    app,
+    getAuthConfig,
+    getLatestSunday11PMEpoch,
+    processWeeklyAuditReset,
+    checkAndPerformAuditReset,
+    syncToCloud
+};

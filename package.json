@@ -5,5 +5,20 @@
   "main": "api/sync.js",
   "dependencies": {
     "ioredis": "^5.4.1"
+  },
+  "scripts": {
+    "test": "./scripts/run-all-tests.sh",
+    "test:python": "pytest tests/python/",
+    "test:js": "jest tests/js/",
+    "test:shell": "bats tests/shell/"
+  },
+  "devDependencies": {
+    "@babel/parser": "^8.0.5",
+    "@babel/traverse": "^8.0.5",
+    "acorn": "^8.18.0",
+    "acorn-walk": "^8.3.5",
+    "bats": "^1.13.0",
+    "jest": "^30.5.1",
+    "supertest": "^7.2.2"
   }
 }

@@ -222,6 +222,23 @@ export function advanceSingleReminderSlide() {
         }
         const cards = parentContainer.querySelectorAll('.reminder-widget-card');
         cards.forEach(c => c.remove());
+
+        // Restore single reminder container if multi-reminder mode removed it
+        let singleBox = document.getElementById('reminders-widget-container');
+        if (!singleBox) {
+            singleBox = document.createElement('div');
+            singleBox.id = 'reminders-widget-container';
+            singleBox.className = 'widget';
+            singleBox.style.cssText = 'flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; overflow: hidden; margin: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;';
+            singleBox.onclick = () => window.open(window.location.protocol + '//' + window.location.hostname + ':1337', '_blank');
+            singleBox.onmouseover = () => { singleBox.style.transform = 'scale(1.02)'; singleBox.style.boxShadow = '0 0 30px rgba(139, 92, 246, 0.3)'; };
+            singleBox.onmouseout = () => { singleBox.style.transform = 'scale(1)'; singleBox.style.boxShadow = 'none'; };
+            singleBox.innerHTML = `
+                <h3 id="reminders-title">Reminders</h3>
+                <div id="reminders-content" style="color: var(--text-primary); font-size: 0.95rem; padding-right: 5px;">Loading...</div>
+            `;
+            parentContainer.insertBefore(singleBox, parentContainer.firstChild);
+        }
     }
 
     const now = Date.now();
@@ -411,4 +428,8 @@ export async function fetchReminders() {
             advanceSingleReminderSlide();
         }
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.advanceReminderSlide = advanceReminderSlide;
 }

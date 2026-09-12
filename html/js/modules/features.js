@@ -99,13 +99,19 @@ export function applyFeatureFlags() {
     if (rotatingPanels) rotatingPanels.style.display = hasPanels ? 'flex' : 'none';
 
     // 6. Mobile QR Code
-    if (f.mobile_qr === false) {
+    const isMobileQrEnabled = (f.mobile_qr !== false);
+    if (!isMobileQrEnabled) {
         body.classList.add('feature-no-mobile-qr');
     } else {
         body.classList.remove('feature-no-mobile-qr');
     }
+    const mobileQrContainer = document.getElementById('mobile-qr-container');
     const mobileQr = document.getElementById('mobile-qr-img');
-    if (mobileQr) mobileQr.style.display = (f.mobile_qr !== false) ? 'block' : 'none';
+    if (mobileQrContainer) {
+        mobileQrContainer.style.display = isMobileQrEnabled ? 'flex' : 'none';
+    } else if (mobileQr) {
+        mobileQr.style.display = isMobileQrEnabled ? 'block' : 'none';
+    }
 
     // 7. Recalculate OSHA, Blend & Shift slot allocations in weather sidebar & header
     allocateSlots(activeAlertCount);
@@ -156,4 +162,8 @@ export function applyFeatureFlags() {
 
     // Ensure rotating milestone/safety panels are attached to appropriate slide (never slide 1)
     syncKioskPanels();
+}
+
+if (typeof window !== 'undefined') {
+    window.applyFeatureFlags = applyFeatureFlags;
 }

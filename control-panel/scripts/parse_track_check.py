@@ -44,14 +44,15 @@ def get_file_timestamp(file_path):
 
 def extract_switch_os(track_id, text):
     found = []
-    # Pattern 1: 45/70 E/END O.S. or 21/22 SWITCH O.S.
-    for m in re.finditer(r"([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?.*?\b(O\.S\.?|OUT OF SERVICE|OS)\b", text, re.I):
-        t1, t2, dir_opt = m.group(1).upper(), m.group(2).upper(), (m.group(3) or "").upper()
+    # Pattern 1: 45/70 E/END O.S. or 21/22 SWITCH O.S. AT S/END
+    for m in re.finditer(r"([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+(?:SWITCH\s+)?([NSEW])\b(?:/END|\s+END)?)?.*?\b(OUT OF SERVICE|OS|O\.S\.?)(?:\.|\b)(?:\s+(?:AT|ON)?\s*([NSEW])\b(?:/END|\s+END)?)?", text, re.I):
+        t1, t2 = m.group(1).upper(), m.group(2).upper()
+        dir_opt = (m.group(3) or m.group(5) or "").upper()
         if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
             found.append({"tracks": [t1, t2], "dir": dir_opt, "raw": m.group(0).strip()})
 
     # Pattern 2: O.S AT 21/22 SWITCH
-    for m in re.finditer(r"\b(O\.S\.?|OUT OF SERVICE|OS)\b.*?(?:AT|ON)\s+([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+([NSEW])(?:/END|\s+END)?)?", text, re.I):
+    for m in re.finditer(r"\b(O\.S\.?|OUT OF SERVICE|OS)\b.*?(?:AT|ON)\s+([A-Za-z0-9]+)/([A-Za-z0-9]+)(?:\s+(?:SWITCH\s+)?([NSEW])\b(?:/END|\s+END)?)?", text, re.I):
         t1, t2, dir_opt = m.group(2).upper(), m.group(3).upper(), (m.group(4) or "").upper()
         if t1 not in EXCLUDE_WORDS and t2 not in EXCLUDE_WORDS:
             if not any(f["tracks"] == [t1, t2] for f in found):
@@ -229,7 +230,7 @@ def extract_cars_from_text(track_id, raw_text):
     text = re.sub(r" \d+/\d+ ", "", text)
     text = re.sub(r" \d+in ", "", text, flags=re.I)
 
-    pattern = r"(\d+)\s*[-–]\s*|(?:\bAND\b|[&+,\n])\s*(\d+)\s+(?![0-9/])|[^\w](\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DL|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b|^(\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DL|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b"
+    pattern = r"(\d+)\s*[-–]\s*|(?:\bAND\b|[&+,\n])\s*(\d+)\s+(?![0-9/])|[^\w](\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DLS?|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b|^(\d+)\s+(?:CARS|MTY|OB|TRIM|BALES|SHEETS|COILS?|HBI|DLS?|SMS|MSA|UP|FLATS?|HEAVY|LIGHT|SMASH|SHRED|SCALE|NOTICE|EMPTY|CLEAR|DOGBONE)\b"
     matches = re.findall(pattern, " " + text + " ", re.I)
     nums = []
     for m in matches:
