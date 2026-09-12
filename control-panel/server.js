@@ -39,7 +39,7 @@ async function syncToCloud() {
         if (fs.existsSync(CONFIG_PATH)) {
             siteConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         }
-        if (!siteConfig.vercel_api_url) return; // Cloud sync disabled if vercel_api_url not specified
+        if (!siteConfig.vercel_api_url || process.env.NODE_ENV === 'test') return; // Cloud sync disabled if vercel_api_url not specified or during unit tests
         const vercelBase = siteConfig.vercel_api_url.replace(/\/+$/, '');
         const siteId = siteConfig.site_id || 'default-site';
 
@@ -854,6 +854,10 @@ app.post('/api/site-config', express.json(), (req, res) => {
 
         if (req.body.site_id !== undefined && current.site_id && req.body.site_id.trim() !== current.site_id.trim()) {
             return res.status(403).json({ error: "Nice try! Site ID modifications are locked in demo mode. 😉" });
+        }
+
+        if (req.body.vercel_api_url !== undefined && current.vercel_api_url && req.body.vercel_api_url.trim() !== current.vercel_api_url.trim()) {
+            return res.status(403).json({ error: "Nice try! Cloud Serverless API URL modifications are locked in demo mode. 😉" });
         }
 
         // Allow known safe keys

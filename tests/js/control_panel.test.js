@@ -89,6 +89,20 @@ describe('Control Panel Authentication Middleware', () => {
         expect(res.body.error).toContain('Nice try');
     });
 
+    test('POST /api/site-config rejects vercel_api_url tampering with 403 Nice Try', async () => {
+        // Seed current config with a vercel_api_url first
+        const currentCfg = JSON.parse(fs.readFileSync(process.env.CONFIG_PATH, 'utf8'));
+        currentCfg.vercel_api_url = 'https://original-demo.vercel.app';
+        fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(currentCfg, null, 2), 'utf8');
+
+        const res = await request(app)
+            .post('/api/site-config')
+            .set('Authorization', authHeader)
+            .send({ vercel_api_url: 'https://attacker-site.com' });
+        expect(res.status).toBe(403);
+        expect(res.body.error).toContain('Nice try');
+    });
+
     test('POST /api/site-config allows updating benign fields', async () => {
         const res = await request(app)
             .post('/api/site-config')

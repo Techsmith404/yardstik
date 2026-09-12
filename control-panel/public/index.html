@@ -347,13 +347,11 @@
                             <i class="fa-solid fa-cloud"></i>
                             <h4>Cloud API Integrations</h4>
                         </div>
-                        <div class="form-grid-2">
                             <div class="form-group form-grid-full">
-                                <label for="cfg-vercel-url">Cloud Serverless API URL</label>
-                                <input type="url" id="cfg-vercel-url" class="form-control" placeholder="https://your-kiosk.vercel.app" style="font-family: 'JetBrains Mono', monospace;">
-                                <span class="form-help">Root endpoint for serverless proxy functions (weather, training data, lightning tracking, and multi-site sync).</span>
+                                <label for="cfg-vercel-url">Cloud Serverless API URL <span style="color: var(--brand-blue); font-size: 0.78rem; font-weight: normal; margin-left: 6px;"><i class="fa-solid fa-lock"></i> Locked in Demo Mode</span></label>
+                                <input type="url" id="cfg-vercel-url" class="form-control" placeholder="https://your-kiosk.vercel.app" style="font-family: 'JetBrains Mono', monospace; opacity: 0.65; cursor: not-allowed;" disabled>
+                                <span class="form-help">Root endpoint for serverless proxy functions. Locked in public demo mode.</span>
                             </div>
-                        </div>
                     </div>
 
                     <!-- Seniority & Anniversary Overrides Section -->
