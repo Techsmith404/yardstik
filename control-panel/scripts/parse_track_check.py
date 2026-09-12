@@ -457,7 +457,7 @@ def parse_grid_layout(rows, svg_caps, file_ts=None):
                 "updated_at": file_ts
             })
 
-    tracks.sort(key=lambda x: (0 if x["id"].isdigit() else 1, int(x["id"]) if x["id"].isdigit() else x["id"]))
+    tracks.sort(key=lambda x: (0 if str(x["id"]).isdigit() else 1, int(x["id"]) if str(x["id"]).isdigit() else str(x["id"])))
     return tracks
 
 def main():
@@ -472,15 +472,17 @@ def main():
     if os.path.exists(out_file):
         try:
             with open(out_file, "r") as f:
-                for t in json.load(f):
-                    if "capacity" in t:
-                        existing_capacities[t["id"].upper()] = t["capacity"]
+                loaded = json.load(f)
+                if isinstance(loaded, list):
+                    for t in loaded:
+                        if isinstance(t, dict) and "id" in t and "capacity" in t:
+                            existing_capacities[str(t["id"]).upper()] = t["capacity"]
         except:
             pass
 
     result = parse_file(in_file)
     for t in result:
-        tid = t["id"].upper()
+        tid = str(t["id"]).upper()
         if tid in existing_capacities:
             t["capacity"] = existing_capacities[tid]
 

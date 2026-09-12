@@ -54,9 +54,13 @@ function processWeeklyAuditReset(data) {
 }
 
 module.exports = async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // SECURITY: Restrict CORS origin to the configured allowed origin.
+    // Access-Control-Allow-Credentials: true is incompatible with wildcard '*' origin.
+    // Use ALLOWED_ORIGIN env var to specify the permitted kiosk frontend origin.
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || (req.headers.origin || 'null');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
@@ -75,19 +79,29 @@ module.exports = async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing site_id or files payload.' });
             }
 
-            // Verify optional sync secret if configured
+            // SECURITY: SYNC_SECRET is now required. If not configured, reject all POST requests.
+            // Set the SYNC_SECRET environment variable in your Vercel project settings.
             const expectedSecret = process.env.SYNC_SECRET;
-            if (expectedSecret && secret !== expectedSecret) {
+            if (!expectedSecret) {
+                return res.status(503).json({ error: 'Sync endpoint is not configured (SYNC_SECRET missing).' });
+            }
+            const providedSecret = (secret || req.headers['x-sync-secret'] || (req.query && req.query.secret) || '').toString().trim();
+            if (providedSecret !== expectedSecret.trim()) {
                 return res.status(401).json({ error: 'Unauthorized sync secret.' });
             }
 
             // Auto-heal equipment.json audit status if needed
             if (files['equipment.json']) {
-                let eqData = typeof files['equipment.json'] === 'string' ? JSON.parse(files['equipment.json']) : files['equipment.json'];
-                if (!eqData.last_audit_reset) {
-                    eqData.last_audit_reset = getLatestSunday11PMEpoch();
+                let eqData = null;
+                try {
+                    eqData = typeof files['equipment.json'] === 'string' ? JSON.parse(files['equipment.json']) : files['equipment.json'];
+                } catch {}
+                if (eqData && typeof eqData === 'object') {
+                    if (!eqData.last_audit_reset) {
+                        eqData.last_audit_reset = getLatestSunday11PMEpoch();
+                    }
+                    files['equipment.json'] = eqData;
                 }
-                files['equipment.json'] = eqData;
             }
 
             if (client) {

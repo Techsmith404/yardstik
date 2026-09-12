@@ -27,10 +27,17 @@ fi
 
 if [ ! -f /opt/kiosk-data/config.json ]; then
     echo "Seeding /opt/kiosk-data/config.json from template..."
-    if [ -f ./config.template.json ]; then
+    if [ -f ./site-config.template.json ]; then
+        sudo cp ./site-config.template.json /opt/kiosk-data/config.json
+    elif [ -f ./config.template.json ]; then
         sudo cp ./config.template.json /opt/kiosk-data/config.json
     else
-        echo '{"site_name":"Local Test Kiosk","site_id":"local-test","latitude":41.6045,"longitude":-87.1311,"timezone":"America/Chicago","vercel_api_url":"","admin_username":"admin","admin_password":"admin"}' | sudo tee /opt/kiosk-data/config.json > /dev/null
+        # SECURITY: Generate a random password for the local test instance.
+        # Do NOT use a hardcoded default — this avoids seeding known credentials into the config.
+        LOCAL_RAND_PW=$(openssl rand -base64 16 2>/dev/null || head -c 16 /dev/urandom | base64)
+        echo "{\"site_name\":\"Local Test Kiosk\",\"site_id\":\"local-test\",\"latitude\":41.6045,\"longitude\":-87.1311,\"timezone\":\"America/Chicago\",\"vercel_api_url\":\"\",\"admin_username\":\"admin\",\"admin_password\":\"${LOCAL_RAND_PW}\"}" | sudo tee /opt/kiosk-data/config.json > /dev/null
+        echo "  ⚠️  Auto-generated local test password: ${LOCAL_RAND_PW}"
+        echo "  (See /opt/kiosk-data/config.json to review or update credentials)"
     fi
 fi
 

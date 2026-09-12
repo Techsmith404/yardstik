@@ -103,7 +103,7 @@ export function renderEquipmentDashboard() {
                     badgesContainer.appendChild(scaleBadge);
 
                     if (cachedFeatures.features?.scale_audit_badges !== false) {
-                        const isAudited = !!item.blend_audit;
+                        const isAudited = auditIsCurrent && !!item.blend_audit;
                         const auditBadge = document.createElement('span');
                         auditBadge.className = `badge-audit ${isAudited ? 'badge-audit-yes' : 'badge-audit-no'}`;
                         auditBadge.innerHTML = `Audit: <i class="fa-solid ${isAudited ? 'fa-check' : 'fa-xmark'}"></i>`;

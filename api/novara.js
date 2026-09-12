@@ -19,9 +19,13 @@ function getRedisClient() {
 }
 
 module.exports = async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // SECURITY: Restrict CORS origin to the configured allowed origin.
+    // Access-Control-Allow-Credentials: true is incompatible with wildcard '*' origin.
+    // Use ALLOWED_ORIGIN env var to specify the permitted kiosk frontend origin.
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || (req.headers.origin || 'null');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
@@ -52,50 +56,15 @@ module.exports = async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'Invalid Users API response format' });
         }
 
-        // Discovery Endpoint: List all field offices across the entire organization
-        if (req.query.inspect === 'offices' || req.query.inspect === 'locations') {
-            let directOfficesApi = null;
-            try {
-                const offReq = await fetch('https://api.novaraflex.com/v1/field-offices.list', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: apiKey })
-                });
-                directOfficesApi = await offReq.json();
-            } catch (e) {}
+        // SECURITY: ?inspect= debug endpoints removed — they exposed full PII (employee names,
+        // IDs, hire dates, training statuses) to unauthenticated callers. Discovery/debug tasks
+        // should be performed using the Novara API directly with proper credentials.
 
-            const officeSummary = {};
-            usersData.users.forEach(u => {
-                const offices = Array.isArray(u.fieldOffice_id) ? u.fieldOffice_id : (u.fieldOffice_id ? [u.fieldOffice_id] : ['UNASSIGNED']);
-                offices.forEach(offId => {
-                    if (!officeSummary[offId]) {
-                        officeSummary[offId] = {
-                            officeId: offId,
-                            activeCount: 0,
-                            sampleEmployees: []
-                        };
-                    }
-                    if (!u.terminationDate || u.terminationDate > Date.now()) {
-                        officeSummary[offId].activeCount++;
-                        if (officeSummary[offId].sampleEmployees.length < 5) {
-                            officeSummary[offId].sampleEmployees.push(`${u.firstname} ${u.lastname}`);
-                        }
-                    }
-                });
-            });
-
-            return res.status(200).json({
-                success: true,
-                directOfficesApi: directOfficesApi,
-                locationsDetected: Object.values(officeSummary)
-            });
-        }
-
-        // 2. Filter for specific Field Office (configurable via env/query/default) and only get active employees
-        const TARGET_FIELD_OFFICE = process.env.NOVARA_FIELD_OFFICE_ID || process.env.TARGET_FIELD_OFFICE || req.query.office || null;
+        // 2. Filter for specific Field Office (configurable via env only — query param override removed)
+        // SECURITY: ?office= query override removed to prevent unauthenticated pivot to any field office.
+        const TARGET_FIELD_OFFICE = process.env.NOVARA_FIELD_OFFICE_ID || process.env.TARGET_FIELD_OFFICE || null;
         const userMap = {};
         const activeIds = [];
-        const inspectUsers = [];
         const now = Date.now();
         
         usersData.users.forEach(u => {
@@ -109,21 +78,11 @@ module.exports = async function handler(req, res) {
                     name: `${u.firstname} ${u.lastname}`,
                     photoUrl: fallbackAvatar
                 };
-                inspectUsers.push({
-                    id: u.id,
-                    name: `${u.lastname}, ${u.firstname}`,
-                    fieldOfficeId: u.fieldOffice_id || null,
-                    hireDate: u.hireDate || u.hire_date || u.startDate || u.start_date || null,
-                    vacationDate: u.vacationDate || u.vacation_date || u.seniorityDate || u.seniority_date || u.custom_vacation_date || null,
-                    rawUserKeys: Object.keys(u).filter(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('hire') || k.toLowerCase().includes('vacation') || k.toLowerCase().includes('start') || k.toLowerCase().includes('seniority')),
-                    allDateValues: Object.fromEntries(Object.entries(u).filter(([k]) => k.toLowerCase().includes('date') || k.toLowerCase().includes('hire') || k.toLowerCase().includes('vacation') || k.toLowerCase().includes('start') || k.toLowerCase().includes('seniority')))
-                });
+                // SECURITY: inspectUsers PII accumulation removed along with ?inspect=dates endpoint.
             }
         });
 
-        if (req.query.inspect === 'dates') {
-            return res.status(200).json({ success: true, count: inspectUsers.length, targetOfficeFilter: TARGET_FIELD_OFFICE, users: inspectUsers });
-        }
+        // SECURITY: ?inspect=dates endpoint removed — exposed full employee PII without authentication.
 
         if (activeIds.length === 0) {
             return res.status(200).json({ success: true, response: [] });
@@ -227,29 +186,9 @@ module.exports = async function handler(req, res) {
             };
         });
 
-        if (req.query.inspect === 'trainings' || req.query.inspect === 'status') {
-            return res.status(200).json({ 
-                success: true, 
-                count: statusData.employees.length, 
-                activeWindowTrainingsCount: activeWindowTrainings.length,
-                activeWindowTrainings,
-                employees: statusData.employees 
-            });
-        }
 
-        if (req.query.inspect === 'kaden' || req.query.inspect === 'user' || req.query.user) {
-            const searchName = (req.query.user || req.query.inspect || 'kaden').toLowerCase();
-            const matchingUsers = Object.entries(userMap).filter(([id, u]) => u.name.toLowerCase().includes(searchName));
-            const matchingEmployees = statusData.employees.filter(emp => matchingUsers.some(([id]) => id === emp.m_user_id));
-            return res.status(200).json({
-                success: true,
-                todayNum,
-                activeWindowTrainingsCount: activeWindowTrainings.length,
-                activeWindowTrainings,
-                matchingUsers,
-                matchingEmployees
-            });
-        }
+        // SECURITY: ?inspect=trainings, ?inspect=status, ?inspect=kaden, ?inspect=user debug
+        // endpoints removed — all exposed full employee training records without authentication.
 
         const result = [];
         statusData.employees.forEach(emp => {
@@ -314,6 +253,18 @@ module.exports = async function handler(req, res) {
                         year: parseInt(match[1], 10),
                         month: parseInt(match[2], 10) - 1, // 0-indexed
                         day: parseInt(match[3], 10)
+                    };
+                }
+            }
+            if (typeof dVal === 'number' || (typeof dVal === 'string' && /^\d+$/.test(dVal.trim()))) {
+                const num = Number(dVal);
+                const ms = num < 10000000000 ? num * 1000 : num;
+                const dtNum = new Date(ms);
+                if (!isNaN(dtNum.getTime())) {
+                    return {
+                        year: dtNum.getUTCFullYear(),
+                        month: dtNum.getUTCMonth(),
+                        day: dtNum.getUTCDate()
                     };
                 }
             }

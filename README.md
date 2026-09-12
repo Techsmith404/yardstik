@@ -17,6 +17,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ## 📸 Screenshots & Visual Showcase
 
 ### 📺 View 1: Live Operations & Production Tracking (TV Kiosk Slide)
+
 > *Auto-rotating TV view showcasing multi-category equipment status, mobile crane scale audits, active blend recipes, daylight/moon progression, shift handoff countdowns, and dynamic emergency weather slots.*
 
 <p align="center">
@@ -26,6 +27,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 📢 View 2: Daily Toolbox Talks & Safety Records (TV Kiosk / Handoff Mode)
+
 > *Auto-rotating TV view featuring high-visibility Daily Toolbox Talks, dynamic Markdown reminder cards, upcoming employee milestones/anniversaries, and OSHA safety video completion trackers.*
 
 <p align="center">
@@ -35,6 +37,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 🚂 View 3: Interactive Yard Track Map & Reminders (TV Kiosk / Handoff Mode)
+
 > *High-visibility vector SVG yard track map with live car counts, capacity gauges, color-coded commodity dashes, and high-priority operations reminder cards.*
 
 <p align="center">
@@ -44,6 +47,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 🖥️ Desktop Unified Supervisor Dashboard (`?view=desktop`)
+
 > *Single-page scrollable operations center for office PCs and plant supervisors. Displays all operational widgets, track layouts, equipment rosters, and employee records simultaneously with a glassmorphism sticky navigation bar.*
 
 <p align="center">
@@ -53,6 +57,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 📱 Mobile Floor Portal (`mobile.html`)
+
 > *Lightweight, mobile-responsive web portal accessible by scanning the break room TV's on-screen QR code. Enables shop floor personnel to inspect equipment status, track map occupancy, blend recipes, and training notices on the go.*
 
 <p align="center">
@@ -62,6 +67,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ---
 
 ### 🎛️ Bespoke Node.js Control Panel (`:1337`)
+
 > *Centralized dark-mode administrative suite featuring real-time equipment status toggling, track check upload & live editing, commodity classification rules, EasyMDE Markdown reminder editing, script runner terminal with live SSE streaming, and visual theme styling.*
 
 <p align="center">
@@ -73,22 +79,26 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ## 🌟 Key Capabilities & Architectural Highlights
 
 ### 1. 🖥️ Multi-Display & Shift Handoff Presentation Architecture
+
 * **Kiosk TV Mode (`localhost:8080/?view=kiosk`):** Designed for unattended plant TVs. Automatically cycles active operational slides every 40 seconds with smooth hardware-accelerated transitions and zero screen burn-in risk.
 * **Shift Handoff Mode (`localhost:8080/?mode=handoff`):** Purpose-built for shift turnover briefings and supervisor handoffs. Seamlessly rotates all 3 operational slides (Slide 1: Operations Overview, Slide 2: Daily Toolbox Talks & Safety, Slide 3: Yard Track Map & Reminders).
 * **Desktop Unified Mode (`localhost:8080/?view=desktop`):** Auto-detected on LAN office computers. Eliminates slide rotation, rendering all plant data in a single unified, scrollable dashboard with sticky section anchors.
 * **Mobile QR Portal (`localhost:8080/mobile.html`):** Instantly accessible by scanning the dynamic on-screen QR code. Includes multi-tier offline caching, touch-friendly controls, and live track check inspections.
 
 ### 2. 🚂 Interactive Yard Track Map & Spreadsheet Ingestion
+
 * **Real-Time Vector SVG Canvas:** Dynamic SVG yard map visualization with pan/zoom support, animated capacity progress bars, and colored railcar indicators.
 * **Multi-Column Excel & CSV Parser:** Robust Python ingestion engine (`parse_track_check.py`) capable of parsing complex multi-track spreadsheets, extracting modified timestamps in UTC, and converting them to browser local time.
 * **Commodity Rules & Visual Classification:** Customizable keyword matching and color assignments (Hot Rail, DLs, Blend, Scrap, Outbound Empty, Bad Order) managed directly from the Control Panel.
 
 ### 3. ⚖️ Equipment Status & Weekly Audit Protocol
+
 * **Categorized Equipment Roster:** Engines, Cat Trucks, Overhead Cranes, Mobile Cranes, and Mobile Equipment with instant status badges (**`OK`**, **`OS` / Out of Service**, **`PM` / Maintenance Scheduled**) and custom issue notes.
 * **Mobile Crane Scale & Blend Audit Tracking:** Live scale health tracking (**`SCALE OK`** / **`SCALE OS`**) paired with weekly audit checkboxes (**`Audit: ✅/❌`**).
 * **Automated Sunday 11:00 PM Reset Engine:** A failproof, three-tier automated audit reset system running server-side background daemons, cloud self-healing, and client timestamp verification to guarantee audit resets every Sunday at 11:00 PM without manual overhead.
 
 ### 4. 🌦️ Dynamic Weather Engine & Emergency Protocol
+
 * **NWS Emergency Slot Allocation:** National Weather Service severe weather warnings (Tornado, Severe Thunderstorm, Flash Flood, Winter Storm, High Wind) dynamically commandeer base widget slots with pulsing emergency indicators.
 * **Xweather Real-Time Lightning Protocol:** Tracks lightning strikes within a 10-mile radius, automatically activating safety warnings and initiating a live second-by-second countdown to the 30-minute OSHA "All-Clear".
 * **Upstash Redis Serverless Edge Cache:** High-performance caching layer (120s TTL) with automated key-exhaustion rotation across backup API credentials to guarantee zero quota outages (WIP).
@@ -96,27 +106,30 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 * **Hardware-Accelerated Canvas FX:** Realistic particle simulations for rain, heavy snowfall, drifting fog banks, and lightning flashes that dynamically activate based on live weather conditions.
 
 ### 5. 🎂 Employee Recognition & Safety Compliance Tracking
+
 * **Automated Seniority & Milestone Engine:** Calculates upcoming work anniversaries with support for historical legacy hire dates and relative countdown badges (`Today!`, `Tomorrow`, `in X days`).
 * **Action Required: Safety Videos:** Scans Novara/LMS training rosters to identify overdue or expiring monthly safety training modules, highlighting missing certifications by employee name.
 
 ### 6. 📝 Dynamic Markdown Reminders & Magic Words Engine
+
 * **EasyMDE Web Editor:** Live in-browser Markdown authoring tool parsing `#` H1 slide delimiters.
 * **Markdown Magic Words:** Injects dynamic layouts and behaviors directly from simple markup tags:
 
-| Magic Word | Function & Visual Behavior | Example |
-| :--- | :--- | :--- |
-| `!CRITICAL` | Displays a glowing crimson border and a pulsing `[CRITICAL]` badge. | `!CRITICAL` |
-| `!HIGH` | Displays a high-contrast amber border and an `[IMPORTANT]` header badge. | `!HIGH` |
-| `!SPLIT` | Automatically splits bulleted (`-`) or numbered (`1.`) lists into 2 balanced columns. | `!SPLIT` |
-| `!LARGE` | Enlarges body typography to 1.5rem for maximum legibility across large break rooms. | `!LARGE` |
-| `!CENTER` | Centers text horizontally and vertically within the card container. | `!CENTER` |
-| `!LONG` | Triples slide display duration from standard 40s to 120s (2 minutes). | `!LONG` |
-| `!ONLY` | Emergency broadcast override: suppresses other reminder slides to display only this notice. | `!ONLY` |
-| `!COUNTDOWN YYYY-MM-DD-HH` | Renders a live ticking countdown clock to a target plant event or deadline. | `!COUNTDOWN 2026-10-31-17` |
-| `!EXPIRE YYYY-MM-DD-HH` | Automatically purges and unpublishes the slide after the specified hour passes. | `!EXPIRE 2026-09-01-08` |
-| `!QR <url>` | Generates an embedded high-contrast QR code for instant employee scanning. | `!QR https://plant-portal.com` |
+| Magic Word                 | Function & Visual Behavior                                                                  | Example                        |
+|:-------------------------- |:------------------------------------------------------------------------------------------- |:------------------------------ |
+| `!CRITICAL`                | Displays a glowing crimson border and a pulsing `[CRITICAL]` badge.                         | `!CRITICAL`                    |
+| `!HIGH`                    | Displays a high-contrast amber border and an `[IMPORTANT]` header badge.                    | `!HIGH`                        |
+| `!SPLIT`                   | Automatically splits bulleted (`-`) or numbered (`1.`) lists into 2 balanced columns.       | `!SPLIT`                       |
+| `!LARGE`                   | Enlarges body typography to 1.5rem for maximum legibility across large break rooms.         | `!LARGE`                       |
+| `!CENTER`                  | Centers text horizontally and vertically within the card container.                         | `!CENTER`                      |
+| `!LONG`                    | Triples slide display duration from standard 40s to 120s (2 minutes).                       | `!LONG`                        |
+| `!ONLY`                    | Emergency broadcast override: suppresses other reminder slides to display only this notice. | `!ONLY`                        |
+| `!COUNTDOWN YYYY-MM-DD-HH` | Renders a live ticking countdown clock to a target plant event or deadline.                 | `!COUNTDOWN 2026-10-31-17`     |
+| `!EXPIRE YYYY-MM-DD-HH`    | Automatically purges and unpublishes the slide after the specified hour passes.             | `!EXPIRE 2026-09-01-08`        |
+| `!QR <url>`                | Generates an embedded high-contrast QR code for instant employee scanning.                  | `!QR https://plant-portal.com` |
 
 ### 7. 🎨 Themes, Shifts & Visual Customization
+
 * **Per-Shift Dedication:** Automatically switches accent themes and dedication badges based on active shift schedules (A, B, C, or D shift).
 * **Seasonal Auto-Overlays:** Optional automatic holiday themes (Winter snowfall, Halloween, Independence Day, New Year).
 * **Industrial Pattern Styles:** Switchable background textures including *Cross-hatch Machined*, *Industrial Carbon*, *Micro Dots*, and *Clean Dark Minimal*.
@@ -125,52 +138,50 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 ## 🏗️ System Architecture
 
-```
-                                    ┌────────────────────────────────────────┐
-                                    │           Upstash Redis (KV)           │
-                                    │    Multi-Site Cloud Sync (<50ms)       │
-               ┌────────────────────┴────────────────────┐                   │
-               │             Vercel Edge Cloud           │                   │
-               │  - /api/lightning (120s TTL cache)      │                   │
-               │  - /api/novara    (Safety & Milestones) │                   │
-               │  - /api/sync      (Cloud Data Mirror)   │                   │
-               └────────────────────┬────────────────────┘                   │
-                                    │                                        │
-                                    ▼                                        │
-                         ┌─────────────────────┐                             │
-                         │  Mobile QR Portal   │                             │
-                         │   (Port 8080)       │                             │
-                         └──────────┬──────────┘                             │
-                                    │                                        │
-     ┌──────────────────────────────┼──────────────────────────────┐         │
-     │ LOCAL DOCKER ENGINE          │                              │         ▼
-     │                              ▼                              │  ┌──────────────┐
-     │                   ┌─────────────────────┐                   │  │ Node.js Host │
-     │                   │      Nginx Web      │                   │  │ Control Panel│
-     │                   │     (Port 8080)     │                   │  │ (Port 1337)  │
-     │                   └──────────┬──────────┘                   │  └──────┬───────┘
-     │                              │                              │         │
-     │                              │                              │         │ (Read/Write JSON & MD)
-     │                              │                              ▼         ▼
-     │                              │                  ┌─────────────────────┐
-     │                              │                  │ Persistent Volume   │
-     │                              │                  │ /opt/kiosk-data/    │
-     │                              │                  │ - equipment.json    │
-     │                              │                  │ - reminders.md      │
-     │                              │                  │ - config.json       │
-     │                              │                  │ - trackers.json     │
-     │                              │                  │ - shifts.json       │
-     │                              │                  └──────────┬──────────┘
-     │                              │                             │
-     └──────────────────────────────┼─────────────────────────────┼───────────────────┘
-                                    │                             │
-                                    ┌─────────────────────────────┴─────────────────────────────┐
-                                    ▼                                                           ▼
-                         ┌─────────────────────┐                                     ┌─────────────────────┐
-                         │ Kiosk TV Slide Mode │                                     │ Desktop Scroll Mode │
-                         │ (Wayland / Ubuntu   │                                     │  (?view=desktop)    │
-                         │  Frame + Chromium)  │                                     └─────────────────────┘
-                         └─────────────────────┘
+```mermaid
+flowchart TD
+    %% Cloud Tier
+    subgraph CLOUD["Cloud Infrastructure"]
+        UPSTASH[("Upstash Redis (KV)<br>Multi-Site Cloud Sync (<50ms)")]
+
+        subgraph VERCEL["Vercel Edge Cloud"]
+            direction TB
+            V_LIGHT["/api/lightning (120s TTL cache)"]
+            V_NOVARA["/api/novara (Safety & Milestones)"]
+            V_SYNC["/api/sync (Cloud Data Mirror)"]
+        end
+    end
+
+    %% Edge Ingestion / Mobile
+    QR["Mobile QR Portal<br>(Port 8080)"]
+
+    %% Host & Docker Engine
+    NODE_HOST["Node.js Host Control Panel<br>(Port 1337)"]
+
+    subgraph DOCKER["LOCAL DOCKER ENGINE"]
+        NGINX["Nginx Web<br>(Port 8080)"]
+
+        VOLUME[("Persistent Volume<br>/opt/kiosk-data/<br>• equipment.json<br>• reminders.md<br>• config.json<br>• trackers.json<br>• shifts.json")]
+    end
+
+    %% Client Displays
+    subgraph CLIENTS["Display Outputs"]
+        KIOSK["Kiosk TV Slide Mode<br>(Wayland / Ubuntu Frame + Chromium)"]
+        DESKTOP["Desktop Scroll Mode<br>(?view=desktop)"]
+    end
+
+    %% Relationships
+    UPSTASH <-->|Sync| VERCEL
+    VERCEL --> QR
+    QR --> NGINX
+
+    UPSTASH -.->|Cloud Mirror Feed| NODE_HOST
+    NODE_HOST -->|Read/Write JSON & MD| VOLUME
+
+    NGINX --> VOLUME
+    NGINX --> KIOSK
+    VOLUME --> KIOSK
+    VOLUME --> DESKTOP
 ```
 
 ---
@@ -178,9 +189,13 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ## 🚀 Installation & Deployment Guide
 
 ### Prerequisites
+
 * **Operating System:** Linux PC (Ubuntu 22.04 / 24.04 LTS recommended) connected to the TV display.
+
 * **Container Runtime:** Docker Engine & Docker Compose (`docker compose` v2).
+
 * **Display Server (for Unattended TV Kiosks):** Ubuntu Frame & Chromium:
+  
   ```bash
   sudo snap install ubuntu-frame
   sudo snap install chromium
@@ -191,6 +206,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ### 💻 Local Development Setup
 
 1. **Clone the Repository:**
+   
    ```bash
    git clone https://github.com/TechSmith404/yardstik.git
    cd yardstik
@@ -198,6 +214,7 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
    ```
 
 2. **Launch Docker Stack:**
+   
    ```bash
    # Run the unified development startup script
    ./scripts/test-local.sh
@@ -207,9 +224,13 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
    ```
 
 3. **Access Services:**
+   
    * **TV Slide Kiosk Display:** [`http://localhost:8080/?view=kiosk`](http://localhost:8080/?view=kiosk)
+   
    * **Desktop Supervisor View:** [`http://localhost:8080/?view=desktop`](http://localhost:8080/?view=desktop)
+   
    * **Mobile QR Portal:** [`http://localhost:8080/mobile.html`](http://localhost:8080/mobile.html)
+   
    * **Administrative Control Panel:** [`http://localhost:1337`](http://localhost:1337) *(Default: `admin` / `MasterPassword123`)*
 
 ---
@@ -217,22 +238,27 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 ### 🏭 Production Kiosk Deployment
 
 1. **Package Deployment Artifact (on Workstation):**
+   
    ```bash
    ./scripts/package.sh
    ```
+   
    *Creates a clean, production-ready `kiosk-deployment.zip` payload.*
 
 2. **Transfer to Target Kiosk Machine:**
+   
    ```bash
    scp kiosk-deployment.zip user@kiosk-ip:~/tmp/
    ```
 
 3. **Execute Remote Deployment:**
+   
    ```bash
    ssh user@kiosk-ip
    cd ~/kiosk-app
    ./scripts/deploy.sh
    ```
+   
    *The deployment script automatically backs up persistent configuration, unpacks updated assets, rebuilds Docker containers, and executes live service reloads.*
 
 ---
@@ -241,23 +267,32 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 ```
 yardstik/
-├── control-panel/              # Node.js Express Administrative Suite
-│   ├── public/                 # Control Panel Frontend (HTML, CSS, JS)
-│   ├── runners/                # JSON definitions for executable tasks
-│   ├── scripts/                # Shell scripts executed via child_process
-│   └── server.js               # Express API backend & SSE terminal server
-├── html/                       # Core Dashboard & Display Frontend
-│   ├── assets/data/            # Default JSON schemas & fallback data
-│   ├── css/                    # Modular stylesheets (styles-v2.css)
-│   ├── js/                     # Vanilla ES6 client modules
-│   │   ├── modules/            # Weather, Trackers, Milestones, etc.
-│   │   └── app.js              # View controller & lifecycle loop
-│   ├── index.html              # Main Kiosk & Desktop entrypoint
-│   └── mobile.html             # Mobile QR companion webapp
-├── scripts/                    # Deployment, packaging & testing scripts
-├── docker-compose.yml          # Container stack configuration
-├── Dockerfile                  # Nginx web server build specification
-└── nginx.conf                  # Nginx reverse proxy configuration
+├── 📁 api/                        # Vercel serverless edge functions
+│   ├── ⚡ lightning.js             # 120s TTL radar & lightning cache
+│   ├── ⚡ novara.js                # Safety LMS & employee milestone scraper
+│   └── ⚡ sync.js                  # Multi-site cloud mirror endpoint
+│
+├── 📁 control-panel/              # Administrative backend suite
+│   ├── 📁 public/                 # Admin panel UI (HTML5 / Vanilla JS)
+│   ├── 📁 runners/                # Executable task definitions (.json)
+│   ├── 📁 scripts/                # Child process automation shell scripts
+│   └── 📄 server.js               # Express API & Server-Sent Events (SSE)
+│
+├── 📁 html/                       # Kiosk presentation tier
+│   ├── 📁 assets/data/            # Default state schemas & offline fixtures
+│   ├── 📁 css/                    # Modular layout stylesheets
+│   ├── 📁 js/
+│   │   ├── 📁 modules/            # Weather, Trackers, Milestones, Alerts
+│   │   ├── 📄 app.js              # State lifecycle & viewport controller
+│   │   └── 📄 desktop.js          # Desktop supervisor interaction engine
+│   ├── 🌐 index.html              # Kiosk TV (Ubuntu Frame) entrypoint
+│   ├── 🖥️ desktop.html            # Dedicated supervisor desktop portal
+│   └── 📱 mobile.html             # QR-scanned mobile dashboard view
+│
+├── 📁 scripts/                    # Packaging, test, and bootstrap tooling
+├── 🐳 docker-compose.yml          # Container orchestration (Web + Control)
+├── 🐳 Dockerfile                  # Lightweight Nginx runtime image
+└── ⚙️ nginx.conf                  # Static file server & reverse proxy rules
 ```
 
 ---

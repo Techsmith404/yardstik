@@ -52,23 +52,3 @@ export async function updateSafetySlide() {
     }
 }
 
-export async function startSlideshow(jsonPath, imgId, ms) {
-    const img = document.getElementById(imgId);
-    if (!img) return;
-    let idx = 0;
-    async function loop() {
-        try {
-            const res = await fetch(jsonPath + '?t=' + new Date().getTime());
-            const files = await res.json();
-            if (files.length > 0) {
-                const folder = jsonPath.includes('safety') ? 'assets/safety-slides/' : 'assets/metrics/';
-                img.src = folder + files[idx % files.length];
-                idx++;
-            } else {
-                img.src = 'assets/placeholder.jpg';
-            }
-        } catch (e) {}
-    }
-    loop(); 
-    setInterval(loop, ms);
-}

@@ -12,10 +12,12 @@ app.use(express.urlencoded({ extended: true }));
 
 const CONFIG_PATH = process.env.CONFIG_PATH || '/opt/config.json';
 
-// Dynamic Auth helper: reads credentials from config.json (or env / default fallback)
+// Dynamic Auth helper: reads credentials from config.json (or env var).
+// SECURITY: No hardcoded fallback password. If no password is configured,
+// auth will fail-closed (deny all requests) to prevent accidental open access.
 function getAuthConfig() {
     let username = process.env.AUTH_USERNAME || 'admin';
-    let password = process.env.AUTH_PASSWORD || 'MasterPassword123';
+    let password = process.env.AUTH_PASSWORD || '';
     try {
         if (fs.existsSync(CONFIG_PATH)) {
             const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
@@ -77,13 +79,46 @@ async function syncToCloud() {
     }
 }
 
+// Executes Python parsing engine for uploaded spreadsheets
+function executeTrackParser(uploadedPath) {
+    return new Promise((resolve, reject) => {
+        const parserScript = path.join(__dirname, 'scripts/parse_track_check.py');
+        const py = spawn('python3', [parserScript, uploadedPath, TRACKS_PATH]);
+        let stderr = '';
+        py.stderr.on('data', (d) => stderr += d.toString());
+        py.on('error', (err) => {
+            try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
+            reject(new Error('Failed to launch parser process: ' + err.message));
+        });
+        py.on('close', (code) => {
+            try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
+            if (code === 0) {
+                fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
+                syncToCloud();
+                let parsed = [];
+                try {
+                    parsed = JSON.parse(fs.readFileSync(TRACKS_PATH, 'utf8'));
+                } catch {}
+                resolve(parsed);
+            } else {
+                reject(new Error(stderr || 'Exit code ' + code));
+            }
+        });
+    });
+}
+
+
+
 // Basic Auth Middleware to protect the Control Panel
 app.use((req, res, next) => {
     // Allow CORS preflight requests
     if (req.method === 'OPTIONS') return next();
     
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    const credentials = Buffer.from(b64auth, 'base64').toString('utf8');
+    const colonIdx = credentials.indexOf(':');
+    const login = colonIdx >= 0 ? credentials.slice(0, colonIdx) : '';
+    const password = colonIdx >= 0 ? credentials.slice(colonIdx + 1) : '';
 
     const auth = getAuthConfig();
     if (login && password && login === auth.username && password === auth.password) {
@@ -98,8 +133,8 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/assets/data', express.static('/data'));
 
-// Set up multer for file uploads
-const upload = multer({ dest: '/tmp/uploads/' });
+// Set up multer for file uploads (50 MB size cap to prevent disk-exhaustion DoS)
+const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
 
 // Define paths based on whether we are in Docker or local dev
 const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
@@ -440,14 +475,27 @@ app.post('/api/execute/:id', upload.any(), (req, res) => {
             errorOutput += data.toString();
         });
         
+        child.on('error', (err) => {
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    code: -1,
+                    output: output,
+                    error: 'Failed to spawn process: ' + err.message
+                });
+            }
+        });
+
         child.on('close', (code) => {
             if (code === 0) syncToCloud();
-            res.json({
-                success: code === 0,
-                code: code,
-                output: output,
-                error: errorOutput
-            });
+            if (!res.headersSent) {
+                res.json({
+                    success: code === 0,
+                    code: code,
+                    output: output,
+                    error: errorOutput
+                });
+            }
         });
         
     } catch (err) {
@@ -483,7 +531,13 @@ app.post('/api/special-event', upload.single('image'), (req, res) => {
         currentData.endTime = req.body.endTime || '';
         
         if (req.file) {
-            const ext = path.extname(req.file.originalname);
+            // SECURITY: Whitelist safe image extensions only. Reject anything not in the list.
+            const ALLOWED_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+            const ext = path.extname(req.file.originalname).toLowerCase();
+            if (!ALLOWED_IMAGE_EXTS.includes(ext)) {
+                try { fs.unlinkSync(req.file.path); } catch {}
+                return res.status(400).json({ error: 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.' });
+            }
             const imgPath = `/data/special_img${ext}`;
             fs.copyFileSync(req.file.path, imgPath);
             currentData.image = `assets/data/special_img${ext}`;
@@ -560,28 +614,25 @@ app.post('/api/tracks', express.json(), (req, res) => {
     }
 });
 
-app.post('/api/tracks/upload', uploadTrack.single('file'), (req, res) => {
+app.post('/api/tracks/upload', uploadTrack.single('file'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
-        const uploadedPath = req.file.path;
-        const parserScript = path.join(__dirname, 'scripts/parse_track_check.py');
+        let uploadedPath = req.file ? req.file.path : null;
 
-        const py = spawn('python3', [parserScript, uploadedPath, TRACKS_PATH]);
-        let stderr = '';
-        py.stderr.on('data', (d) => stderr += d.toString());
-        py.on('close', (code) => {
-            try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
-            if (code === 0) {
-                fs.writeFileSync('/data/version.txt', Date.now().toString(), 'utf8');
-                syncToCloud();
-                const parsed = JSON.parse(fs.readFileSync(TRACKS_PATH, 'utf8'));
-                res.json({ success: true, count: parsed.length, tracks: parsed });
-            } else {
-                res.status(500).json({ error: 'Parser failed: ' + (stderr || 'Exit code ' + code) });
-            }
-        });
+        // If file was sent via JSON base64 body instead of multipart
+        if (!uploadedPath && req.body && (req.body.file_base64 || req.body.content)) {
+            const rawBase64 = req.body.file_base64 || req.body.content;
+            const b64 = typeof rawBase64 === 'object' && rawBase64.$content ? rawBase64.$content : rawBase64;
+            const buf = Buffer.from(b64, 'base64');
+            uploadedPath = path.join('/tmp', `direct_upload_${Date.now()}_${req.body.filename || 'track_check.xlsx'}`);
+            fs.writeFileSync(uploadedPath, buf);
+        }
+
+        if (!uploadedPath) {
+            return res.status(400).json({ error: 'No file uploaded or file_base64 provided' });
+        }
+
+        const parsed = await executeTrackParser(uploadedPath);
+        res.json({ success: true, count: parsed.length, tracks: parsed });
     } catch (e) {
         res.status(500).json({ error: 'Upload processing failed: ' + e.message });
     }
@@ -598,9 +649,25 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
             fs.unlinkSync(uploadedPath);
             return res.status(400).json({ error: 'File is not a valid SVG drawing' });
         }
-        if (content.toLowerCase().includes('<script')) {
+        // SECURITY: Comprehensive SVG XSS sanitization.
+        // Block <script> tags, <foreignObject> (can embed HTML), event handler attributes,
+        // and javascript: URIs in href / xlink:href to prevent stored XSS via SVG.
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes('<script')) {
             fs.unlinkSync(uploadedPath);
             return res.status(400).json({ error: 'SVG contains script tags which are not allowed' });
+        }
+        if (lowerContent.includes('<foreignobject')) {
+            fs.unlinkSync(uploadedPath);
+            return res.status(400).json({ error: 'SVG contains foreignObject elements which are not allowed' });
+        }
+        if (/\bon\w+\s*=/.test(lowerContent)) {
+            fs.unlinkSync(uploadedPath);
+            return res.status(400).json({ error: 'SVG contains event handler attributes which are not allowed' });
+        }
+        if (/\bhref\s*=\s*["']?\s*javascript:/i.test(content) || /xlink:href\s*=\s*["']?\s*javascript:/i.test(content)) {
+            fs.unlinkSync(uploadedPath);
+            return res.status(400).json({ error: 'SVG contains javascript: URIs which are not allowed' });
         }
         fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
         const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');

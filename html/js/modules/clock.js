@@ -122,14 +122,22 @@ export function updateCountdownTimers() {
         let targetStr = el.getAttribute('data-target');
         let targetDate;
         
-        // Parse MM-DD-HH-mm format
-        const match = targetStr.match(/^([0-9]{2})-([0-9]{2})-([0-9]{2})-([0-9]{2})$/);
-        if (match) {
+        // Parse YYYY-MM-DD-HH(-mm) or MM-DD-HH-mm format
+        const yMatch = targetStr.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})-([0-9]{2})(?:-([0-9]{2}))?$/);
+        const match = !yMatch && targetStr.match(/^([0-9]{2})-([0-9]{2})-([0-9]{2})-([0-9]{2})$/);
+        if (yMatch) {
+            const year = parseInt(yMatch[1], 10);
+            const month = parseInt(yMatch[2], 10) - 1;
+            const date = parseInt(yMatch[3], 10);
+            const hours = parseInt(yMatch[4], 10);
+            const mins = yMatch[5] ? parseInt(yMatch[5], 10) : 0;
+            targetDate = new Date(year, month, date, hours, mins, 0, 0);
+        } else if (match) {
             const now = new Date();
-            const month = parseInt(match[1]) - 1; // JS months are 0-indexed
-            const date = parseInt(match[2]);
-            const hours = parseInt(match[3]);
-            const mins = parseInt(match[4]);
+            const month = parseInt(match[1], 10) - 1; // JS months are 0-indexed
+            const date = parseInt(match[2], 10);
+            const hours = parseInt(match[3], 10);
+            const mins = parseInt(match[4], 10);
             
             targetDate = new Date(now.getFullYear(), month, date, hours, mins, 0, 0);
             

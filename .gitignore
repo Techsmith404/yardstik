@@ -15,6 +15,9 @@ __pycache__/
 script-server/
 code-review/
 .agents/
+.agent/
+AGENTS.md
+SSoT.md
 *.bak
 *.tmp
 *.xlsx

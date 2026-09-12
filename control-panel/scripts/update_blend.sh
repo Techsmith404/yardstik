@@ -11,9 +11,13 @@ do
     esac
 done
 
-python3 -c "
+# SECURITY: Pass val and label as environment variables instead of interpolating them into the
+# Python code string. Directly embedding $val/$label inside '''$val''' allows triple-quote
+# escape injection — an attacker who controls the value could execute arbitrary Python code.
+BLEND_VAL="$val" BLEND_LABEL="$label" python3 - <<'PYEOF'
 import json
 import time
+import os
 
 path = '/data/trackers.json'
 try:
@@ -22,8 +26,8 @@ try:
 except Exception:
     data = {}
 
-val = '''$val'''.strip()
-label = '''$label'''.strip()
+val = (os.environ.get('BLEND_VAL') or '').strip()
+label = (os.environ.get('BLEND_LABEL') or '').strip()
 now_ms = int(time.time() * 1000)
 
 if val:
@@ -37,7 +41,7 @@ if label:
 
 with open(path, 'w') as f:
     json.dump(data, f, indent=4)
-"
+PYEOF
 
 date +%s > /data/version.txt
 echo "Successfully updated Production Tracker in trackers.json and refreshed the kiosk."

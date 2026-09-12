@@ -20,7 +20,8 @@ sudo ufw allow out 53/tcp
 sudo ufw allow out 80/tcp
 sudo ufw allow out 443/tcp
 sudo ufw allow out 123/udp
-sudo ufw allow in 5353/udp
+# mDNS inbound restricted to LAN subnet — mDNS is link-local and should never arrive from the internet
+sudo ufw allow in from 192.168.0.0/16 to any port 5353 proto udp
 sudo ufw allow out 5353/udp
 sudo ufw --force enable
 

@@ -52,8 +52,8 @@ checkLightning();
 setInterval(checkLightning, 120000); // 2 mins
 setTimeout(checkLightning, 2000);
 
-setInterval(fetchSafetyVideos, 3600000); // 1 hr
-setInterval(getAnniversaries, 3600000); // 1 hr
+setInterval(fetchSafetyVideos, 900000); // 15 mins
+setInterval(getAnniversaries, 900000); // 15 mins
 setInterval(checkVersion, 5000); // 5s live reload check
 
 // 4. Desktop Reminders Renderer
@@ -87,7 +87,7 @@ export async function renderDesktopReminders() {
             if (body.match(/!CENTER/i)) isCenter = true;
             if (body.match(/!ONLY/i)) isOnly = true;
 
-            // Check expiration
+            // Parse Expire Magic Word
             const expireMatch = body.match(/!EXPIRE\s+([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2})/i);
             if (expireMatch) {
                 const parts = expireMatch[1].split('-');
@@ -96,9 +96,24 @@ export async function renderDesktopReminders() {
                 body = body.replace(expireMatch[0], '');
             }
 
+            // Parse Countdown Magic Word: !COUNTDOWN YYYY-MM-DD-HH or MM-DD-HH-mm
+            let countdownHtml = "";
+            const cdMatch = body.match(/!COUNTDOWN\s+([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}(?:-[0-9]{2})?|[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2})/i);
+            if (cdMatch) {
+                countdownHtml = `<div class="countdown-timer" data-target="${cdMatch[1]}"></div>`;
+                body = body.replace(cdMatch[0], '');
+            }
+
+            // Parse QR Magic Word: !QR https://...
+            const qrMatch = body.match(/!QR\s+(https?:\/\/[^\s]+)/i);
+            if (qrMatch) {
+                body = body.replace(qrMatch[0], `<div style="text-align:center; margin: 10px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrMatch[1])}" style="border: 4px solid white; border-radius: 8px;"></div>`);
+            }
+
             // Clean magic words
             body = body.replace(/<!--\s*(priority|format):\s*(high|critical|split)\s*-->/ig, '');
             body = body.replace(/!(HIGH|CRITICAL|SPLIT|LARGE|CENTER|LONG|ONLY)/ig, '');
+            body += countdownHtml;
 
             parsedReminders.push({ title, body, priority, splitList, isLarge, isCenter, isOnly });
         }

@@ -340,6 +340,7 @@ export async function getWeather() {
         // 3. National Weather Service (NWS) Active Alerts
         try {
             const nwsRes = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, { cache: 'no-store' });
+            if (!nwsRes.ok) throw new Error('NWS HTTP ' + nwsRes.status);
             const nwsData = await nwsRes.json();
             
             // -- DEV MOCK NWS --

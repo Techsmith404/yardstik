@@ -21,6 +21,19 @@ function getRedisClient() {
     return redis;
 }
 
+async function ensureRedis(client) {
+    if (!client) return null;
+    try {
+        if (client.status === 'wait' || client.status === 'close') {
+            await client.connect();
+        }
+        return client;
+    } catch (e) {
+        console.error('Redis connection failed in api/lightning.js:', e.message);
+        return null;
+    }
+}
+
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -71,32 +84,10 @@ module.exports = async (req, res) => {
     const radius = req.query.radius || '10mi';
     const cacheKey = `xweather:cache:${lat}:${lon}:${radius}`;
 
-    const client = getRedisClient();
+    const client = await ensureRedis(getRedisClient());
 
-    if (req.query.inspect === 'keys' || req.query.inspect === 'status') {
-        const keyStatuses = [];
-        for (let i = 0; i < keyPairs.length; i++) {
-            const k = keyPairs[i];
-            const exhaustedKey = `xweather:exhausted:${k.id}`;
-            let isExhausted = false;
-            if (client) {
-                try {
-                    isExhausted = !!(await client.get(exhaustedKey));
-                } catch (e) {}
-            }
-            keyStatuses.push({
-                index: i + 1,
-                idMasked: `${k.id.substring(0, 4)}...${k.id.substring(Math.max(0, k.id.length - 2))}`,
-                status: isExhausted ? 'exhausted_blacklisted' : 'active'
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            totalKeysConfigured: keyPairs.length,
-            redisConnected: !!client,
-            keyStatuses
-        });
-    }
+    // SECURITY: ?inspect=keys and ?inspect=status debug endpoints removed.
+    // They exposed API key metadata (masked IDs, exhaustion status) without authentication.
 
     // 2. Check Server-Side Redis Cache (2 minute TTL)
     if (client) {

@@ -350,9 +350,9 @@ export async function fetchReminders() {
                 body = body.replace(expireMatch[0], ''); // Clean up text if not expired
             }
             
-            // Parse Countdown Magic Word: !COUNTDOWN MM-DD-HH-mm
+            // Parse Countdown Magic Word: !COUNTDOWN YYYY-MM-DD-HH or MM-DD-HH-mm
             let countdownHtml = "";
-            const cdMatch = body.match(/!COUNTDOWN\s+([0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2})/i);
+            const cdMatch = body.match(/!COUNTDOWN\s+([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}(?:-[0-9]{2})?|[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2})/i);
             if (cdMatch) {
                 countdownHtml = `<div class="countdown-timer" data-target="${cdMatch[1]}"></div>`;
                 body = body.replace(cdMatch[0], ''); // Remove magic word

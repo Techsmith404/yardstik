@@ -6,5 +6,5 @@
   "timezone": "America/Chicago",
   "vercel_api_url": "https://your-project.vercel.app",
   "admin_username": "admin",
-  "admin_password": "MasterPassword123"
+  "admin_password": "CHANGE_ME_BEFORE_DEPLOYMENT"
 }

@@ -13,7 +13,7 @@
 set -euo pipefail
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-GITHUB_REPO="${GITHUB_REPO:-https://github.com/Techsmith404/yardstik.git}"
+GITHUB_REPO="${GITHUB_REPO:-https://github.com/TechSmith404/yardstik.git}"
 BRANCH="${1:-main}"
 INSTALL_DIR="$HOME/kiosk-app"
 DATA_DIR="/opt/kiosk-data"
@@ -86,70 +86,19 @@ sudo usermod -aG docker "$USER"
 sudo systemctl enable --now docker
 log "Docker installed."
 
-section "Step 3 — GitHub SSH Authentication"
-warn "GitHub requires an SSH key for authenticated private repository access."
-echo ""
-
-SSH_KEY_PATH="$HOME/.ssh/id_ed25519_kiosk"
-if [ ! -f "$SSH_KEY_PATH" ]; then
-    ssh-keygen -t ed25519 -C "kiosk-$(hostname)" -f "$SSH_KEY_PATH" -N ""
-    log "SSH key generated at $SSH_KEY_PATH"
-else
-    warn "SSH key already exists at $SSH_KEY_PATH — using existing key."
-fi
-
-# Configure SSH to use port 443 (HTTPS port) via ssh.github.com to bypass plant firewalls
-mkdir -p "$HOME/.ssh"
-chmod 700 "$HOME/.ssh"
-cat > "$HOME/.ssh/config" <<EOF
-Host github.com
-    Hostname ssh.github.com
-    Port 443
-    User git
-    IdentityFile $SSH_KEY_PATH
-    StrictHostKeyChecking no
-EOF
-chmod 600 "$HOME/.ssh/config"
-
-echo ""
-echo -e "${BOLD}${YELLOW}══════════════════════════════════════════════════════${RESET}"
-echo -e "${BOLD}  ACTION REQUIRED: Add this public key to GitHub${RESET}"
-echo -e "${BOLD}${YELLOW}══════════════════════════════════════════════════════${RESET}"
-echo ""
-cat "${SSH_KEY_PATH}.pub"
-echo ""
-echo -e "  1. Copy the key above"
-echo -e "  2. Go to: ${BOLD}https://github.com/settings/keys${RESET}"
-echo -e "  3. Click 'New SSH key', paste it, and save."
-echo ""
-
-# Loop until GitHub SSH authentication succeeds
-while true; do
-    read -rp "Press ENTER once you have added the key to GitHub..." _ < /dev/tty
-    info "Verifying GitHub connection over port 443..."
-    SSH_AUTH_OUTPUT=$(ssh -T git@github.com 2>&1 || true)
-    if echo "$SSH_AUTH_OUTPUT" | grep -qi "successfully authenticated"; then
-        log "GitHub SSH connection verified successfully!"
-        break
-    else
-        warn "Could not authenticate with GitHub yet. Please ensure the key was saved."
-        echo ""
-    fi
-done
-
-section "Step 4 — Clone Kiosk Repository"
+section "Step 3 — Clone Kiosk Repository"
+# The repo is public — no SSH keys or auth tokens required.
 if [ -d "$INSTALL_DIR/.git" ]; then
     warn "$INSTALL_DIR already exists. Pulling latest code..."
     cd "$INSTALL_DIR"
     git pull origin "$BRANCH"
 else
-    # Convert HTTPS URL to SSH
-    SSH_REPO=$(echo "$GITHUB_REPO" | sed 's|https://github.com/|git@github.com:|')
-    git clone --branch "$BRANCH" "$SSH_REPO" "$INSTALL_DIR"
+    git clone --branch "$BRANCH" "$GITHUB_REPO" "$INSTALL_DIR"
 fi
+chmod +x "$INSTALL_DIR/kiosk-sync.sh" 2>/dev/null || true
 log "Repository cloned to $INSTALL_DIR."
 
-section "Step 5 — Setup Ephemeral Data Directory"
+section "Step 4 — Setup Ephemeral Data Directory"
 sudo mkdir -p "$DATA_DIR/data"
 sudo chown -R "$USER:$USER" "$DATA_DIR"
 sudo chmod -R 777 "$DATA_DIR"
@@ -169,12 +118,12 @@ if [ ! -f "$DATA_DIR/data/version.txt" ]; then
 fi
 
 if [ ! -f "$DATA_DIR/config.json" ]; then
-    if [ -f "$INSTALL_DIR/config.template.json" ]; then
-        cp "$INSTALL_DIR/config.template.json" "$DATA_DIR/config.json"
-    elif [ -f "$INSTALL_DIR/site-config.template.json" ]; then
+    if [ -f "$INSTALL_DIR/site-config.template.json" ]; then
         cp "$INSTALL_DIR/site-config.template.json" "$DATA_DIR/config.json"
+    elif [ -f "$INSTALL_DIR/config.template.json" ]; then
+        cp "$INSTALL_DIR/config.template.json" "$DATA_DIR/config.json"
     fi
-    warn "Site config created at $DATA_DIR/config.json"
+    warn "Site config created at $DATA_DIR/config.json — edit it before using the kiosk!"
 fi
 cp "$DATA_DIR/config.json" "$DATA_DIR/data/config.json" 2>/dev/null || true
 
@@ -187,8 +136,9 @@ fi
 sudo chmod -R 777 "$DATA_DIR"
 log "Ephemeral data and safety slides directory ready at $DATA_DIR"
 
-section "Step 6 — Build & Start Docker Services"
+section "Step 5 — Build & Start Docker Services"
 cd "$INSTALL_DIR"
+# sg re-evaluates group membership for the docker group without requiring logout/login
 sg docker -c "docker compose up -d --build"
 
 # Verify local container is responding
@@ -198,7 +148,7 @@ while ! curl -s -f http://127.0.0.1:8080 > /dev/null 2>&1; do
 done
 log "Docker containers online and serving at http://localhost:8080!"
 
-section "Step 7 — Install Snap Kiosk Display Server & Browser"
+section "Step 6 — Install Snap Kiosk Display Server & Browser"
 sudo snap install ubuntu-frame
 sudo snap install wpe-webkit-mir-kiosk
 sudo snap install mesa-core22
@@ -257,7 +207,7 @@ EOF
 sudo systemctl daemon-reload
 log "Ubuntu Frame & WPE Browser installed and wired."
 
-section "Step 8 — Boot Optimizations, Silent Boot & Cron Jobs"
+section "Step 7 — Boot Optimizations & Silent Boot"
 # Disable network wait services that cause boot delays
 sudo systemctl disable systemd-networkd-wait-online.service 2>/dev/null || true
 sudo systemctl mask systemd-networkd-wait-online.service 2>/dev/null || true
@@ -268,9 +218,13 @@ sudo systemctl mask NetworkManager-wait-online.service 2>/dev/null || true
 if [ -f "$INSTALL_DIR/scripts/setup-boot-splash.sh" ]; then
     sudo "$INSTALL_DIR/scripts/setup-boot-splash.sh" || true
 fi
+log "Boot optimizations and silent splash screen installed."
 
-# Set up crontab auto-sync (every 3 mins) and midnight tmp cleanup
-CRON_CMD="*/3 * * * * $INSTALL_DIR/kiosk-sync.sh >> $INSTALL_DIR/sync.log 2>&1"
+section "Step 8 — Cron Jobs (Auto-Sync)"
+# kiosk-sync.sh pulls the latest code from GitHub every 15 minutes.
+# If a new commit is detected it bumps version.txt (triggering a live browser reload on the TV)
+# and restarts containers to pick up any server.js / compose changes.
+CRON_CMD="*/15 * * * * $INSTALL_DIR/kiosk-sync.sh >> $INSTALL_DIR/sync.log 2>&1"
 TMP_CRON="0 0 * * * find $HOME/tmp -mindepth 1 -delete 2>/dev/null || true"
 
 CURRENT_CRON=$(crontab -l 2>/dev/null || true)
@@ -284,7 +238,16 @@ NEW_CRON=$(echo "$CURRENT_CRON" | grep -v "kiosk-sync.sh" | grep -v "tmp -mindep
     echo "$TMP_CRON"
 } | crontab -
 
-log "Boot optimizations and cron schedules installed."
+log "Cron job installed (auto-sync every 15 minutes)."
+
+section "Step 9 — Security Lockdown"
+# Apply UFW firewall rules, kernel hardening, USB mass storage disable,
+# Bluetooth disable, and SSH hardening.
+if [ -f "$INSTALL_DIR/scripts/kiosk-lockdown.sh" ]; then
+    bash "$INSTALL_DIR/scripts/kiosk-lockdown.sh"
+else
+    warn "kiosk-lockdown.sh not found — skipping. Run it manually after installation."
+fi
 
 echo ""
 echo -e "${BOLD}${GREEN}══════════════════════════════════════════════════════${RESET}"
@@ -297,6 +260,7 @@ echo -e "  Site Config:     ${BOLD}$DATA_DIR/config.json${RESET}"
 echo -e "  Ephemeral Data:  ${BOLD}$DATA_DIR/data/${RESET}"
 echo -e "  Sync Log:        ${BOLD}$INSTALL_DIR/sync.log${RESET}"
 echo ""
+warn "Edit ${BOLD}$DATA_DIR/config.json${RESET} to set your Site Name, coordinates, timezone, and admin credentials."
 warn "A REBOOT is recommended to apply all display and service changes."
 echo ""
 read -rp "Reboot now? [y/N] " answer < /dev/tty

@@ -9,7 +9,7 @@ import { getAnniversaries } from './modules/anniversaries.js';
 import { fetchReminders, advanceReminderSlide } from './modules/reminders.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
-import { initSeasonalTheme, applyTheme, getSeasonalTheme } from './modules/theme.js';
+import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures, isTrackMapActive } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 
@@ -60,8 +60,8 @@ setInterval(fetchSpecialEvent, 60000); // 1 min
 setInterval(checkLightning, 120000); // 2 mins
 setTimeout(checkLightning, 2000);
 
-setInterval(fetchSafetyVideos, 3600000); // 1 hr
-setInterval(getAnniversaries, 3600000); // 1 hr
+setInterval(fetchSafetyVideos, 900000); // 15 mins
+setInterval(getAnniversaries, 900000); // 15 mins
 setInterval(checkVersion, 5000); // 5s live reload check
 
 // 4. Equipment Autoscroll on Kiosk TV Mode

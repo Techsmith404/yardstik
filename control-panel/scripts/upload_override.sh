@@ -47,22 +47,23 @@ if [ "$action" = "Upload New Override" ]; then
             target_name="override.jpg"
         fi
         
-        python3 -c '
+        TARGET_NAME="$target_name" python3 - <<'PYEOF'
 import json
 import datetime
 import sys
+import os
 try:
     with open("/data/trackers.json", "r") as f:
         data = json.load(f)
     effective_now = datetime.datetime.now() + datetime.timedelta(hours=1)
     data["toolbox_override_date"] = effective_now.strftime("%Y-%m-%d")
-    data["toolbox_override_file"] = "'$target_name'"
+    data["toolbox_override_file"] = os.environ.get("TARGET_NAME", "")
     with open("/data/trackers.json", "w") as f:
         json.dump(data, f, indent=4)
 except Exception as e:
     print("Error updating trackers.json:", e)
     sys.exit(1)
-'
+PYEOF
         date +%s > /data/version.txt
         echo "Toolbox Override activated! It will automatically expire at midnight."
         exit 0
