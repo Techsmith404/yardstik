@@ -319,9 +319,9 @@
                                 <span class="form-help">Displayed in the browser title and Control Panel header.</span>
                             </div>
                             <div class="form-group form-grid-full">
-                                <label for="cfg-site-id">Site Identifier (ID)</label>
-                                <input type="text" id="cfg-site-id" class="form-control" placeholder="e.g. plant-01" style="font-family: 'JetBrains Mono', monospace;">
-                                <span class="form-help">Unique lowercase slug with no spaces. Used internally for logging and cloud synchronization.</span>
+                                <label for="cfg-site-id">Site Identifier (ID) <span style="color: var(--brand-blue); font-size: 0.78rem; font-weight: normal; margin-left: 6px;"><i class="fa-solid fa-lock"></i> Locked in Demo Mode</span></label>
+                                <input type="text" id="cfg-site-id" class="form-control" placeholder="e.g. plant-01" style="font-family: 'JetBrains Mono', monospace; opacity: 0.65; cursor: not-allowed;" disabled>
+                                <span class="form-help">Unique lowercase slug with no spaces. Locked in public demo mode.</span>
                             </div>
                             <div class="form-group">
                                 <label for="cfg-latitude">Latitude</label>
@@ -383,14 +383,14 @@
                         </div>
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label for="cfg-admin-username">Admin Username</label>
-                                <input type="text" id="cfg-admin-username" class="form-control" placeholder="admin">
-                                <span class="form-help">Username for HTTP Basic Authentication.</span>
+                                <label for="cfg-admin-username">Admin Username <span style="color: var(--brand-blue); font-size: 0.78rem; font-weight: normal; margin-left: 6px;"><i class="fa-solid fa-lock"></i> Locked in Demo Mode</span></label>
+                                <input type="text" id="cfg-admin-username" class="form-control" placeholder="admin" style="opacity: 0.65; cursor: not-allowed;" disabled>
+                                <span class="form-help">Username modifications are disabled in public demo mode.</span>
                             </div>
                             <div class="form-group">
-                                <label for="cfg-admin-password">New Admin Password</label>
-                                <input type="password" id="cfg-admin-password" class="form-control" placeholder="Leave blank to keep current password">
-                                <span class="form-help">Only fill this in if you want to update the password.</span>
+                                <label for="cfg-admin-password">New Admin Password <span style="color: var(--brand-blue); font-size: 0.78rem; font-weight: normal; margin-left: 6px;"><i class="fa-solid fa-lock"></i> Locked in Demo Mode</span></label>
+                                <input type="password" id="cfg-admin-password" class="form-control" placeholder="Password updates locked in demo mode" style="opacity: 0.65; cursor: not-allowed;" disabled>
+                                <span class="form-help">Password modifications are disabled in public demo mode.</span>
                             </div>
                         </div>
                     </div>

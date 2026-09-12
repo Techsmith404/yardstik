@@ -61,6 +61,43 @@ describe('Control Panel Authentication Middleware', () => {
         // SECURITY: Never return raw password
         expect(res.body.admin_password).toBeUndefined();
     });
+
+    test('POST /api/site-config rejects password tampering with 403 Nice Try', async () => {
+        const res = await request(app)
+            .post('/api/site-config')
+            .set('Authorization', authHeader)
+            .send({ admin_password: 'hacked_password' });
+        expect(res.status).toBe(403);
+        expect(res.body.error).toContain('Nice try');
+    });
+
+    test('POST /api/site-config rejects username tampering with 403 Nice Try', async () => {
+        const res = await request(app)
+            .post('/api/site-config')
+            .set('Authorization', authHeader)
+            .send({ admin_username: 'new_admin_user' });
+        expect(res.status).toBe(403);
+        expect(res.body.error).toContain('Nice try');
+    });
+
+    test('POST /api/site-config rejects site_id tampering with 403 Nice Try', async () => {
+        const res = await request(app)
+            .post('/api/site-config')
+            .set('Authorization', authHeader)
+            .send({ site_id: 'changed-site-id' });
+        expect(res.status).toBe(403);
+        expect(res.body.error).toContain('Nice try');
+    });
+
+    test('POST /api/site-config allows updating benign fields', async () => {
+        const res = await request(app)
+            .post('/api/site-config')
+            .set('Authorization', authHeader)
+            .send({ site_name: 'Updated Plant Name', timezone: 'America/New_York' });
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.config.site_name).toBe('Updated Plant Name');
+    });
 });
 
 describe('Sunday 11:00 PM Weekly Audit Reset Protocol (SSoT §9.4)', () => {

@@ -843,6 +843,19 @@ app.post('/api/site-config', express.json(), (req, res) => {
             ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
             : {};
 
+        // Security Safeguard for Demo Mode: Prevent unauthorized credentials or Site ID tampering
+        if (typeof req.body.admin_password === 'string' && req.body.admin_password.trim().length > 0) {
+            return res.status(403).json({ error: "Nice try! Password modifications are locked in demo mode. 😉" });
+        }
+
+        if (req.body.admin_username !== undefined && current.admin_username && req.body.admin_username.trim() !== current.admin_username.trim()) {
+            return res.status(403).json({ error: "Nice try! Username modifications are locked in demo mode. 😉" });
+        }
+
+        if (req.body.site_id !== undefined && current.site_id && req.body.site_id.trim() !== current.site_id.trim()) {
+            return res.status(403).json({ error: "Nice try! Site ID modifications are locked in demo mode. 😉" });
+        }
+
         // Allow known safe keys
         const allowed = ['site_name', 'site_id', 'latitude', 'longitude', 'timezone', 'vercel_api_url', 'admin_username'];
         const updated = { ...current };
@@ -850,16 +863,14 @@ app.post('/api/site-config', express.json(), (req, res) => {
             if (req.body[key] !== undefined) updated[key] = req.body[key];
         });
 
-        // Update password if a new non-empty password was supplied
-        if (typeof req.body.admin_password === 'string' && req.body.admin_password.trim().length > 0) {
-            updated.admin_password = req.body.admin_password.trim();
-        }
-
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), 'utf8');
         // Also save sanitized config to /data/config.json so the kiosk frontend reads it cleanly
-        const safeFrontendConfig = { ...updated };
-        delete safeFrontendConfig.admin_password;
-        fs.writeFileSync(path.join(DATA_DIR, 'config.json'), JSON.stringify(safeFrontendConfig, null, 2), 'utf8');
+        const frontendConfigPath = path.join(DATA_DIR, 'config.json');
+        if (path.resolve(CONFIG_PATH) !== path.resolve(frontendConfigPath)) {
+            const safeFrontendConfig = { ...updated };
+            delete safeFrontendConfig.admin_password;
+            fs.writeFileSync(frontendConfigPath, JSON.stringify(safeFrontendConfig, null, 2), 'utf8');
+        }
 
         // Bump version.txt so the kiosk reloads and picks up the new config
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
