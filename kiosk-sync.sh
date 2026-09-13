@@ -11,6 +11,7 @@
 # =============================================================================
 
 set -e
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 REPO_DIR="/opt/docker/yardstik"
 LOG_FILE="$REPO_DIR/sync.log"
