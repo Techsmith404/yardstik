@@ -19,11 +19,11 @@ Built from the ground up for **24/7 hardware-accelerated continuous operation**,
 
 Experience YardStik's live viewports and administrative suite directly in your browser:
 
-* 📺 **[Live Kiosk TV Display](https://yardstik-test.vercel.app/?view=kiosk&site=demo-site)** — Hardware-accelerated full-screen rotating break room presentation.
-* ⚡ **[Shift Handoff Mode](https://yardstik-test.vercel.app/?mode=handoff&site=demo-site)** — High-density, multi-slide operations briefing view designed for shift changeovers.
-* 🖥️ **[Desktop Supervisor Portal](https://yardstik-test.vercel.app/desktop.html?site=demo-site)** — Unified single-page scrollable dashboard with sticky section navigation for office workstations.
-* 📱 **[Mobile Floor Companion](https://yardstik-test.vercel.app/mobile.html?site=demo-site)** — Touch-optimized floor companion webapp accessible via on-screen TV QR code.
-* 🎛️ **[Administrative Control Panel](https://admin-demo.yourdomain.com)** — Dark-mode operations management suite (*Demo Login: `admin` / `demo` — resets automatically every 24 hours*).
+* 📺 **[Live Kiosk TV Display](https://kiosk-demo.techsmith404.com/?view=kiosk)** — Hardware-accelerated full-screen rotating break room presentation.
+* ⚡ **[Shift Handoff Mode](https://kiosk-demo.techsmith404.com/?mode=handoff)** — High-density, multi-slide operations briefing view designed for shift changeovers.
+* 🖥️ **[Desktop Supervisor Portal](https://kiosk-demo.techsmith404.com/desktop.html)** — Unified single-page scrollable dashboard with sticky section navigation for office workstations.
+* 📱 **[Mobile Floor Companion](https://yardstik-test.vercel.app/mobile.html)** — Touch-optimized floor companion webapp hosted on Vercel Edge (*Auto-configured via `DEFAULT_SITE_ID: yardstik-demo`*).
+* 🎛️ **[Administrative Control Panel](https://admin-demo.techsmith404.com)** — Dark-mode operations management suite (*Demo Login: `admin` / `demo` — resets automatically every 24 hours*).
 
 ---
 
