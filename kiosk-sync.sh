@@ -7,14 +7,14 @@
 # mounted into Docker via volumes — it is NOT in git and is never touched here.
 #
 # Setup: Add to crontab via `crontab -e`
-#   */15 * * * * ~/kiosk-app/kiosk-sync.sh >> ~/kiosk-app/sync.log 2>&1
+#   */15 * * * * /opt/docker/yardstik/kiosk-sync.sh >> /opt/docker/yardstik/sync.log 2>&1
 # =============================================================================
 
 set -e
 
-REPO_DIR="$HOME/kiosk-app"
+REPO_DIR="/opt/docker/yardstik"
 LOG_FILE="$REPO_DIR/sync.log"
-BRANCH="main"
+BRANCH="demo"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
