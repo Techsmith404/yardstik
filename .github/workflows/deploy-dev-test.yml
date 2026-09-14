@@ -1,0 +1,40 @@
+name: Deploy dev-test Staging
+on:
+  push:
+    branches: [dev-test]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull and Reload Staging
+        run: |
+          set -euo pipefail
+          echo "🚀 Deploying latest commit to dev-test staging on Andromeda..."
+          
+          STAGING_DIR="/opt/docker/kiosk-dev/kiosk-app"
+          DATA_DIR="/opt/docker/kiosk-dev/kiosk-data"
+          
+          if [ -d "$STAGING_DIR" ]; then
+            cd "$STAGING_DIR"
+            git fetch origin dev-test
+            git reset --hard origin/dev-test
+            
+            # Bump version.txt to instantly trigger hot reload across all connected displays
+            mkdir -p "$DATA_DIR/data"
+            date +%s > "$DATA_DIR/data/version.txt" 2>/dev/null || true
+            
+            # Refresh dev staging containers
+            if [ -f "docker-compose.dev.yml" ]; then
+              docker compose -f docker-compose.dev.yml up -d --remove-orphans
+            elif [ -f "/opt/docker/kiosk-dev/docker-compose.dev.yml" ]; then
+              docker compose -f /opt/docker/kiosk-dev/docker-compose.dev.yml up -d --remove-orphans
+            fi
+            echo "✅ Successfully deployed dev-test staging on Andromeda!"
+          else
+            echo "⚠️ Staging directory $STAGING_DIR not found. Executing in current workspace."
+            date +%s > "$DATA_DIR/data/version.txt" 2>/dev/null || true
+            if [ -f "docker-compose.dev.yml" ]; then
+              docker compose -f docker-compose.dev.yml up -d --remove-orphans
+            fi
+          fi
