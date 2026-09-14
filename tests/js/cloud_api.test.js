@@ -30,6 +30,11 @@ function createMockReqRes(options = {}) {
             this.data = payload;
             return this;
         },
+        redirect(url) {
+            this.statusCode = 302;
+            this.redirectUrl = url;
+            return this;
+        },
         end() {
             return this;
         }
@@ -88,6 +93,36 @@ describe('Serverless Cloud Sync API (api/sync.js)', () => {
         await syncHandler(req, res);
         expect(res.statusCode).toBe(400);
         expect(res.data.error).toContain('Missing site_id or files');
+    });
+
+    test('Redirects GET for toolbox_slide.png to fallback 001.png when no Redis entry exists', async () => {
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            query: { file: 'toolbox_slide.png', site: 'test-site' }
+        });
+        await syncHandler(req, res);
+        expect(res.statusCode).toBe(302);
+        expect(res.redirectUrl).toBe('/assets/safety-slides/001.png');
+    });
+
+    test('Accepts POST containing single active toolbox_slide.png base64 payload', async () => {
+        process.env.SYNC_SECRET = 'secret123';
+        const fakePngBase64 = Buffer.from('fake-png-bytes').toString('base64');
+        const { req, res } = createMockReqRes({
+            method: 'POST',
+            body: {
+                site_id: 'test-site',
+                secret: 'secret123',
+                files: {
+                    'toolbox_slide.png': fakePngBase64,
+                    'toolbox_slide_meta.json': { slide_number: '257', filename: '257.png' }
+                }
+            }
+        });
+        await syncHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.synced_files).toContain('toolbox_slide.png');
     });
 });
 

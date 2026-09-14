@@ -91,4 +91,38 @@ describe('YardStik Mobile Companion Web App (§9.1, §9.3, §9.4, §9.8 Complian
         expect(cssContent).toContain('.modal-track-sheet');
         expect(cssContent).toContain('.modal-track-card');
     });
+
+    test('Mobile companion normalizes anniversaries from both Novara API and anniversaries.json schemas', () => {
+        const jsContent = fs.readFileSync(mobileJsPath, 'utf8');
+        expect(jsContent).toContain('renderAnniversariesList');
+        expect(jsContent).toContain('anniversaries-container');
+
+        function extractAnniversaryEmployees(payload) {
+            return (payload && payload.employees) || 
+                   (payload && payload.anniversaries && payload.anniversaries.employees) || 
+                   (payload && Array.isArray(payload.anniversaries) ? payload.anniversaries : []);
+        }
+
+        // Schema A: Full /api/novara payload
+        const novaraPayload = {
+            success: true,
+            response: [],
+            anniversaries: {
+                is_today: false,
+                employees: [{ name: "Alex Morgan", years: 5, date: "Aug 25", days_until: 0 }]
+            }
+        };
+        const empsA = extractAnniversaryEmployees(novaraPayload);
+        expect(empsA.length).toBe(1);
+        expect(empsA[0].name).toBe("Alex Morgan");
+
+        // Schema B: /api/novara?type=anniversaries or anniversaries.json
+        const flatPayload = {
+            is_today: false,
+            employees: [{ name: "Casey Miller", years: 1, date: "Sep 15", days_until: 21 }]
+        };
+        const empsB = extractAnniversaryEmployees(flatPayload);
+        expect(empsB.length).toBe(1);
+        expect(empsB[0].name).toBe("Casey Miller");
+    });
 });

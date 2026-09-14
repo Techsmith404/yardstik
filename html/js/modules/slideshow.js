@@ -40,12 +40,22 @@ export async function updateSafetySlide() {
         }
         
         const paddedNum = slideNum.toString().padStart(3, '0');
+        const isRemoteCloud = (typeof window !== 'undefined' && (window.location.hostname.indexOf('vercel.app') !== -1 || window.location.protocol === 'https:'));
+
         img.onerror = function() {
             if (!this.src.endsWith('001.png')) {
                 this.src = 'assets/safety-slides/001.png';
             }
         };
-        img.src = `assets/safety-slides/${paddedNum}.png`;
+
+        if (isRemoteCloud) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const siteId = urlParams.get('site');
+            const siteQuery = siteId ? 'site=' + encodeURIComponent(siteId) + '&' : '';
+            img.src = `/api/sync?${siteQuery}file=toolbox_slide.png&t=${Date.now()}`;
+        } else {
+            img.src = `assets/safety-slides/${paddedNum}.png`;
+        }
         if (label) label.innerText = `#${paddedNum}`;
     } catch (e) {
         console.log("Error updating safety slide", e);
