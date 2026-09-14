@@ -31,6 +31,62 @@ function getAuthConfig() {
     return { username, password };
 }
 
+// Helper to resolve the current active toolbox slide (or manual override)
+function getCurrentToolboxSlideInfo() {
+    try {
+        const actualNow = new Date();
+        const now = new Date(actualNow.getTime() + (60 * 60 * 1000)); // Shift +1h for 11:00 PM rollover
+        const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+        // 1. Check trackers.json for manual daily override
+        const trackersPath = path.join(DATA_DIR, 'trackers.json');
+        if (fs.existsSync(trackersPath)) {
+            try {
+                const trackers = JSON.parse(fs.readFileSync(trackersPath, 'utf8'));
+                if (trackers.toolbox_override_date === todayStr && trackers.toolbox_override_file) {
+                    const overridePath = path.join(DATA_DIR, trackers.toolbox_override_file);
+                    if (fs.existsSync(overridePath)) {
+                        return { filename: trackers.toolbox_override_file, filePath: overridePath, isOverride: true, slideNum: 'override' };
+                    }
+                }
+            } catch {}
+        }
+
+        // 2. Day-of-year calculation
+        const start = new Date(Date.UTC(now.getFullYear(), 0, 0));
+        const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        const dayOfYear = Math.round((todayUTC - start) / (1000 * 60 * 60 * 24));
+        const year = now.getFullYear();
+        const isLeap = ((year % 4 === 0) && (year % 100 !== 0)) || (year % 400 === 0);
+        let slideNum = dayOfYear;
+        if (isLeap) {
+            if (dayOfYear === 60) slideNum = 20;
+            else if (dayOfYear > 60) slideNum = dayOfYear - 1;
+        }
+        const paddedNum = slideNum.toString().padStart(3, '0');
+        const targetFilename = `${paddedNum}.png`;
+
+        const candidateDirs = [
+            process.env.SAFETY_SLIDES_DIR,
+            '/safety-slides',
+            '/opt/kiosk-data/safety-slides',
+            path.join(DATA_DIR, 'safety-slides'),
+            path.join(__dirname, '../html/assets/safety-slides'),
+            path.join(__dirname, 'public/safety-slides')
+        ].filter(Boolean);
+
+        for (const dir of candidateDirs) {
+            const candidatePath = path.join(dir, targetFilename);
+            if (fs.existsSync(candidatePath)) {
+                return { filename: targetFilename, filePath: candidatePath, isOverride: false, slideNum: paddedNum };
+            }
+        }
+    } catch (err) {
+        console.warn('[Toolbox Sync] Error resolving slide:', err.message);
+    }
+    return null;
+}
+
 // Helper to push live ephemeral files to Vercel Cloud for mobile and remote viewers
 async function syncToCloud() {
     try {
@@ -55,6 +111,25 @@ async function syncToCloud() {
                 } catch {}
             }
         });
+
+        // Attach current single daily toolbox slide as base64 (overwriting previous in Redis)
+        const slideInfo = getCurrentToolboxSlideInfo();
+        if (slideInfo && fs.existsSync(slideInfo.filePath)) {
+            try {
+                const imgBuf = fs.readFileSync(slideInfo.filePath);
+                if (imgBuf.length > 0 && imgBuf.length <= 5 * 1024 * 1024) {
+                    filesToSync['toolbox_slide.png'] = imgBuf.toString('base64');
+                    filesToSync['toolbox_slide_meta.json'] = {
+                        slide_number: slideInfo.slideNum,
+                        filename: slideInfo.filename,
+                        is_override: slideInfo.isOverride,
+                        updated_at: Date.now()
+                    };
+                }
+            } catch (slideErr) {
+                console.warn('[Cloud Sync] Failed to attach toolbox slide:', slideErr.message);
+            }
+        }
 
         if (Object.keys(filesToSync).length === 0) return;
 

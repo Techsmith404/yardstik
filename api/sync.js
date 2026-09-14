@@ -143,7 +143,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid file parameter.' });
         }
 
-        // Cache response on Edge for 5s (fast sync, low latency)
+        // Cache response on Edge (fast sync, low latency)
         res.setHeader('Cache-Control', 'public, max-age=5, s-maxage=5, stale-while-revalidate=15');
 
         if (client) {
@@ -167,6 +167,17 @@ module.exports = async function handler(req, res) {
                         } catch {
                             return res.status(200).json(val);
                         }
+                    } else if (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.webp') || file.endsWith('.gif')) {
+                        let contentType = 'image/png';
+                        if (file.endsWith('.jpg') || file.endsWith('.jpeg')) contentType = 'image/jpeg';
+                        else if (file.endsWith('.webp')) contentType = 'image/webp';
+                        else if (file.endsWith('.gif')) contentType = 'image/gif';
+
+                        res.setHeader('Content-Type', contentType);
+                        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=120');
+                        const cleanB64 = val.replace(/^data:image\/\w+;base64,/, '');
+                        const imgBuf = Buffer.from(cleanB64, 'base64');
+                        return res.status(200).send(imgBuf);
                     } else {
                         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
                         return res.status(200).send(val);
@@ -178,6 +189,9 @@ module.exports = async function handler(req, res) {
         }
 
         // Fallback: If not in Redis, redirect to static asset
+        if (file === 'toolbox_slide.png' || file.endsWith('.png')) {
+            return res.redirect('/assets/safety-slides/001.png');
+        }
         return res.redirect(`/assets/data/${file}`);
     }
 

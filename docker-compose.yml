@@ -34,4 +34,5 @@ services:
       # Control panel reads/writes ephemeral data and site config from the same host path
       - /opt/kiosk-data/data:/data
       - /opt/kiosk-data/config.json:/opt/config.json
+      - /opt/kiosk-data/safety-slides:/safety-slides:ro
       - /var/run/docker.sock:/var/run/docker.sock

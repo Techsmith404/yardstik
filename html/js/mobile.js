@@ -256,11 +256,13 @@
         let slideTitle = 'Daily Toolbox Talk';
         let slideBadgeText = '';
 
+        const isRemoteCloud = (window.location.hostname.indexOf('vercel.app') !== -1 || window.location.protocol === 'https:');
+
         if (trackersData && trackersData.toolbox_override_date === todayStr && trackersData.toolbox_override_file) {
             isOverride = true;
             slideTitle = 'Safety Stand-down';
             slideBadgeText = 'ACTIVE OVERRIDE';
-            slideImgUrl = 'assets/data/' + trackersData.toolbox_override_file;
+            slideImgUrl = isRemoteCloud ? getDataUrl('toolbox_slide.png') : ('assets/data/' + trackersData.toolbox_override_file);
         } else {
             const start = new Date(Date.UTC(now.getFullYear(), 0, 0));
             const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
@@ -275,7 +277,7 @@
             }
             const paddedNum = slideNum.toString().padStart(3, '0');
             slideBadgeText = 'Slide #' + paddedNum;
-            slideImgUrl = 'assets/safety-slides/' + paddedNum + '.png';
+            slideImgUrl = isRemoteCloud ? getDataUrl('toolbox_slide.png') : ('assets/safety-slides/' + paddedNum + '.png');
         }
 
         const cardClass = isOverride ? 'toolbox-card standdown' : 'toolbox-card';
@@ -288,7 +290,7 @@
                     '<span class="badge" style="background: ' + badgeBg + '; color: #fff;">' + slideBadgeText + '</span>' +
                 '</div>' +
                 '<div class="toolbox-img-preview-box" id="toolbox-preview-box">' +
-                    '<img src="' + slideImgUrl + '" class="toolbox-img" alt="' + slideTitle + '" onerror="this.src=\'assets/safety-slides/001.png\'">' +
+                    '<img src="' + slideImgUrl + '" class="toolbox-img" alt="' + slideTitle + '" onerror="if(!this.src.includes(\'001.png\')) this.src=\'assets/safety-slides/001.png\'">' +
                     '<div class="toolbox-img-overlay"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> Tap to Zoom</div>' +
                 '</div>' +
             '</div>';
@@ -585,9 +587,87 @@
     // 6. Novara LMS Safety Training & Anniversaries
     // ==========================================================================
 
+    function renderAnniversariesList(employees) {
+        const container = document.getElementById('anniversaries-container');
+        if (!container) return;
+
+        if (!Array.isArray(employees) || employees.length === 0) {
+            container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No upcoming milestones this month.</div>';
+            return;
+        }
+
+        let html = '';
+        employees.forEach(function(emp) {
+            const isToday = emp.days_until === 0;
+            const yearStr = emp.years === 1 ? 'Year' : 'Years';
+            const daysText = isToday ? 'Today! 🎉' : (emp.days_until === 1 ? 'Tomorrow' : (emp.days_until !== undefined && emp.days_until !== null ? 'in ' + emp.days_until + ' days' : ''));
+            const itemStyle = isToday 
+                ? 'border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.08);' 
+                : 'border-left: 4px solid var(--accent-purple);';
+            const badgeStyle = isToday 
+                ? 'background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fcd34d; font-weight: 800;' 
+                : 'background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); color: #d8b4fe;';
+
+            const avatarHtml = emp.photoUrl
+                ? '<img src="' + emp.photoUrl + '" class="safety-person-avatar" style="width: 34px; height: 34px;" alt="' + emp.name + '" onerror="this.src=\'assets/safety-slides/001.png\'">'
+                : '<span style="font-size: 1.3rem;">' + (isToday ? '🎂' : '🎉') + '</span>';
+
+            html += 
+                '<div class="anniversary-item" style="' + itemStyle + '">' +
+                    '<div style="display: flex; align-items: center; gap: 10px;">' +
+                        avatarHtml +
+                        '<div>' +
+                            '<div style="font-weight: 700; color: #fff;">' + emp.name + '</div>' +
+                            '<div style="font-size: 0.75rem; color: var(--text-muted);">' + 
+                                (emp.date || emp.hire_date || 'Milestone') + 
+                                (daysText ? ' • <span style="color: ' + (isToday ? '#fcd34d' : 'var(--text-secondary)') + '; font-weight: ' + (isToday ? '700' : '400') + ';">' + daysText + '</span>' : '') + 
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="badge" style="' + badgeStyle + ' font-size: 0.82rem;">' + emp.years + ' ' + yearStr + (isToday ? '!' : '') + '</span>' +
+                '</div>';
+        });
+        container.innerHTML = html;
+    }
+
     function loadSafetyAndMilestones() {
         const vercelBase = siteConfig.vercel_api_url ? siteConfig.vercel_api_url.replace(/\/+$/, '') : '';
         const navBadgeEl = document.getElementById('badge-safety');
+        let anniversariesLoaded = false;
+
+        function fetchFallbackAnniversaries() {
+            if (anniversariesLoaded) return;
+            
+            const fallbackUrl = vercelBase ? (vercelBase + '/api/novara?type=anniversaries') : getDataUrl('anniversaries.json');
+            fetch(fallbackUrl)
+                .then(function(res) {
+                    if (res.ok) return res.json();
+                    if (vercelBase) {
+                        return fetch(getDataUrl('anniversaries.json')).then(function(r) { return r.ok ? r.json() : null; });
+                    }
+                    return null;
+                })
+                .then(function(data) {
+                    if (anniversariesLoaded) return;
+                    const emps = (data && data.employees) || (data && data.anniversaries && data.anniversaries.employees) || (data && Array.isArray(data.anniversaries) ? data.anniversaries : null);
+                    renderAnniversariesList(emps || []);
+                    if (emps && emps.length > 0) anniversariesLoaded = true;
+                })
+                .catch(function(err) {
+                    console.warn("Anniversaries fallback fetch error:", err);
+                    if (!anniversariesLoaded) {
+                        fetch(getDataUrl('anniversaries.json'))
+                            .then(function(r) { return r.ok ? r.json() : null; })
+                            .then(function(data) {
+                                const emps = (data && data.employees) || (data && Array.isArray(data.anniversaries) ? data.anniversaries : null);
+                                renderAnniversariesList(emps || []);
+                            })
+                            .catch(function() {
+                                renderAnniversariesList([]);
+                            });
+                    }
+                });
+        }
 
         // Novara Safety Training
         fetch(vercelBase + '/api/novara')
@@ -602,81 +682,56 @@
                 if (!data || !data.success || !data.response || data.response.length === 0) {
                     container.innerHTML = '<div style="color: var(--success); text-align: center; padding: 15px; font-style: italic;"><i class="fa-solid fa-circle-check"></i> All employees 100% up to date! 🎉</div>';
                     if (navBadgeEl) navBadgeEl.style.display = 'none';
-                    return;
+                } else {
+                    let overdueTotal = 0;
+                    let html = '';
+
+                    data.response.forEach(function(emp) {
+                        const expCount = emp.expiringCount || 0;
+                        const incompCount = emp.incompleteCount || 0;
+                        overdueTotal += incompCount;
+
+                        let badgesHtml = '';
+                        if (expCount > 0) {
+                            badgesHtml += '<span class="badge" style="background: var(--warning-bg); border: 1px solid var(--warning-border); color: #fcd34d;"><i class="fa-solid fa-clock"></i> ' + expCount + ' Due</span>';
+                        }
+                        if (incompCount > 0) {
+                            badgesHtml += '<span class="badge" style="background: var(--danger-bg); border: 1px solid var(--danger-border); color: #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> ' + incompCount + ' Overdue</span>';
+                        }
+
+                        html += 
+                            '<div class="safety-person-row">' +
+                                '<div class="safety-person-left">' +
+                                    '<img src="' + emp.photoUrl + '" class="safety-person-avatar" alt="' + emp.name + '" onerror="this.src=\'assets/safety-slides/001.png\'">' +
+                                    '<span class="safety-person-name">' + emp.name + '</span>' +
+                                '</div>' +
+                                '<div style="display: flex; gap: 6px;">' + badgesHtml + '</div>' +
+                            '</div>';
+                    });
+
+                    container.innerHTML = html;
+
+                    if (navBadgeEl) {
+                        if (overdueTotal > 0) {
+                            navBadgeEl.textContent = overdueTotal.toString();
+                            navBadgeEl.style.display = 'block';
+                        } else {
+                            navBadgeEl.style.display = 'none';
+                        }
+                    }
                 }
 
-                let overdueTotal = 0;
-                let html = '';
-
-                data.response.forEach(function(emp) {
-                    const expCount = emp.expiringCount || 0;
-                    const incompCount = emp.incompleteCount || 0;
-                    overdueTotal += incompCount;
-
-                    let badgesHtml = '';
-                    if (expCount > 0) {
-                        badgesHtml += '<span class="badge" style="background: var(--warning-bg); border: 1px solid var(--warning-border); color: #fcd34d;"><i class="fa-solid fa-clock"></i> ' + expCount + ' Due</span>';
-                    }
-                    if (incompCount > 0) {
-                        badgesHtml += '<span class="badge" style="background: var(--danger-bg); border: 1px solid var(--danger-border); color: #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> ' + incompCount + ' Overdue</span>';
-                    }
-
-                    html += 
-                        '<div class="safety-person-row">' +
-                            '<div class="safety-person-left">' +
-                                '<img src="' + emp.photoUrl + '" class="safety-person-avatar" alt="' + emp.name + '" onerror="this.src=\'assets/safety-slides/001.png\'">' +
-                                '<span class="safety-person-name">' + emp.name + '</span>' +
-                            '</div>' +
-                            '<div style="display: flex; gap: 6px;">' + badgesHtml + '</div>' +
-                        '</div>';
-                });
-
-                container.innerHTML = html;
-
-                if (navBadgeEl) {
-                    if (overdueTotal > 0) {
-                        navBadgeEl.textContent = overdueTotal.toString();
-                        navBadgeEl.style.display = 'block';
-                    } else {
-                        navBadgeEl.style.display = 'none';
-                    }
+                // Check if Novara response also carried anniversaries
+                if (data && data.anniversaries && Array.isArray(data.anniversaries.employees) && data.anniversaries.employees.length > 0) {
+                    renderAnniversariesList(data.anniversaries.employees);
+                    anniversariesLoaded = true;
+                } else {
+                    fetchFallbackAnniversaries();
                 }
             })
             .catch(function(err) {
                 console.warn("Novara fetch error:", err);
-            });
-
-        // Anniversaries Flat-file
-        fetch(getDataUrl('anniversaries.json'))
-            .then(function(res) {
-                if (res.ok) return res.json();
-                return null;
-            })
-            .then(function(data) {
-                const container = document.getElementById('anniversaries-container');
-                if (!container || !data || !data.anniversaries || data.anniversaries.length === 0) {
-                    if (container) container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No upcoming milestones this month.</div>';
-                    return;
-                }
-
-                let html = '';
-                data.anniversaries.forEach(function(a) {
-                    html += 
-                        '<div class="anniversary-item">' +
-                            '<div style="display: flex; align-items: center; gap: 10px;">' +
-                                '<span style="font-size: 1.3rem;">🎉</span>' +
-                                '<div>' +
-                                    '<div style="font-weight: 700; color: #fff;">' + a.name + '</div>' +
-                                    '<div style="font-size: 0.75rem; color: var(--text-muted);">' + (a.hire_date || 'Milestone') + '</div>' +
-                                '</div>' +
-                            '</div>' +
-                            '<span class="badge" style="background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); color: #d8b4fe; font-size: 0.82rem;">' + a.years + ' Years</span>' +
-                        '</div>';
-                });
-                container.innerHTML = html;
-            })
-            .catch(function(err) {
-                console.warn("Anniversaries fetch error:", err);
+                fetchFallbackAnniversaries();
             });
     }
 
