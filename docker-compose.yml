@@ -30,6 +30,7 @@ services:
       - ./control-panel/runners:/app/conf/runners
       - ./control-panel/scripts:/app/scripts
       - ./control-panel/public:/app/public
+      - ./control-panel/lib:/app/lib
       - ./control-panel/server.js:/app/server.js
       # Control panel reads/writes ephemeral data and site config from the same host path
       - /opt/kiosk-data/data:/data
