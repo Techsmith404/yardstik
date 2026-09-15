@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/auth/(.*)", "destination": "/api/auth.js" },
+    { "source": "/api/auth", "destination": "/api/auth.js" },
+    { "source": "/api/equipment", "destination": "/api/equipment.js" },
+    { "source": "/api/sync", "destination": "/api/sync.js" },
+    { "source": "/api/lightning", "destination": "/api/lightning.js" },
+    { "source": "/api/novara", "destination": "/api/novara.js" },
+    { "source": "/assets/(.*)", "destination": "/html/assets/$1" },
+    { "source": "/css/(.*)", "destination": "/html/css/$1" },
+    { "source": "/js/(.*)", "destination": "/html/js/$1" },
+    { "source": "/login.html", "destination": "/html/login.html" },
+    { "source": "/register.html", "destination": "/html/register.html" },
+    { "source": "/mobile.html", "destination": "/html/mobile.html" },
+    { "source": "/desktop.html", "destination": "/html/desktop.html" },
+    { "source": "/version.txt", "destination": "/html/assets/data/version.txt" },
+    { "source": "/", "destination": "/html/index.html" }
+  ]
+}

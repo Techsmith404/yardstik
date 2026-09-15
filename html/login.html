@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - YardStik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            color: #f8fafc;
+        }
+        .auth-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+        .auth-brand i {
+            font-size: 2rem;
+            color: #38bdf8;
+        }
+        .auth-brand h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .auth-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: -16px;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .auth-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px 14px 12px 40px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .auth-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            background: rgba(15, 23, 42, 0.85);
+        }
+        .auth-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        .auth-btn:hover {
+            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+            transform: translateY(-1px);
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .auth-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="fa-solid fa-layer-group"></i>
+            <h1>YardStik Sign In</h1>
+        </div>
+        <div class="auth-subtitle">Operations & Maintenance Access</div>
+
+        <div id="error-alert" class="alert-error"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="username" class="auth-input" placeholder="Enter username" required autofocus autocomplete="username">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" class="auth-input" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+            </div>
+
+            <button type="submit" id="btn-submit" class="auth-btn">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            YardStik Floor Operations &bull; v4.8
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+            const form = document.getElementById('login-form');
+            const errorAlert = document.getElementById('error-alert');
+            const submitBtn = document.getElementById('btn-submit');
+
+            // If already logged in, redirect
+            fetch('/api/auth/me')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.authenticated) {
+                        const params = new URLSearchParams(window.location.search);
+                        const redirectUrl = params.get('redirect') || '/mobile.html';
+                        window.location.href = redirectUrl;
+                    }
+                })
+                .catch(function() {});
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                errorAlert.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.success) {
+                        if (data.token) {
+                            try { localStorage.setItem('yardstik_session_token', data.token); } catch(e) {}
+                        }
+                        const params = new URLSearchParams(window.location.search);
+                        const redirectUrl = params.get('redirect') || '/mobile.html';
+                        window.location.href = redirectUrl;
+                    } else {
+                        throw new Error((data && data.error) || 'Invalid login credentials');
+                    }
+                })
+                .catch(function(err) {
+                    errorAlert.textContent = err.message || 'Authentication failed.';
+                    errorAlert.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In';
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
