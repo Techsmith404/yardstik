@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 RUN apk add --no-cache bash python3 py3-openpyxl file curl tzdata
 COPY package*.json ./
