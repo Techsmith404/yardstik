@@ -272,6 +272,65 @@ describe('Serverless Cloud Auth API (api/auth.js)', () => {
         expect(res.data.some(u => u.username === 'bob_maintenance')).toBe(true);
     });
 
+    test('POST /api/auth.js?action=login processes rewritten Vercel requests', async () => {
+        const { req, res } = createMockReqRes({
+            method: 'POST',
+            url: '/api/auth.js?action=login',
+            query: { action: 'login' },
+            body: { username: 'admin', password: 'admin' }
+        });
+        await authHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.user.role).toBe('admin');
+    });
+
+    test('DELETE /api/auth/invites/:token revokes pending invite', async () => {
+        // Create an invite
+        const createRes = createMockReqRes({
+            method: 'POST',
+            url: '/api/auth/invite',
+            headers: { authorization: `Bearer ${adminToken}` },
+            body: { role: 'viewer' }
+        });
+        await authHandler(createRes.req, createRes.res);
+        const tempTok = createRes.res.data.invite.token;
+
+        // Revoke it
+        const { req, res } = createMockReqRes({
+            method: 'DELETE',
+            url: `/api/auth/invites/${tempTok}`,
+            headers: { authorization: `Bearer ${adminToken}` }
+        });
+        await authHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+    });
+
+    test('PATCH /api/users/:id/role updates user role', async () => {
+        // Get Bob's ID
+        const usersRes = createMockReqRes({
+            method: 'GET',
+            url: '/api/auth/users',
+            headers: { authorization: `Bearer ${adminToken}` }
+        });
+        await authHandler(usersRes.req, usersRes.res);
+        const bob = usersRes.res.data.find(u => u.username === 'bob_maintenance');
+        expect(bob).toBeDefined();
+
+        // Promote Bob to admin
+        const { req, res } = createMockReqRes({
+            method: 'PATCH',
+            url: `/api/users/${bob.id}/role`,
+            headers: { authorization: `Bearer ${adminToken}` },
+            body: { role: 'admin' }
+        });
+        await authHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.user.role).toBe('admin');
+    });
+
     test('POST /api/auth/logout logs user out', async () => {
         const { req, res } = createMockReqRes({
             method: 'POST',
