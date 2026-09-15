@@ -85,12 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
             avatarEl.textContent = initial;
         }
 
-        // Hide admin-only navigation if user is maintenance/viewer
+        // Hide admin-only navigation and dashboard cards if user is maintenance/viewer
         if (user.role !== 'admin') {
             const adminNavs = ['nav-site-settings', 'nav-users', 'nav-audit', 'nav-extras'];
             adminNavs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
+            });
+            const adminCards = ['site-settings', 'users', 'audit', 'extras'];
+            adminCards.forEach(scriptId => {
+                const card = document.querySelector(`.info-card[data-script="${scriptId}"]`);
+                if (card) card.style.display = 'none';
             });
         }
     }
@@ -2177,7 +2182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnOpenInviteModal) {
         btnOpenInviteModal.addEventListener('click', () => {
             if (modalInvite) {
-                modalInvite.style.display = 'flex';
+                modalInvite.classList.add('active');
                 if (generatedInviteBox) generatedInviteBox.style.display = 'none';
                 if (inviteCopyMsg) inviteCopyMsg.style.display = 'none';
             }
@@ -2186,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnCloseInvite) {
         btnCloseInvite.addEventListener('click', () => {
-            if (modalInvite) modalInvite.style.display = 'none';
+            if (modalInvite) modalInvite.classList.remove('active');
         });
     }
 
@@ -2366,5 +2371,41 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = `/api/audit-logs/export?action=${encodeURIComponent(action)}&search=${encodeURIComponent(search)}`;
         });
     }
+
+    // =========================================================================
+    // ✨ What's New Changelog Modal
+    // =========================================================================
+    const btnChangelog = document.getElementById('btn-changelog');
+    const modalChangelog = document.getElementById('modal-changelog');
+    const btnCloseChangelog = document.getElementById('btn-close-changelog');
+    const btnDismissChangelog = document.getElementById('btn-dismiss-changelog');
+
+    if (btnChangelog && modalChangelog) {
+        btnChangelog.addEventListener('click', () => {
+            modalChangelog.classList.add('active');
+        });
+    }
+
+    if (btnCloseChangelog && modalChangelog) {
+        btnCloseChangelog.addEventListener('click', () => {
+            modalChangelog.classList.remove('active');
+        });
+    }
+
+    if (btnDismissChangelog && modalChangelog) {
+        btnDismissChangelog.addEventListener('click', () => {
+            modalChangelog.classList.remove('active');
+        });
+    }
+
+    // Modal background overlay clicks
+    window.addEventListener('click', (e) => {
+        if (modalChangelog && e.target === modalChangelog) {
+            modalChangelog.classList.remove('active');
+        }
+        if (modalInvite && e.target === modalInvite) {
+            modalInvite.classList.remove('active');
+        }
+    });
 });
 
