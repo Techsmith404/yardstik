@@ -1,8 +1,12 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/auth/(.*)", "destination": "/api/auth.js" },
+    { "source": "/api/auth/(.*)", "destination": "/api/auth.js?action=$1" },
     { "source": "/api/auth", "destination": "/api/auth.js" },
+    { "source": "/api/users/(.*)", "destination": "/api/auth.js?action=users/$1" },
+    { "source": "/api/users", "destination": "/api/auth.js?action=users" },
+    { "source": "/api/audit-logs/(.*)", "destination": "/api/auth.js?action=audit-logs/$1" },
+    { "source": "/api/audit-logs", "destination": "/api/auth.js?action=audit-logs" },
     { "source": "/api/equipment", "destination": "/api/equipment.js" },
     { "source": "/api/sync", "destination": "/api/sync.js" },
     { "source": "/api/lightning", "destination": "/api/lightning.js" },

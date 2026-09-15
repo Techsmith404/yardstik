@@ -33,9 +33,15 @@ module.exports = async function handler(req, res) {
 
     const siteId = req.query.site || (req.body && req.body.site_id) || process.env.DEFAULT_SITE_ID || 'default-site';
 
-    // Parse sub-path from URL
+    // Parse sub-path from URL, query action, or headers
     const urlParts = (req.url || '').split('?');
-    const pathName = urlParts[0].replace(/^\/api\/auth\/?/, '').replace(/\/$/, '');
+    let pathName = req.query.action || (req.headers && req.headers['x-matched-path']) || urlParts[0] || '';
+    pathName = pathName.split('?')[0].replace(/^\/api\//, '').replace(/\.js$/, '').replace(/\/$/, '');
+    if (pathName.startsWith('auth/')) {
+        pathName = pathName.replace(/^auth\//, '');
+    } else if (pathName === 'auth') {
+        pathName = '';
+    }
 
     // ── 1. GET /api/auth/me ─────────────────────────────────────────────────
     if (req.method === 'GET' && (pathName === 'me' || pathName === '')) {
@@ -320,7 +326,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ── 9. GET /api/auth/audit-logs (Admin Only) ─────────────────────────────
-    if (req.method === 'GET' && pathName === 'audit-logs') {
+    if (req.method === 'GET' && (pathName === 'audit-logs' || pathName === 'audit')) {
         const token = getAuthToken(req);
         const sess = await getSession(siteId, token);
         if (!sess || sess.role !== 'admin') {
@@ -329,6 +335,76 @@ module.exports = async function handler(req, res) {
 
         const logs = await getAuditLogs(siteId);
         return res.status(200).json({ logs, total: logs.length });
+    }
+
+    // ── 10. DELETE /api/auth/invites/:token (Admin Only) ──────────────────────
+    if (req.method === 'DELETE' && (pathName.indexOf('invites/') === 0 || pathName.indexOf('invite/') === 0)) {
+        const token = getAuthToken(req);
+        const sess = await getSession(siteId, token);
+        if (!sess || sess.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin role required' });
+        }
+        const inviteToken = pathName.replace(/^invites?\//, '');
+        const invites = await getInvites(siteId);
+        const filtered = invites.filter(i => i.token !== inviteToken);
+        await saveInvites(siteId, filtered);
+        return res.status(200).json({ success: true, message: 'Invite revoked' });
+    }
+
+    // ── 11. PATCH /api/users/:id/role (Admin Only) ───────────────────────────
+    if (req.method === 'PATCH' && pathName.indexOf('users/') === 0 && pathName.indexOf('/role') !== -1) {
+        const token = getAuthToken(req);
+        const sess = await getSession(siteId, token);
+        if (!sess || sess.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin role required' });
+        }
+        const userId = pathName.split('/')[1];
+        const { role } = req.body || {};
+        if (!['admin', 'maintenance', 'viewer'].includes(role)) {
+            return res.status(400).json({ error: 'Invalid role' });
+        }
+        const users = await getUsers(siteId);
+        const userKey = Object.keys(users).find(k => users[k].id === userId);
+        if (!userKey) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        users[userKey].role = role;
+        await saveUsers(siteId, users);
+        await logAudit(siteId, {
+            req,
+            user: { id: sess.userId, username: sess.username },
+            action: 'user.role_change',
+            details: `Changed role of user ${users[userKey].username} to ${role}`
+        });
+        return res.status(200).json({ success: true, user: users[userKey] });
+    }
+
+    // ── 12. DELETE /api/users/:id (Admin Only) ───────────────────────────────
+    if (req.method === 'DELETE' && pathName.indexOf('users/') === 0) {
+        const token = getAuthToken(req);
+        const sess = await getSession(siteId, token);
+        if (!sess || sess.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin role required' });
+        }
+        const userId = pathName.split('/')[1];
+        const users = await getUsers(siteId);
+        const userKey = Object.keys(users).find(k => users[k].id === userId);
+        if (!userKey) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        if (users[userKey].id === sess.userId) {
+            return res.status(400).json({ error: 'Cannot delete your own account' });
+        }
+        const deletedUsername = users[userKey].username;
+        delete users[userKey];
+        await saveUsers(siteId, users);
+        await logAudit(siteId, {
+            req,
+            user: { id: sess.userId, username: sess.username },
+            action: 'user.delete',
+            details: `Deleted user account: ${deletedUsername}`
+        });
+        return res.status(200).json({ success: true, message: 'User deleted' });
     }
 
     return res.status(404).json({ error: 'Endpoint not found' });
