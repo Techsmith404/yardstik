@@ -4,6 +4,8 @@ services:
     build: .
     container_name: yardstik-dev-app
     restart: always
+    networks:
+      default:
     ports:
       - "8081:80"
     volumes:
@@ -21,6 +23,10 @@ services:
     build: ./control-panel
     container_name: yardstik-dev-control-panel
     restart: always
+    networks:
+      default:
+        aliases:
+          - control-panel
     ports:
       - "1338:5000"
     volumes:
@@ -37,3 +43,4 @@ services:
       - /opt/docker/kiosk-dev/kiosk-data/config.json:/opt/config.json
       - /opt/docker/kiosk-dev/kiosk-data/safety-slides:/safety-slides:ro
       - /var/run/docker.sock:/var/run/docker.sock
+
