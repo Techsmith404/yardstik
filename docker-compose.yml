@@ -16,7 +16,8 @@ services:
       # Sync host timezone to docker container so python has the exact correct time
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      # 1. Base website files from the git repo
+      # 1. Base website files and nginx config from the git repo
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./html:/usr/share/nginx/html
       # 2. Ephemeral data (reminders, metrics, site config, etc.) mounted over assets/data
       - /opt/kiosk-data/data:/usr/share/nginx/html/assets/data
