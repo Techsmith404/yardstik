@@ -85,22 +85,25 @@ function queryAuditLogs({ action, username, search, limit = 50, offset = 0 } = {
 
 // Exports audit logs to standard CSV format
 function exportAuditLogsCsv(filters = {}) {
-    const { logs } = queryAuditLogs({ ...filters, limit: 10000, offset: 0 });
-    
+    const { logs } = queryAuditLogs({ ...filters, limit: 5000, offset: 0 });
+
+    // Escape a value for RFC 4180 CSV — wrap all fields to handle commas, quotes, newlines
+    function csvEscape(val) {
+        return '"' + String(val || '').replace(/"/g, '""').replace(/\n/g, ' ') + '"';
+    }
+
     // CSV Header
     const headers = ['Timestamp', 'Username', 'Role', 'Action', 'Details', 'IP Address'];
-    const rows = [headers.join(',')];
+    const rows = [headers.map(csvEscape).join(',')];
 
     logs.forEach(log => {
-        const safeDetails = '"' + (log.details || '').replace(/"/g, '""').replace(/\n/g, ' ') + '"';
-        const safeAction = '"' + (log.action || '').replace(/"/g, '""') + '"';
         const row = [
-            log.timestamp,
-            log.username,
-            log.role,
-            safeAction,
-            safeDetails,
-            log.ip || ''
+            csvEscape(log.timestamp),
+            csvEscape(log.username),
+            csvEscape(log.role),
+            csvEscape(log.action),
+            csvEscape(log.details),
+            csvEscape(log.ip)
         ];
         rows.push(row.join(','));
     });
@@ -112,17 +115,16 @@ function exportAuditLogsCsv(filters = {}) {
 function pruneAuditLogs(maxEntries = 5000) {
     try {
         const db = getDb();
-        const countStmt = db.prepare('SELECT COUNT(*) as total FROM audit_logs');
-        const { total } = countStmt.get();
-        if (total > maxEntries) {
-            const deleteCount = total - maxEntries;
-            const pruneStmt = db.prepare(`
-                DELETE FROM audit_logs WHERE id IN (
-                    SELECT id FROM audit_logs ORDER BY epoch ASC LIMIT ?
-                )
-            `);
-            pruneStmt.run(deleteCount);
-            console.log(`[Audit Log] Pruned ${deleteCount} old audit log entries.`);
+        // Single atomic DELETE — avoids TOCTOU race between COUNT and DELETE
+        const pruneStmt = db.prepare(`
+            DELETE FROM audit_logs
+            WHERE id NOT IN (
+                SELECT id FROM audit_logs ORDER BY epoch DESC LIMIT ?
+            )
+        `);
+        const result = pruneStmt.run(maxEntries);
+        if (result.changes > 0) {
+            console.log(`[Audit Log] Pruned ${result.changes} old audit log entries.`);
         }
     } catch (e) {
         console.error('[Audit Log] Pruning error:', e.message);

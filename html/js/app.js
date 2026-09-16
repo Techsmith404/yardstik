@@ -160,9 +160,14 @@ if (isDesktopMode) {
     }
 
     views.forEach(v => v.classList.remove('active'));
-    if (views[currentView] && views[currentView].getAttribute('data-disabled') === 'true') {
+
+    // Skip consecutive disabled slides — use a while loop with a safety cap (APP-03 fix)
+    let skipGuard = 0;
+    while (views[currentView] && views[currentView].getAttribute('data-disabled') === 'true') {
         currentView = (currentView + 1) % views.length;
+        if (++skipGuard >= views.length) break; // All views disabled — stop skipping
     }
+
     if (views[currentView]) {
         views[currentView].classList.add('active');
         if (views[currentView].id === 'view-special') views[currentView].style.display = 'flex';
@@ -172,18 +177,30 @@ if (isDesktopMode) {
         advanceReminderSlide();
         syncKioskPanels(views[currentView]);
         triggerRotatingPanelsAnimation(views[currentView], initialMs);
+
+        // Advance to the next view ONCE and schedule cycleViews (APP-07 fix: removed
+        // the duplicate initialDelay block below that caused currentView double-advance)
+        currentView = (currentView + 1) % views.length;
+        setTimeout(cycleViews, initialMs);
     }
 
     // In Kiosk TV Mode: cycle views on timed slide loop
     function cycleViews() {
         if (views.length === 0) return;
+
+        // Skip disabled slides — cap at views.length iterations to prevent infinite loop (APP-05 fix)
+        let disabledSkipCount = 0;
+        while (views[currentView] && views[currentView].getAttribute('data-disabled') === 'true') {
+            currentView = (currentView + 1) % views.length;
+            if (++disabledSkipCount >= views.length) {
+                // All slides are disabled — bail out, don't schedule next cycle
+                console.warn('[Cycle] All kiosk views are disabled. Slideshow halted.');
+                return;
+            }
+        }
+
         const checkView = views[currentView];
         if (!checkView) return;
-        if (checkView.getAttribute('data-disabled') === 'true') {
-            currentView = (currentView + 1) % views.length;
-            setTimeout(cycleViews, 0);
-            return;
-        }
 
         views.forEach(v => {
             v.classList.remove('active');
@@ -210,13 +227,5 @@ if (isDesktopMode) {
         currentView = (currentView + 1) % views.length;
         setTimeout(cycleViews, ms);
     }
-    
-    // Start the loop dynamically based on the first view's requested duration
-    if (views.length > 0 && views[currentView]) {
-        let initialDelay = parseInt(views[currentView].getAttribute('data-duration')) || 40000;
-        if (isHandoffActive) initialDelay = 60000;
-        if (isShort) initialDelay = 10000;
-        currentView = (currentView + 1) % views.length;
-        setTimeout(cycleViews, initialDelay);
-    }
 }
+

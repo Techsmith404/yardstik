@@ -22,6 +22,8 @@ function getDb(customPath) {
     // Enable WAL mode and foreign keys for high concurrency & integrity
     db.exec('PRAGMA journal_mode = WAL;');
     db.exec('PRAGMA foreign_keys = ON;');
+    db.exec('PRAGMA synchronous = NORMAL;');   // Safe with WAL; reduces fsync overhead
+    db.exec('PRAGMA busy_timeout = 5000;');    // 5s wait before SQLITE_BUSY error
 
     initSchema(db);
     return db;

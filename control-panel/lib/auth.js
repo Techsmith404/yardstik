@@ -42,9 +42,13 @@ function seedDefaultAdminIfNeeded(configPath) {
         console.error('[Auth] Error reading config during admin seeding:', e.message);
     }
 
-    // Default password if completely unset
+    // Default password if completely unset — generate a random one-time password
+    // rather than falling back to the well-known string 'admin'.
     if (!password) {
-        password = 'admin';
+        password = crypto.randomBytes(8).toString('hex');
+        console.warn(`\n⚠️  [Auth] No admin password configured! Generated a one-time password:`);
+        console.warn(`⚠️  [Auth]   Username: ${username}  Password: ${password}`);
+        console.warn(`⚠️  [Auth] Change this immediately via the Control Panel settings.\n`);
     }
 
     const { hash, salt } = hashPassword(password);
@@ -69,6 +73,9 @@ function createUser({ username, password, displayName, role = 'viewer' }) {
 
     if (!cleanUsername || cleanUsername.length < 3) {
         throw new Error('Username must be at least 3 characters long');
+    }
+    if (cleanUsername.length > 64) {
+        throw new Error('Username too long (max 64 characters)');
     }
     if (!password || password.length < 6) {
         throw new Error('Password must be at least 6 characters long');
@@ -260,27 +267,23 @@ function verifyInviteToken(token) {
 }
 
 function redeemInvite({ token, username, password, displayName }) {
-    const invite = verifyInviteToken(token);
-    if (!invite) {
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    // Atomically claim the invite first — prevents two simultaneous registrations
+    // from the same token (TOCTOU race condition fix).
+    const claimStmt = db.prepare(
+        `UPDATE invites SET used_at = ? WHERE token = ? AND used_at IS NULL AND expires_at > ?`
+    );
+    const claim = claimStmt.run(now, token, now);
+    if (claim.changes === 0) {
         throw new Error('Invalid or expired invitation token');
     }
 
-    const newUser = createUser({
-        username,
-        password,
-        displayName,
-        role: invite.role
-    });
+    const invite = db.prepare('SELECT * FROM invites WHERE token = ?').get(token);
+    const newUser = createUser({ username, password, displayName, role: invite.role });
 
-    const db = getDb();
-    const now = new Date().toISOString();
-    const updateStmt = db.prepare(`
-        UPDATE invites
-        SET used_at = ?, used_by = ?
-        WHERE token = ?
-    `);
-    updateStmt.run(now, newUser.id, token);
-
+    db.prepare('UPDATE invites SET used_by = ? WHERE token = ?').run(newUser.id, token);
     return newUser;
 }
 

@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const crypto = require('crypto');
 
 const { getDb } = require('./lib/db');
 const {
@@ -32,12 +33,47 @@ const {
 } = require('./lib/audit');
 
 const app = express();
-app.use(cors());
+
+// Restrict CORS to configured origins only — never wildcard on an industrial panel
+const corsOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : false;
+app.use(cors({ origin: corsOrigins, credentials: true }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 const CONFIG_PATH = process.env.CONFIG_PATH || '/opt/config.json';
 const DATA_DIR = process.env.DATA_DIR || '/data';
+const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
+// Hoisted early — also referenced by executeTrackParser (avoids TDZ confusion)
+const TRACKS_PATH = path.join(DATA_DIR, 'tracks.json');
+// 11 PM shift rollover offset in ms (1 hour) — configurable per SSoT §3.4
+const SHIFT_ROLLOVER_OFFSET_MS = parseInt(process.env.SHIFT_ROLLOVER_OFFSET_MS || '3600000', 10);
+
+/**
+ * Bumps version.txt to trigger browser live-reload on all connected kiosk clients.
+ * Standardised on milliseconds (Date.now()) for consistency across all callers.
+ */
+function bumpVersion() {
+    try {
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+    } catch (e) {
+        console.error('[Version] Failed to bump version.txt:', e.message);
+    }
+}
+
+/** Fire-and-forget cloud sync with error logging (prevents unhandled rejections). */
+function triggerSync() {
+    syncToCloud().catch(e => console.warn('[Cloud Sync]', e.message));
+}
+
+// Global error handlers — catches unexpected async/sync failures
+process.on('unhandledRejection', (reason) => {
+    console.error('[Server] Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('[Server] Uncaught Exception:', err);
+});
 
 // Initialize SQLite DB and seed admin account
 seedDefaultAdminIfNeeded(CONFIG_PATH);
@@ -65,11 +101,14 @@ function getSessionToken(req) {
     if (authHeader.startsWith('Bearer ')) {
         return authHeader.slice(7).trim();
     }
-    // 2. Cookie: session_token=<token>
+    // 2. Cookie: session_token=<value> — use indexOf to handle base64 values with '=' padding
     if (req.headers.cookie) {
         const cookies = req.headers.cookie.split(';');
         for (const c of cookies) {
-            const [name, val] = c.trim().split('=');
+            const eqIdx = c.trim().indexOf('=');
+            if (eqIdx < 0) continue;
+            const name = c.trim().slice(0, eqIdx);
+            const val  = c.trim().slice(eqIdx + 1);
             if (name === 'session_token' && val) {
                 return decodeURIComponent(val);
             }
@@ -92,16 +131,26 @@ function getBasicAuthUser(req) {
             const user = verifyUser(username, password);
             if (user) return user;
 
-            // 2. Try legacy config
+            // 2. Try legacy config — use timingSafeEqual to prevent timing oracle attacks
             const legacy = getAuthConfig();
-            if (legacy.username && legacy.password && username === legacy.username && password === legacy.password) {
-                return {
-                    id: 'usr_legacy_admin',
-                    username: legacy.username,
-                    displayName: 'System Admin',
-                    role: 'admin',
-                    active: 1
-                };
+            if (legacy.username && legacy.password && username === legacy.username) {
+                try {
+                    const legacyOk = crypto.timingSafeEqual(
+                        Buffer.from(password),
+                        Buffer.from(legacy.password)
+                    );
+                    if (legacyOk) {
+                        return {
+                            id: 'usr_legacy_admin',
+                            username: legacy.username,
+                            displayName: 'System Admin',
+                            role: 'admin',
+                            active: 1
+                        };
+                    }
+                } catch {
+                    // Buffers of different lengths → timingSafeEqual throws → not a match
+                }
             }
         }
     }
@@ -286,7 +335,11 @@ async function syncToCloud() {
 
 app.post('/api/auth/login', (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password } = req.body || {};
+        // Validate inputs before hitting the DB — prevents null audit log entries
+        if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+            return res.status(400).json({ error: 'Username and password are required.' });
+        }
         const user = verifyUser(username, password);
         if (!user) {
             logAction({ req, user: null, action: 'auth.login_failed', details: `Failed login attempt for username: ${username}` });
@@ -523,11 +576,17 @@ function executeTrackParser(uploadedPath) {
 app.get('/api/scripts', requireRole(['admin']), (req, res) => {
     try {
         const files = fs.readdirSync(RUNNERS_DIR).filter(f => f.endsWith('.json'));
-        const scripts = files.map(file => {
-            const content = fs.readFileSync(path.join(RUNNERS_DIR, file), 'utf8');
-            const data = JSON.parse(content);
-            data.id = file.replace('.json', '');
-            return data;
+        // Gracefully skip malformed JSON files instead of crashing the whole endpoint
+        const scripts = files.flatMap(file => {
+            try {
+                const content = fs.readFileSync(path.join(RUNNERS_DIR, file), 'utf8');
+                const data = JSON.parse(content);
+                data.id = file.replace('.json', '');
+                return [data];
+            } catch {
+                console.warn(`[Scripts] Skipping malformed runner config: ${file}`);
+                return [];
+            }
         });
         scripts.sort((a, b) => a.name.localeCompare(b.name));
         res.json(scripts);
@@ -536,6 +595,13 @@ app.get('/api/scripts', requireRole(['admin']), (req, res) => {
         res.status(500).json({ error: 'Failed to load scripts config' });
     }
 });
+
+// Allowlist of directories from which runner scripts may be executed
+const ALLOWED_SCRIPT_DIRS = [
+    path.resolve(RUNNERS_DIR),
+    path.resolve('/app/scripts'),
+    path.resolve('/app/conf/scripts'),
+];
 
 app.post('/api/execute/:id', requireRole(['admin']), upload.any(), (req, res) => {
     const scriptId = path.basename(req.params.id);
@@ -547,6 +613,15 @@ app.post('/api/execute/:id', requireRole(['admin']), upload.any(), (req, res) =>
 
     try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+        // Security: validate script_path is within an allowed directory (prevents arbitrary execution)
+        const resolvedPath = path.resolve(config.script_path || '');
+        const isAllowed = ALLOWED_SCRIPT_DIRS.some(d => resolvedPath.startsWith(d));
+        if (!isAllowed) {
+            console.error(`[Runner] Blocked execution of out-of-allowlist path: ${resolvedPath}`);
+            return res.status(403).json({ error: 'Script path is outside allowed directories.' });
+        }
+
         const args = [];
 
         if (config.parameters) {
@@ -563,9 +638,11 @@ app.post('/api/execute/:id', requireRole(['admin']), upload.any(), (req, res) =>
             });
         }
 
-        logAction({ req, user: req.user, action: 'runner.execute', details: `Executed runner: ${config.name || scriptId} with args: ${args.join(' ')}` });
+        // Log parameter names only (not values) to avoid sensitive data in audit logs
+        const paramNames = (config.parameters || []).map(p => p.name).join(', ');
+        logAction({ req, user: req.user, action: 'runner.execute', details: `Executed runner: ${config.name || scriptId} | params: ${paramNames}` });
 
-        const child = spawn(config.script_path, args);
+        const child = spawn(resolvedPath, args);
         let output = '';
         let errorOutput = '';
 

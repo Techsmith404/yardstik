@@ -9,11 +9,16 @@ Outputs normalized JSON array to /data/tracks.json (or local assets).
 
 import sys
 import os
+import csv
 import json
 import re
+import tempfile
 from datetime import datetime, timezone
 import zipfile
 import xml.etree.ElementTree as ET
+
+# Track IDs that are never flagged as bad-order (site-specific hold/in-plant track)
+BAD_ORDER_EXEMPT_TRACKS: frozenset = frozenset({"22"})
 
 EXCLUDE_WORDS = {"N", "S", "E", "W", "END", "CLEAR", "EMPTY", "BO", "OS", "SWITCH"}
 
@@ -91,7 +96,7 @@ def extract_svg_capacities():
                         caps[tid] = cap
                     if caps:
                         break
-            except:
+            except Exception:
                 pass
     return caps
 
@@ -241,14 +246,17 @@ def extract_cars_from_text(track_id, raw_text):
     return sum(nums) if nums else 0
 
 def parse_standard_table(rows, header_row_idx, header, svg_caps, file_ts=None):
-    track_col = next(i for i, h in enumerate(header) if 'track' in h)
+    # Use default=None fallback to prevent StopIteration propagating as RuntimeError (PY-05 fix)
+    track_col = next((i for i, h in enumerate(header) if 'track' in h), None)
+    if track_col is None:
+        return []
     car_col = next((i for i, h in enumerate(header) if 'car' in h or 'count' in h or 'qty' in h), None)
     cap_col = next((i for i, h in enumerate(header) if 'cap' in h), None)
     comm_col = next((i for i, h in enumerate(header) if 'commodity' in h or 'content' in h or 'desc' in h), None)
     date_col = next((i for i, h in enumerate(header) if 'date' in h or 'inbound' in h or 'dwell' in h), None)
     notes_col = next((i for i, h in enumerate(header) if 'note' in h or 'status' in h), None)
 
-    now = datetime.now()
+    now = datetime.now()  # naive: openpyxl returns naive datetimes — keep consistent for dwell math
     if file_ts is None:
         file_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     tracks = []
@@ -287,8 +295,10 @@ def parse_standard_table(rows, header_row_idx, header, svg_caps, file_ts=None):
         date_val = row[date_col] if (date_col is not None and len(row) > date_col) else None
 
         is_clear = (cars == 0) or (comm.upper() in ['CLEAR', 'EMPTY']) or (notes.upper() in ['CLEAR', 'EMPTY'])
-        is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", f"{comm} {notes}", re.I)) and (track_id != "22")
-        is_blend = bool(re.search(r" BLEND ", f"{comm} {notes}", re.I))
+        # Use BAD_ORDER_EXEMPT_TRACKS constant instead of magic '22' (PY-12 fix)
+        is_bad_order = bool(re.search(r"\b(B\.O|BAD ORDER|O\.S\.?)\b", f"{comm} {notes}", re.I)) and (track_id not in BAD_ORDER_EXEMPT_TRACKS)
+        # Use \bBLEND\b word boundary to match parse_grid_layout behaviour (PY-11 fix)
+        is_blend = bool(re.search(r"\bBLEND\b", f"{comm} {notes}", re.I))
 
         dwell_days = 0
         dwell_warning = False
@@ -478,7 +488,7 @@ def main():
                     for t in loaded:
                         if isinstance(t, dict) and "id" in t and "capacity" in t:
                             existing_capacities[str(t["id"]).upper()] = t["capacity"]
-        except:
+        except Exception:
             pass
 
     result = parse_file(in_file)
@@ -488,8 +498,13 @@ def main():
             t["capacity"] = existing_capacities[tid]
 
     os.makedirs(os.path.dirname(os.path.abspath(out_file)), exist_ok=True)
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
+
+    # Atomic write: write to a temp file, then os.replace() so readers never see a partial JSON (PY-10 fix)
+    out_dir = os.path.dirname(os.path.abspath(out_file))
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=out_dir, delete=False, suffix=".tmp") as tf:
+        json.dump(result, tf, indent=2)
+        tmp_path = tf.name
+    os.replace(tmp_path, out_file)
 
     print(f"Successfully parsed {len(result)} tracks into {out_file}")
 
