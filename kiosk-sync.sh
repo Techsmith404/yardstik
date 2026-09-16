@@ -10,9 +10,9 @@
 #   */15 * * * * ~/kiosk-app/kiosk-sync.sh >> ~/kiosk-app/sync.log 2>&1
 # =============================================================================
 
-set -e
+set -euo pipefail
 
-REPO_DIR="$HOME/kiosk-app"
+REPO_DIR="${KIOSK_REPO_DIR:-$HOME/kiosk-app}"
 LOG_FILE="$REPO_DIR/sync.log"
 BRANCH="main"
 

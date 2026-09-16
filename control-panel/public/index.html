@@ -25,6 +25,8 @@
                 <button id="nav-shifts" class="nav-item nav-special" data-script="shifts" style="margin-top: 8px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</button>
                 <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
                 <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
+                <button id="nav-users" class="nav-item nav-special" data-script="users" style="margin-top: 8px;"><i class="fa-solid fa-users-gear"></i> User Accounts</button>
+                <button id="nav-audit" class="nav-item nav-special" data-script="audit" style="margin-top: 8px;"><i class="fa-solid fa-clipboard-check"></i> Audit Logs</button>
                 <button id="nav-extras" class="nav-item nav-special" data-script="extras" style="margin-top: 8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Themes</button>
                 <div class="nav-divider"></div>
                 <div id="dynamic-scripts" style="display: flex; flex-direction: column; gap: 8px;">
@@ -39,8 +41,14 @@
                 <h2 id="current-script-title">Dashboard</h2>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="btn-changelog" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(56, 189, 248, 0.08); color: #38bdf8; cursor: pointer;">
-                        <i class="fa-solid fa-sparkles"></i> What's New (v4.2)
+                        <i class="fa-solid fa-sparkles"></i> What's New (v4.7)
                     </button>
+                    <div id="user-profile-bar" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 20px;">
+                        <div id="user-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff;">A</div>
+                        <span id="user-display-name" style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">Admin</span>
+                        <span id="user-role-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">ADMIN</span>
+                        <button id="btn-logout" title="Sign Out" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px 4px; font-size: 0.85rem; transition: color 0.2s;"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                    </div>
                     <div class="user-status">
                         <span class="pulse"></span> System Online
                     </div>
@@ -82,6 +90,14 @@
                             <div class="info-card" data-script="site-settings">
                                 <h5><i class="fa-solid fa-sliders"></i> Site Settings</h5>
                                 <p>Configure location-specific details (Site Name, Coordinates, Timezone, Vercel API URL) and manage admin security credentials.</p>
+                            </div>
+                            <div class="info-card" data-script="users">
+                                <h5><i class="fa-solid fa-users-gear"></i> User Accounts & RBAC</h5>
+                                <p>Manage employee user accounts, assign role-based permissions (Admin, Maintenance, Viewer), and generate single-use registration invite links.</p>
+                            </div>
+                            <div class="info-card" data-script="audit">
+                                <h5><i class="fa-solid fa-clipboard-check"></i> Security & Operations Audit Logs</h5>
+                                <p>Inspect comprehensive audit trails for equipment toggles, configuration changes, runner executions, and user authentications with CSV export.</p>
                             </div>
                             <div class="info-card" data-script="extras">
                                 <h5><i class="fa-solid fa-wand-magic-sparkles"></i> Extras & Themes</h5>
@@ -699,38 +715,187 @@
                         <div id="commodity-rules-status" style="margin-top: 12px; font-size: 0.85rem; display: none;"></div>
                     </div>
                 </div>
+
+                <!-- User Accounts & RBAC View (Issue #14) -->
+                <div id="users-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1.1rem;"><i class="fa-solid fa-users-gear" style="color: #38bdf8;"></i> User Accounts & Permissions</h4>
+                                <p class="script-desc" style="margin: 0;">Manage employee accounts, assign Role-Based Access Control (RBAC), and generate single-use registration invite links.</p>
+                            </div>
+                            <button id="btn-open-invite-modal" class="btn primary"><i class="fa-solid fa-user-plus"></i> Generate Invite Link</button>
+                        </div>
+
+                        <!-- Users Table -->
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary);">
+                                        <th style="padding: 10px 14px;">User</th>
+                                        <th style="padding: 10px 14px;">Username</th>
+                                        <th style="padding: 10px 14px;">Role</th>
+                                        <th style="padding: 10px 14px;">Created</th>
+                                        <th style="padding: 10px 14px; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading user accounts...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Active Invites Section -->
+                    <div class="card">
+                        <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-link" style="color: #a78bfa;"></i> Active Registration Invites</h4>
+                        <div id="invites-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="color: var(--text-secondary); font-size: 0.88rem; padding: 8px 0;">No active invites pending. Click "Generate Invite Link" above to invite new employees.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backend Audit Logs View (Issue #15) -->
+                <div id="audit-view" class="view">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1.1rem;"><i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> Security & Operations Audit Logs</h4>
+                                <p class="script-desc" style="margin: 0;">Comprehensive audit trail of equipment status changes, configuration updates, runner executions, and user authentications.</p>
+                            </div>
+                            <button id="btn-export-audit" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-csv" style="color: #10b981;"></i> Export CSV</button>
+                        </div>
+
+                        <!-- Filter Controls -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 220px; position: relative;">
+                                <input type="text" id="input-audit-search" class="form-control" placeholder="Search by user, action, details, or IP..." style="width: 100%; box-sizing: border-box; padding: 8px 12px;">
+                            </div>
+                            <select id="select-audit-action" class="form-control" style="width: 180px; padding: 8px 12px;">
+                                <option value="all">All Actions</option>
+                                <option value="equipment">Equipment Updates</option>
+                                <option value="reminders">Reminders / Announcements</option>
+                                <option value="tracks">Tracks & Map Uploads</option>
+                                <option value="runner">Script Runners</option>
+                                <option value="auth">Auth & Registration</option>
+                                <option value="user">User Role Changes</option>
+                                <option value="config">Site Config</option>
+                            </select>
+                            <button id="btn-refresh-audit" class="btn btn-secondary" title="Refresh Logs"><i class="fa-solid fa-arrows-rotate"></i></button>
+                        </div>
+
+                        <!-- Logs Table -->
+                        <div style="overflow-x: auto; max-height: 520px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.86rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); position: sticky; top: 0; background: #1e293b; z-index: 2;">
+                                        <th style="padding: 10px 12px;">Timestamp</th>
+                                        <th style="padding: 10px 12px;">User</th>
+                                        <th style="padding: 10px 12px;">Action</th>
+                                        <th style="padding: 10px 12px;">Details</th>
+                                        <th style="padding: 10px 12px;">IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-table-body">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">Loading audit logs...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary);">
+                            <span id="audit-total-count">Showing 0 logs</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btn-audit-prev" class="btn btn-secondary" style="padding: 4px 10px;" disabled><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                                <button id="btn-audit-next" class="btn btn-secondary" style="padding: 4px 10px;" disabled>Next <i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
+    </div>
 
+    <!-- Generate Invite Modal -->
+    <div id="modal-invite" class="modal-overlay">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus" style="color: #38bdf8;"></i> Generate Registration Invite</h3>
+                <button class="modal-close-btn" id="btn-close-invite">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #cbd5e1; font-size: 0.85rem;">Assigned Role</label>
+                    <select id="invite-role-select" class="form-control" style="width: 100%; box-sizing: border-box; padding: 10px;">
+                        <option value="maintenance">Maintenance / Operator (Equipment status, notes & crane audits)</option>
+                        <option value="admin">Administrator (Full control panel, settings, script runners)</option>
+                        <option value="viewer">Viewer (Dashboard access only)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: #cbd5e1; font-size: 0.85rem;">Invite Expiration</label>
+                    <select id="invite-duration-select" class="form-control" style="width: 100%; box-sizing: border-box; padding: 10px;">
+                        <option value="72">72 Hours (3 Days)</option>
+                        <option value="24">24 Hours (1 Day)</option>
+                        <option value="168">7 Days (1 Week)</option>
+                    </select>
+                </div>
+
+                <button id="btn-generate-invite-submit" class="btn btn-primary" style="width: 100%; padding: 10px;">
+                    <i class="fa-solid fa-bolt"></i> Generate Link
+                </button>
+
+                <!-- Generated Link Container -->
+                <div id="generated-invite-box" style="display: none; margin-top: 18px; padding: 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #38bdf8; margin-bottom: 6px;">Single-Use Invite Link:</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="invite-link-input" class="form-control" readonly style="flex: 1; font-size: 0.85rem; padding: 6px 10px; background: rgba(15, 23, 42, 0.8);">
+                        <button id="btn-copy-invite-link" class="btn primary" style="padding: 6px 12px; font-size: 0.85rem;"><i class="fa-solid fa-copy"></i> Copy</button>
+                    </div>
+                    <span id="invite-copy-msg" style="display: block; font-size: 0.78rem; color: #22c55e; margin-top: 6px; display: none;"><i class="fa-solid fa-check"></i> Copied to clipboard! Send this link to the employee.</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- What's New & Setup Guide Modal -->
     <div id="modal-changelog" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-sparkles" style="color: #38bdf8;"></i> What's New in Yardstik v4.2</h3>
+                <h3><i class="fa-solid fa-sparkles" style="color: #38bdf8;"></i> What's New in Yardstik v4.7</h3>
                 <button class="modal-close-btn" id="btn-close-changelog" title="Close">&times;</button>
             </div>
-            <div class="modal-body">
-                <div style="margin-bottom: 20px; padding: 12px 16px; background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px;">
-                    <strong style="color: #38bdf8; font-size: 1rem;">🚂 Interactive Yard Track Map & Shift Handoff Mode</strong>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div style="margin-bottom: 16px; padding: 12px 16px; background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38bdf8; border-radius: 6px;">
+                    <strong style="color: #38bdf8; font-size: 1rem;">🔐 User Accounts, RBAC & Audit Trails (v4.7)</strong>
                     <p style="margin: 6px 0 0 0; font-size: 0.88rem; color: #cbd5e1;">
-                        Yardstik v4.2 introduces real-time SVG yard track mapping, multi-column Excel spreadsheet ingestion, automated car classification, and dedicated Shift Handoff view modes.
+                        Yardstik v4.7 introduces native SQLite user management, role-based access control (Admin, Maintenance, Viewer), single-use invite links, and tamper-evident audit logging for equipment changes, runner executions, and security events.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px; padding: 12px 16px; background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 6px;">
+                    <strong style="color: #10b981; font-size: 1rem;">🚂 Interactive Yard Track Map & Shift Handoff Mode</strong>
+                    <p style="margin: 6px 0 0 0; font-size: 0.88rem; color: #cbd5e1;">
+                        Real-time SVG yard track mapping, multi-column Excel spreadsheet ingestion, automated car classification, and dedicated Shift Handoff view modes.
                     </p>
                 </div>
 
                 <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-sliders" style="color: #a78bfa;"></i> Getting Started at Deployed Locations</h4>
                 <ol style="padding-left: 20px; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 8px; color: #cbd5e1; font-size: 0.88rem;">
-                    <li><strong>Feature Toggle:</strong> The Track Map slide is disabled by default to ensure existing locations continue operating smoothly without configuration changes. To enable it, navigate to <em>Extras & Themes</em> and turn on <strong>Yard Track Map Engine</strong>.</li>
-                    <li><strong>Upload Track Check:</strong> In <em>Track Management</em>, upload your facility's daily <code>.xlsx</code> or <code>.csv</code> track check file, or download the pre-configured starter spreadsheet below.</li>
-                    <li><strong>Custom Vector SVG:</strong> Optionally upload a custom vector SVG map of your facility layout (with track elements matching track IDs). The system ships with a high-resolution 11-track starter layout.</li>
-                    <li><strong>Commodity Rules:</strong> Customize keyword classification rules and color-coded dashes to match your facility's specific commodities and railcar assignments.</li>
-                    <li><strong>Shift Handoff Mode:</strong> Use <code>?mode=handoff</code> in the Kiosk URL to lock the display onto the Track Map or rotate all operational slides simultaneously during shift turnover meetings.</li>
+                    <li><strong>User Accounts & RBAC:</strong> Navigate to <em>User Accounts</em> to manage employee logins, promote roles, or generate secure registration invite links for field maintenance personnel.</li>
+                    <li><strong>Audit Trail:</strong> In <em>Audit Logs</em>, view and export comprehensive logs of all operational actions, configuration changes, and script runner executions.</li>
+                    <li><strong>Track Management:</strong> Upload your facility's daily <code>.xlsx</code> or <code>.csv</code> track check file, or download starter templates below. Enable the Track Map slide in <em>Extras & Themes</em> when ready.</li>
+                    <li><strong>Shift Handoff Mode:</strong> Use <code>?mode=handoff</code> in the Kiosk URL to display high-density operational metrics during shift turnover meetings.</li>
                 </ol>
 
                 <h4 style="color: #fff; margin: 16px 0 8px 0; font-size: 1rem;"><i class="fa-solid fa-shield-halved" style="color: #22c55e;"></i> Safe Fallbacks & Resiliency</h4>
                 <p style="margin: 0 0 16px 0; font-size: 0.88rem; color: #cbd5e1;">
-                    When Track Map is disabled, the Kiosk automatically rotates Slide 1 (Overview) and Slide 2 (Daily Toolbox Talk & Safety Milestones), ensuring zero disruption to existing workflows.
+                    Yardstik runs 100% air-gapped and offline with local SQLite storage. All Kiosk slides fall back safely to cached data and offline modes if network connections are interrupted.
                 </p>
 
                 <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">

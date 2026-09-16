@@ -69,7 +69,7 @@ export const isExplicitKiosk = viewParam === 'kiosk';
 export const isExplicitDesktop = viewParam === 'desktop' || (typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html'));
 export const isLocalhostKiosk = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isExplicitDesktop && !isExplicitHandoff;
 
-export const isKioskMode = isExplicitKiosk || isLocalhostKiosk || (!isExplicitDesktop && !window.location.pathname.endsWith('desktop.html'));
+export const isKioskMode = isExplicitKiosk || isLocalhostKiosk || (!isExplicitDesktop && !(typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html')));
 export const isDesktopMode = isExplicitDesktop || (typeof window !== 'undefined' && window.location.pathname.endsWith('desktop.html'));
 export let isHandoffActive = isExplicitHandoff;
 

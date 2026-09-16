@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>YardStik Mobile</title>
     <meta name="theme-color" content="#0b0f19">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YardStik">
@@ -30,6 +31,9 @@
         <div class="app-actions">
             <button id="btn-refresh" class="icon-btn" title="Refresh Live Data" aria-label="Refresh">
                 <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <button id="btn-mobile-auth" class="icon-btn" title="Maintenance Login" aria-label="Account">
+                <i class="fa-solid fa-user"></i>
             </button>
             <div class="status-pill live" id="mobile-sync-pill">
                 <span class="dot"></span> Live
@@ -262,7 +266,97 @@
         </div>
     </div>
 
+    <!-- Mobile Maintenance Floor Auth Modal -->
+    <div id="modal-mobile-auth" class="modal-track-sheet" style="display: none;">
+        <div class="modal-track-card" style="max-width: 400px; margin: 0 auto; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #fff;"><i class="fa-solid fa-user-gear" style="color: var(--brand-blue);"></i> Maintenance Sign In</h3>
+                <button id="btn-close-mobile-auth" style="background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Unauthenticated State Form -->
+            <form id="mobile-login-form">
+                <div id="mobile-auth-error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; margin-bottom: 12px;"></div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">Username</label>
+                    <input type="text" id="mobile-auth-username" class="search-input" style="width: 100%; box-sizing: border-box; border-radius: 8px;" placeholder="Username" required autocomplete="username">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">Password</label>
+                    <input type="password" id="mobile-auth-password" class="search-input" style="width: 100%; box-sizing: border-box; border-radius: 8px;" placeholder="Password" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="btn-mobile-login-submit" class="filter-chip active" style="width: 100%; padding: 12px; justify-content: center; font-size: 0.95rem; font-weight: 600; border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Unlock Maintenance Mode
+                </button>
+            </form>
+
+            <!-- Authenticated State Box -->
+            <div id="mobile-auth-logged-in" style="display: none; text-align: center; padding: 10px 0;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--brand-blue); color: #0f172a; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; margin: 0 auto 12px auto;" id="mobile-auth-avatar">A</div>
+                <h4 style="margin: 0 0 4px 0; color: #fff;" id="mobile-auth-user-display">Technician</h4>
+                <span class="badge badge-ok" id="mobile-auth-role-badge" style="margin-bottom: 16px; display: inline-block;">MAINTENANCE</span>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;">Maintenance controls active. You can now tap any equipment item to update operational status, notes, or crane scale audits.</p>
+                <button id="btn-mobile-logout" class="filter-chip" style="width: 100%; padding: 10px; justify-content: center; color: #ef4444; border-color: rgba(239, 68, 68, 0.4); border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment Quick Edit Modal for Maintenance -->
+    <div id="modal-equip-quick-edit" class="modal-track-sheet" style="display: none;">
+        <div class="modal-track-card" style="max-width: 420px; margin: 0 auto; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #fff;" id="quick-edit-title">Edit Equipment</h3>
+                    <span style="font-size: 0.78rem; color: var(--text-muted);" id="quick-edit-cat-name">Category</span>
+                </div>
+                <button id="btn-close-quick-edit" style="background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <form id="quick-edit-form">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase;">Operational Status</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <button type="button" class="btn-status-toggle" data-status="OK" style="padding: 10px 6px; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(34, 197, 94, 0.1); color: var(--success); cursor: pointer;"><i class="fa-solid fa-check"></i> OK</button>
+                        <button type="button" class="btn-status-toggle" data-status="PM" style="padding: 10px 6px; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(245, 158, 11, 0.1); color: var(--warning); cursor: pointer;"><i class="fa-solid fa-wrench"></i> PM</button>
+                        <button type="button" class="btn-status-toggle" data-status="OS" style="padding: 10px 6px; font-weight: 700; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(239, 68, 68, 0.1); color: var(--danger); cursor: pointer;"><i class="fa-solid fa-triangle-exclamation"></i> OS</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase;">Issue / Maintenance Note</label>
+                    <input type="text" id="quick-edit-reason" class="search-input" style="width: 100%; box-sizing: border-box; border-radius: 8px;" placeholder="Optional issue description...">
+                </div>
+
+                <!-- Crane Scale Section (only displayed for Mobile Cranes) -->
+                <div id="quick-edit-crane-section" style="display: none; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px;">
+                    <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #38bdf8; margin-bottom: 8px; text-transform: uppercase;">Crane Scale & Weekly Audit</label>
+                    <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Scale Status:</span>
+                        <select id="quick-edit-scale-status" class="search-input" style="width: auto; padding: 4px 10px; border-radius: 6px;">
+                            <option value="OK">Scale OK</option>
+                            <option value="OS">Scale OS</option>
+                            <option value="NONE">No Scale</option>
+                        </select>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #fff; cursor: pointer;">
+                        <input type="checkbox" id="quick-edit-blend-audit" style="width: 18px; height: 18px; accent-color: var(--brand-blue);">
+                        <span>Scale Calibration Audited This Week</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="btn-save-quick-edit" class="filter-chip active" style="width: 100%; padding: 12px; justify-content: center; font-size: 0.95rem; font-weight: 600; border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes to Floor Display
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Mobile Companion Client Script -->
-    <script src="js/mobile.js?v=4.6"></script>
+    <script src="js/mobile.js?v=4.7"></script>
 </body>
 </html>

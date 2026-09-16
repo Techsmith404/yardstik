@@ -52,12 +52,76 @@ document.addEventListener('DOMContentLoaded', () => {
         currentScriptTitle.innerText = "Dashboard";
     });
 
+    // Check authentication state on page load
+    let currentUser = null;
+    fetch('/api/auth/me')
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.authenticated && data.user) {
+                currentUser = data.user;
+                updateUserProfileUI(currentUser);
+            } else {
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+            }
+        })
+        .catch(() => {
+            window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+        });
+
+    function updateUserProfileUI(user) {
+        const nameEl = document.getElementById('user-display-name');
+        const roleEl = document.getElementById('user-role-badge');
+        const avatarEl = document.getElementById('user-avatar');
+        if (nameEl) nameEl.textContent = user.displayName || user.username;
+        if (roleEl) {
+            roleEl.textContent = (user.role || 'viewer').toUpperCase();
+            if (user.role === 'admin') {
+                roleEl.style.background = 'rgba(245, 158, 11, 0.2)';
+                roleEl.style.color = '#fbbf24';
+            }
+        }
+        if (avatarEl) {
+            const initial = (user.displayName || user.username || 'A').charAt(0).toUpperCase();
+            avatarEl.textContent = initial;
+        }
+
+        // Hide admin-only navigation and dashboard cards if user is maintenance/viewer
+        if (user.role !== 'admin') {
+            const adminNavs = ['nav-site-settings', 'nav-users', 'nav-audit', 'nav-extras'];
+            adminNavs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            const adminCards = ['site-settings', 'users', 'audit', 'extras'];
+            adminCards.forEach(scriptId => {
+                const card = document.querySelector(`.info-card[data-script="${scriptId}"]`);
+                if (card) card.style.display = 'none';
+            });
+        }
+    }
+
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            fetch('/api/auth/logout', { method: 'POST' })
+                .then(() => {
+                    try { localStorage.removeItem('yardstik_session_token'); } catch(e) {}
+                    window.location.href = '/login.html';
+                })
+                .catch(() => {
+                    window.location.href = '/login.html';
+                });
+        });
+    }
+
     // Fetch available scripts from backend
     fetch('/api/scripts')
         .then(res => res.json())
         .then(data => {
-            scriptsConfig = data;
-            renderSidebar();
+            if (Array.isArray(data)) {
+                scriptsConfig = data;
+                renderSidebar();
+            }
         })
         .catch(err => console.error("Failed to load scripts:", err));
 
@@ -1933,29 +1997,415 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    clearConsoleBtn.addEventListener('click', () => {
-        consoleOutput.innerHTML = '';
-    });
+    // =========================================================================
+    // 👤 User Management & RBAC Logic (Issue #14)
+    // =========================================================================
+    const navUsersBtn = document.getElementById('nav-users');
+    const usersView = document.getElementById('users-view');
+    const usersTableBody = document.getElementById('users-table-body');
+    const invitesListContainer = document.getElementById('invites-list-container');
+    const modalInvite = document.getElementById('modal-invite');
+    const btnOpenInviteModal = document.getElementById('btn-open-invite-modal');
+    const btnCloseInvite = document.getElementById('btn-close-invite');
+    const btnGenerateInviteSubmit = document.getElementById('btn-generate-invite-submit');
+    const generatedInviteBox = document.getElementById('generated-invite-box');
+    const inviteLinkInput = document.getElementById('invite-link-input');
+    const btnCopyInviteLink = document.getElementById('btn-copy-invite-link');
+    const inviteCopyMsg = document.getElementById('invite-copy-msg');
 
-    // What's New Modal Logic
+    function loadUsersData() {
+        if (!usersTableBody) return;
+        usersTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
+        
+        fetch('/api/users')
+            .then(res => res.json())
+            .then(users => {
+                if (!Array.isArray(users) || users.length === 0) {
+                    usersTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">No user accounts found.</td></tr>';
+                    return;
+                }
+                let html = '';
+                users.forEach(u => {
+                    const isSelf = currentUser && currentUser.id === u.id;
+                    const roleColor = u.role === 'admin' ? '#fbbf24' : (u.role === 'maintenance' ? '#38bdf8' : '#94a3b8');
+                    const roleBg = u.role === 'admin' ? 'rgba(245, 158, 11, 0.15)' : (u.role === 'maintenance' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(148, 163, 184, 0.15)');
+                    const createdDate = new Date(u.createdAt).toLocaleDateString();
+
+                    html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 12px 14px; font-weight: 600; color: #fff;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${roleColor}; color: #0f172a; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;">
+                                        ${escapeHtml((u.displayName || u.username).charAt(0).toUpperCase())}
+                                    </div>
+                                    <span>${escapeHtml(u.displayName || u.username)}</span>
+                                    ${isSelf ? '<span style="font-size: 0.7rem; background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 1px 6px; border-radius: 4px;">YOU</span>' : ''}
+                                </div>
+                            </td>
+                            <td style="padding: 12px 14px; color: var(--text-secondary); font-family: monospace;">${escapeHtml(u.username)}</td>
+                            <td style="padding: 12px 14px;">
+                                <select class="form-control user-role-select" data-user-id="${escapeHtml(u.id)}" ${isSelf ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem; background: ${roleBg}; color: ${roleColor}; border-color: ${roleColor}40; border-radius: 4px;">
+                                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrator</option>
+                                    <option value="maintenance" ${u.role === 'maintenance' ? 'selected' : ''}>Maintenance / Operator</option>
+                                    <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                </select>
+                            </td>
+                            <td style="padding: 12px 14px; color: var(--text-secondary);">${createdDate}</td>
+                            <td style="padding: 12px 14px; text-align: right;">
+                                ${!isSelf ? `<button class="btn btn-secondary btn-delete-user" data-user-id="${escapeHtml(u.id)}" data-username="${escapeHtml(u.username)}" style="padding: 4px 8px; font-size: 0.8rem; color: #ef4444;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                });
+                usersTableBody.innerHTML = html;
+
+                // Attach role change listeners
+                document.querySelectorAll('.user-role-select').forEach(sel => {
+                    sel.addEventListener('change', (e) => {
+                        const userId = e.target.getAttribute('data-user-id');
+                        const newRole = e.target.value;
+                        fetch(`/api/users/${userId}/role`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ role: newRole })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                loadUsersData();
+                            } else {
+                                alert(data.error || 'Failed to update role');
+                                loadUsersData();
+                            }
+                        })
+                        .catch(() => loadUsersData());
+                    });
+                });
+
+                // Attach delete listeners
+                document.querySelectorAll('.btn-delete-user').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const userId = btn.getAttribute('data-user-id');
+                        const uname = btn.getAttribute('data-username');
+                        if (confirm(`Are you sure you want to delete user account '${uname}'?`)) {
+                            fetch(`/api/users/${userId}`, { method: 'DELETE' })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        loadUsersData();
+                                    } else {
+                                        alert(data.error || 'Failed to delete user');
+                                    }
+                                });
+                        }
+                    });
+                });
+            })
+            .catch(() => {
+                usersTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #ef4444;">Failed to load user accounts.</td></tr>';
+            });
+
+        // Load Invites
+        if (invitesListContainer) {
+            fetch('/api/auth/invites')
+                .then(res => res.json())
+                .then(invites => {
+                    if (!Array.isArray(invites) || invites.length === 0) {
+                        invitesListContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.88rem; padding: 8px 0;">No active invites pending. Click "Generate Invite Link" above to invite new employees.</div>';
+                        return;
+                    }
+                    let html = '';
+                    invites.forEach(inv => {
+                        const isUsed = !!inv.used_at;
+                        const isExpired = new Date(inv.expires_at) <= new Date();
+                        const statusBadge = isUsed 
+                            ? `<span style="color: #22c55e; background: rgba(34, 197, 94, 0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Used by ${escapeHtml(inv.used_by_username || 'user')}</span>`
+                            : (isExpired 
+                                ? '<span style="color: #ef4444; background: rgba(239, 68, 68, 0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Expired</span>'
+                                : '<span style="color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">Pending</span>');
+
+                        const protocol = window.location.protocol;
+                        const host = window.location.host;
+                        const fullUrl = `${protocol}//${host}/register.html?invite=${inv.token}`;
+
+                        html += `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.86rem; flex-wrap: wrap; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa-solid fa-ticket" style="color: #38bdf8;"></i>
+                                    <div>
+                                        <span style="font-weight: 600; color: #fff; text-transform: uppercase;">Role: ${escapeHtml(inv.role)}</span>
+                                        <div style="color: var(--text-secondary); font-size: 0.78rem;">Created by ${escapeHtml(inv.created_by)} &bull; Expires: ${new Date(inv.expires_at).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    ${statusBadge}
+                                    ${!isUsed && !isExpired ? `
+                                        <button class="btn btn-secondary btn-copy-pending-invite" data-url="${escapeHtml(fullUrl)}" style="padding: 4px 8px; font-size: 0.78rem;"><i class="fa-solid fa-copy"></i></button>
+                                        <button class="btn btn-secondary btn-delete-invite" data-token="${escapeHtml(inv.token)}" style="padding: 4px 8px; font-size: 0.78rem; color: #ef4444;"><i class="fa-solid fa-xmark"></i></button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    invitesListContainer.innerHTML = html;
+
+                    document.querySelectorAll('.btn-copy-pending-invite').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            navigator.clipboard.writeText(btn.getAttribute('data-url'));
+                            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                            setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 2000);
+                        });
+                    });
+
+                    document.querySelectorAll('.btn-delete-invite').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const tok = btn.getAttribute('data-token');
+                            fetch(`/api/auth/invites/${tok}`, { method: 'DELETE' })
+                                .then(() => loadUsersData());
+                        });
+                    });
+                });
+        }
+    }
+
+    if (navUsersBtn) {
+        navUsersBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navUsersBtn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            usersView.classList.add('active');
+            currentScriptTitle.innerText = "User Accounts & RBAC";
+            loadUsersData();
+        });
+    }
+
+    if (btnOpenInviteModal) {
+        btnOpenInviteModal.addEventListener('click', () => {
+            if (modalInvite) {
+                modalInvite.classList.add('active');
+                if (generatedInviteBox) generatedInviteBox.style.display = 'none';
+                if (inviteCopyMsg) inviteCopyMsg.style.display = 'none';
+            }
+        });
+    }
+
+    if (btnCloseInvite) {
+        btnCloseInvite.addEventListener('click', () => {
+            if (modalInvite) modalInvite.classList.remove('active');
+        });
+    }
+
+    if (btnGenerateInviteSubmit) {
+        btnGenerateInviteSubmit.addEventListener('click', () => {
+            const role = document.getElementById('invite-role-select').value;
+            const duration = document.getElementById('invite-duration-select').value;
+
+            btnGenerateInviteSubmit.disabled = true;
+            btnGenerateInviteSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+
+            fetch('/api/auth/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: role, durationHours: duration })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnGenerateInviteSubmit.disabled = false;
+                btnGenerateInviteSubmit.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Link';
+                if (data.success && data.inviteUrl) {
+                    if (generatedInviteBox) generatedInviteBox.style.display = 'block';
+                    if (inviteLinkInput) inviteLinkInput.value = data.inviteUrl;
+                    loadUsersData();
+                } else {
+                    alert(data.error || 'Failed to generate invite link');
+                }
+            })
+            .catch(err => {
+                btnGenerateInviteSubmit.disabled = false;
+                btnGenerateInviteSubmit.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Link';
+                alert('Network error generating invite');
+            });
+        });
+    }
+
+    if (btnCopyInviteLink) {
+        btnCopyInviteLink.addEventListener('click', () => {
+            if (inviteLinkInput && inviteLinkInput.value) {
+                navigator.clipboard.writeText(inviteLinkInput.value);
+                if (inviteCopyMsg) inviteCopyMsg.style.display = 'block';
+            }
+        });
+    }
+
+    // =========================================================================
+    // 📋 Backend Audit Logs Logic (Issue #15)
+    // =========================================================================
+    const navAuditBtn = document.getElementById('nav-audit');
+    const auditView = document.getElementById('audit-view');
+    const auditTableBody = document.getElementById('audit-table-body');
+    const inputAuditSearch = document.getElementById('input-audit-search');
+    const selectAuditAction = document.getElementById('select-audit-action');
+    const btnRefreshAudit = document.getElementById('btn-refresh-audit');
+    const btnExportAudit = document.getElementById('btn-export-audit');
+    const auditTotalCount = document.getElementById('audit-total-count');
+    const btnAuditPrev = document.getElementById('btn-audit-prev');
+    const btnAuditNext = document.getElementById('btn-audit-next');
+
+    let currentAuditOffset = 0;
+    const auditLimit = 50;
+    let totalAuditLogs = 0;
+
+    function loadAuditLogs() {
+        if (!auditTableBody) return;
+        auditTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Loading audit logs...</td></tr>';
+
+        const action = selectAuditAction ? selectAuditAction.value : 'all';
+        const search = inputAuditSearch ? inputAuditSearch.value.trim() : '';
+
+        const queryParams = new URLSearchParams({
+            action: action,
+            search: search,
+            limit: auditLimit.toString(),
+            offset: currentAuditOffset.toString()
+        });
+
+        fetch(`/api/audit-logs?${queryParams.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                const logs = data.logs || [];
+                totalAuditLogs = data.total || 0;
+
+                if (auditTotalCount) {
+                    const start = totalAuditLogs === 0 ? 0 : currentAuditOffset + 1;
+                    const end = Math.min(currentAuditOffset + logs.length, totalAuditLogs);
+                    auditTotalCount.textContent = `Showing ${start}–${end} of ${totalAuditLogs} total audit events`;
+                }
+
+                if (btnAuditPrev) btnAuditPrev.disabled = currentAuditOffset === 0;
+                if (btnAuditNext) btnAuditNext.disabled = currentAuditOffset + logs.length >= totalAuditLogs;
+
+                if (logs.length === 0) {
+                    auditTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--text-secondary);">No audit log events match your filters.</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(log => {
+                    const d = new Date(log.epoch || log.timestamp);
+                    const formattedDate = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+                    const actionClass = log.action.indexOf('auth') === 0 ? '#38bdf8' :
+                                       (log.action.indexOf('equipment') === 0 ? '#10b981' :
+                                       (log.action.indexOf('runner') === 0 ? '#f59e0b' : '#c084fc'));
+
+                    html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 10px 12px; font-family: monospace; color: var(--text-secondary); white-space: nowrap;">${formattedDate}</td>
+                            <td style="padding: 10px 12px; font-weight: 600; color: #fff;">
+                                <span>${escapeHtml(log.username)}</span>
+                                <span style="font-size: 0.72rem; color: var(--text-secondary); margin-left: 4px;">(${escapeHtml(log.role)})</span>
+                            </td>
+                            <td style="padding: 10px 12px;">
+                                <span style="display: inline-block; font-family: monospace; font-size: 0.78rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: ${actionClass}20; color: ${actionClass};">
+                                    ${escapeHtml(log.action)}
+                                </span>
+                            </td>
+                            <td style="padding: 10px 12px; color: #e2e8f0;">${escapeHtml(log.details || '')}</td>
+                            <td style="padding: 10px 12px; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(log.ip || '')}</td>
+                        </tr>
+                    `;
+                });
+                auditTableBody.innerHTML = html;
+            })
+            .catch(() => {
+                auditTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #ef4444;">Failed to load audit logs.</td></tr>';
+            });
+    }
+
+    if (navAuditBtn) {
+        navAuditBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navAuditBtn.classList.add('active');
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            auditView.classList.add('active');
+            currentScriptTitle.innerText = "Audit Logs & Security Trail";
+            currentAuditOffset = 0;
+            loadAuditLogs();
+        });
+    }
+
+    if (btnRefreshAudit) btnRefreshAudit.addEventListener('click', loadAuditLogs);
+    if (selectAuditAction) selectAuditAction.addEventListener('change', () => { currentAuditOffset = 0; loadAuditLogs(); });
+    if (inputAuditSearch) {
+        let debounceTimer;
+        inputAuditSearch.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentAuditOffset = 0;
+                loadAuditLogs();
+            }, 300);
+        });
+    }
+
+    if (btnAuditPrev) {
+        btnAuditPrev.addEventListener('click', () => {
+            if (currentAuditOffset >= auditLimit) {
+                currentAuditOffset -= auditLimit;
+                loadAuditLogs();
+            }
+        });
+    }
+
+    if (btnAuditNext) {
+        btnAuditNext.addEventListener('click', () => {
+            if (currentAuditOffset + auditLimit < totalAuditLogs) {
+                currentAuditOffset += auditLimit;
+                loadAuditLogs();
+            }
+        });
+    }
+
+    if (btnExportAudit) {
+        btnExportAudit.addEventListener('click', () => {
+            const action = selectAuditAction ? selectAuditAction.value : 'all';
+            const search = inputAuditSearch ? inputAuditSearch.value.trim() : '';
+            window.location.href = `/api/audit-logs/export?action=${encodeURIComponent(action)}&search=${encodeURIComponent(search)}`;
+        });
+    }
+
+    // =========================================================================
+    // ✨ What's New Changelog Modal
+    // =========================================================================
     const btnChangelog = document.getElementById('btn-changelog');
     const modalChangelog = document.getElementById('modal-changelog');
     const btnCloseChangelog = document.getElementById('btn-close-changelog');
     const btnDismissChangelog = document.getElementById('btn-dismiss-changelog');
 
-    function openChangelogModal() {
-        if (modalChangelog) modalChangelog.classList.add('active');
-    }
-    function closeChangelogModal() {
-        if (modalChangelog) modalChangelog.classList.remove('active');
-    }
-
-    if (btnChangelog) btnChangelog.addEventListener('click', openChangelogModal);
-    if (btnCloseChangelog) btnCloseChangelog.addEventListener('click', closeChangelogModal);
-    if (btnDismissChangelog) btnDismissChangelog.addEventListener('click', closeChangelogModal);
-    if (modalChangelog) {
-        modalChangelog.addEventListener('click', (e) => {
-            if (e.target === modalChangelog) closeChangelogModal();
+    if (btnChangelog && modalChangelog) {
+        btnChangelog.addEventListener('click', () => {
+            modalChangelog.classList.add('active');
         });
     }
+
+    if (btnCloseChangelog && modalChangelog) {
+        btnCloseChangelog.addEventListener('click', () => {
+            modalChangelog.classList.remove('active');
+        });
+    }
+
+    if (btnDismissChangelog && modalChangelog) {
+        btnDismissChangelog.addEventListener('click', () => {
+            modalChangelog.classList.remove('active');
+        });
+    }
+
+    // Modal background overlay clicks
+    window.addEventListener('click', (e) => {
+        if (modalChangelog && e.target === modalChangelog) {
+            modalChangelog.classList.remove('active');
+        }
+        if (modalInvite && e.target === modalInvite) {
+            modalInvite.classList.remove('active');
+        }
+    });
 });
+

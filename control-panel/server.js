@@ -4,18 +4,81 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const crypto = require('crypto');
+
+const { getDb } = require('./lib/db');
+const {
+    seedDefaultAdminIfNeeded,
+    verifyUser,
+    createUser,
+    listUsers,
+    getUserById,
+    updateUserRole,
+    deleteUser,
+    createSession,
+    getSessionUser,
+    deleteSession,
+    cleanupExpiredSessions,
+    createInvite,
+    verifyInviteToken,
+    redeemInvite,
+    listInvites,
+    deleteInvite
+} = require('./lib/auth');
+const {
+    logAction,
+    queryAuditLogs,
+    exportAuditLogsCsv,
+    pruneAuditLogs
+} = require('./lib/audit');
 
 const app = express();
-app.use(cors());
+
+// Restrict CORS to configured origins only — never wildcard on an industrial panel
+const corsOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : false;
+app.use(cors({ origin: corsOrigins, credentials: true }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 const CONFIG_PATH = process.env.CONFIG_PATH || '/opt/config.json';
 const DATA_DIR = process.env.DATA_DIR || '/data';
+const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
+// Hoisted early — also referenced by executeTrackParser (avoids TDZ confusion)
+const TRACKS_PATH = path.join(DATA_DIR, 'tracks.json');
+// 11 PM shift rollover offset in ms (1 hour) — configurable per SSoT §3.4
+const SHIFT_ROLLOVER_OFFSET_MS = parseInt(process.env.SHIFT_ROLLOVER_OFFSET_MS || '3600000', 10);
 
-// Dynamic Auth helper: reads credentials from config.json (or env var).
-// SECURITY: No hardcoded fallback password. If no password is configured,
-// auth will fail-closed (deny all requests) to prevent accidental open access.
+/**
+ * Bumps version.txt to trigger browser live-reload on all connected kiosk clients.
+ * Standardised on milliseconds (Date.now()) for consistency across all callers.
+ */
+function bumpVersion() {
+    try {
+        fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+    } catch (e) {
+        console.error('[Version] Failed to bump version.txt:', e.message);
+    }
+}
+
+/** Fire-and-forget cloud sync with error logging (prevents unhandled rejections). */
+function triggerSync() {
+    syncToCloud().catch(e => console.warn('[Cloud Sync]', e.message));
+}
+
+// Global error handlers — catches unexpected async/sync failures
+process.on('unhandledRejection', (reason) => {
+    console.error('[Server] Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('[Server] Uncaught Exception:', err);
+});
+
+// Initialize SQLite DB and seed admin account
+seedDefaultAdminIfNeeded(CONFIG_PATH);
+
+// Helper to get legacy auth config for fallback
 function getAuthConfig() {
     let username = process.env.AUTH_USERNAME || 'admin';
     let password = process.env.AUTH_PASSWORD || '';
@@ -30,6 +93,119 @@ function getAuthConfig() {
     }
     return { username, password };
 }
+
+// ── Auth & RBAC Middleware ──────────────────────────────────────────────────
+function getSessionToken(req) {
+    // 1. Authorization: Bearer <token>
+    const authHeader = req.headers.authorization || '';
+    if (authHeader.startsWith('Bearer ')) {
+        return authHeader.slice(7).trim();
+    }
+    // 2. Cookie: session_token=<value> — use indexOf to handle base64 values with '=' padding
+    if (req.headers.cookie) {
+        const cookies = req.headers.cookie.split(';');
+        for (const c of cookies) {
+            const eqIdx = c.trim().indexOf('=');
+            if (eqIdx < 0) continue;
+            const name = c.trim().slice(0, eqIdx);
+            const val  = c.trim().slice(eqIdx + 1);
+            if (name === 'session_token' && val) {
+                return decodeURIComponent(val);
+            }
+        }
+    }
+    return null;
+}
+
+function getBasicAuthUser(req) {
+    const authHeader = req.headers.authorization || '';
+    if (authHeader.startsWith('Basic ')) {
+        const b64 = authHeader.slice(6).trim();
+        const creds = Buffer.from(b64, 'base64').toString('utf8');
+        const colon = creds.indexOf(':');
+        if (colon >= 0) {
+            const username = creds.slice(0, colon);
+            const password = creds.slice(colon + 1);
+
+            // 1. Try SQLite users
+            const user = verifyUser(username, password);
+            if (user) return user;
+
+            // 2. Try legacy config — use timingSafeEqual to prevent timing oracle attacks
+            const legacy = getAuthConfig();
+            if (legacy.username && legacy.password && username === legacy.username) {
+                try {
+                    const legacyOk = crypto.timingSafeEqual(
+                        Buffer.from(password),
+                        Buffer.from(legacy.password)
+                    );
+                    if (legacyOk) {
+                        return {
+                            id: 'usr_legacy_admin',
+                            username: legacy.username,
+                            displayName: 'System Admin',
+                            role: 'admin',
+                            active: 1
+                        };
+                    }
+                } catch {
+                    // Buffers of different lengths → timingSafeEqual throws → not a match
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function authenticateUser(req, res, next) {
+    // 1. Check Session Token
+    const token = getSessionToken(req);
+    if (token) {
+        const sessionUser = getSessionUser(token);
+        if (sessionUser) {
+            req.user = sessionUser;
+            req.sessionToken = token;
+            return next();
+        }
+    }
+
+    // 2. Check Basic Auth (for automated tests / runners / legacy CLI)
+    const basicUser = getBasicAuthUser(req);
+    if (basicUser) {
+        req.user = basicUser;
+        return next();
+    }
+
+    req.user = null;
+    next();
+}
+
+app.use(authenticateUser);
+
+function requireAuth(req, res, next) {
+    if (!req.user) {
+        res.set('WWW-Authenticate', 'Basic realm="Kiosk Control Panel"');
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+    next();
+}
+
+function requireRole(allowedRoles = []) {
+    return (req, res, next) => {
+        if (!req.user) {
+            res.set('WWW-Authenticate', 'Basic realm="Kiosk Control Panel"');
+            return res.status(401).json({ error: 'Authentication required.' });
+        }
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: `Forbidden: Requires one of [${allowedRoles.join(', ')}] role.` });
+        }
+        next();
+    };
+}
+
+// Serve the frontend UI and data
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/assets/data', express.static(DATA_DIR));
 
 // Helper to resolve the current active toolbox slide (or manual override)
 function getCurrentToolboxSlideInfo() {
@@ -95,7 +271,7 @@ async function syncToCloud() {
         if (fs.existsSync(CONFIG_PATH)) {
             siteConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         }
-        if (!siteConfig.vercel_api_url) return; // Cloud sync disabled if vercel_api_url not specified
+        if (!siteConfig.vercel_api_url) return;
         const vercelBase = siteConfig.vercel_api_url.replace(/\/+$/, '');
         const siteId = siteConfig.site_id || 'default-site';
 
@@ -112,7 +288,7 @@ async function syncToCloud() {
             }
         });
 
-        // Attach current single daily toolbox slide as base64 (overwriting previous in Redis)
+        // Attach current single daily toolbox slide as base64
         const slideInfo = getCurrentToolboxSlideInfo();
         if (slideInfo && fs.existsSync(slideInfo.filePath)) {
             try {
@@ -155,6 +331,218 @@ async function syncToCloud() {
     }
 }
 
+// ── Auth Endpoints (Issue #14) ──────────────────────────────────────────────
+
+app.post('/api/auth/login', (req, res) => {
+    try {
+        const { username, password } = req.body || {};
+        // Validate inputs before hitting the DB — prevents null audit log entries
+        if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+            return res.status(400).json({ error: 'Username and password are required.' });
+        }
+        const user = verifyUser(username, password);
+        if (!user) {
+            logAction({ req, user: null, action: 'auth.login_failed', details: `Failed login attempt for username: ${username}` });
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        const session = createSession(user.id);
+        logAction({ req, user, action: 'auth.login_success', details: `User ${user.username} logged in successfully.` });
+
+        res.setHeader('Set-Cookie', `session_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 3600}`);
+        res.json({
+            success: true,
+            token: session.token,
+            user
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+    try {
+        const token = req.sessionToken || getSessionToken(req);
+        if (token) {
+            deleteSession(token);
+        }
+        if (req.user) {
+            logAction({ req, user: req.user, action: 'auth.logout', details: `User ${req.user.username} logged out.` });
+        }
+        res.setHeader('Set-Cookie', 'session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+        res.json({ success: true, message: 'Logged out successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/auth/me', (req, res) => {
+    if (!req.user) {
+        return res.json({ authenticated: false, user: null });
+    }
+    res.json({
+        authenticated: true,
+        user: req.user
+    });
+});
+
+app.post('/api/auth/register', (req, res) => {
+    try {
+        const { token, username, password, displayName } = req.body;
+        const newUser = redeemInvite({ token, username, password, displayName });
+        const session = createSession(newUser.id);
+
+        logAction({ req, user: newUser, action: 'auth.register', details: `New user registered: ${newUser.username} (${newUser.role})` });
+
+        res.setHeader('Set-Cookie', `session_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 3600}`);
+        res.json({
+            success: true,
+            token: session.token,
+            user: newUser
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.get('/api/auth/verify-invite', (req, res) => {
+    try {
+        const { token } = req.query;
+        const invite = verifyInviteToken(token);
+        if (!invite) {
+            return res.status(400).json({ valid: false, error: 'Invitation link is invalid or expired' });
+        }
+        res.json({ valid: true, invite: { role: invite.role, created_by: invite.created_by, expires_at: invite.expires_at } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/invite', requireRole(['admin']), (req, res) => {
+    try {
+        const { role, durationHours } = req.body;
+        const invite = createInvite({
+            role: role || 'maintenance',
+            createdBy: req.user.username,
+            durationHours: durationHours ? parseInt(durationHours, 10) : 72
+        });
+
+        logAction({ req, user: req.user, action: 'user.invite_created', details: `Created invite token for role: ${invite.role}` });
+
+        const protocol = req.protocol || 'http';
+        const host = req.get('host') || 'localhost:1337';
+        const inviteUrl = `${protocol}://${host}/register.html?invite=${invite.token}`;
+
+        res.json({
+            success: true,
+            invite,
+            inviteUrl
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/auth/invites', requireRole(['admin']), (req, res) => {
+    try {
+        const invites = listInvites();
+        res.json(invites);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/auth/invites/:token', requireRole(['admin']), (req, res) => {
+    try {
+        deleteInvite(req.params.token);
+        logAction({ req, user: req.user, action: 'user.invite_deleted', details: `Revoked invite token: ${req.params.token}` });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── User Management Endpoints (Issue #14) ───────────────────────────────────
+
+app.get('/api/users', requireRole(['admin']), (req, res) => {
+    try {
+        const users = listUsers();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.patch('/api/users/:id/role', requireRole(['admin']), (req, res) => {
+    try {
+        const { role } = req.body;
+        const targetUser = getUserById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+        updateUserRole(req.params.id, role);
+        logAction({
+            req,
+            user: req.user,
+            action: 'user.role_change',
+            details: `Changed role of user ${targetUser.username} from ${targetUser.role} to ${role}`
+        });
+
+        res.json({ success: true, message: `User role updated to ${role}` });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.delete('/api/users/:id', requireRole(['admin']), (req, res) => {
+    try {
+        const targetUser = getUserById(req.params.id);
+        if (!targetUser) return res.status(404).json({ error: 'User not found' });
+        if (targetUser.id === req.user.id) {
+            return res.status(400).json({ error: 'Cannot delete your own active account' });
+        }
+
+        deleteUser(req.params.id);
+        logAction({ req, user: req.user, action: 'user.delete', details: `Deleted user account: ${targetUser.username}` });
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── Audit Logs Endpoints (Issue #15) ────────────────────────────────────────
+
+app.get('/api/audit-logs', requireRole(['admin']), (req, res) => {
+    try {
+        const { action, username, search, limit, offset } = req.query;
+        const result = queryAuditLogs({
+            action,
+            username,
+            search,
+            limit: limit ? parseInt(limit, 10) : 50,
+            offset: offset ? parseInt(offset, 10) : 0
+        });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/audit-logs/export', requireRole(['admin']), (req, res) => {
+    try {
+        const { action, username, search } = req.query;
+        const csv = exportAuditLogsCsv({ action, username, search });
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="yardstik_audit_logs_${Date.now()}.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── File Uploads Setup ──────────────────────────────────────────────────────
+const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
+const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
+
 // Executes Python parsing engine for uploaded spreadsheets
 function executeTrackParser(uploadedPath) {
     return new Promise((resolve, reject) => {
@@ -183,49 +571,23 @@ function executeTrackParser(uploadedPath) {
     });
 }
 
+// ── Scripts & Automation Runners ────────────────────────────────────────────
 
-
-// Basic Auth Middleware to protect the Control Panel
-app.use((req, res, next) => {
-    // Allow CORS preflight requests
-    if (req.method === 'OPTIONS') return next();
-    
-    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-    const credentials = Buffer.from(b64auth, 'base64').toString('utf8');
-    const colonIdx = credentials.indexOf(':');
-    const login = colonIdx >= 0 ? credentials.slice(0, colonIdx) : '';
-    const password = colonIdx >= 0 ? credentials.slice(colonIdx + 1) : '';
-
-    const auth = getAuthConfig();
-    if (login && password && login === auth.username && password === auth.password) {
-        return next();
-    }
-
-    res.set('WWW-Authenticate', 'Basic realm="Kiosk Control Panel"');
-    res.status(401).send('Authentication required.');
-});
-
-// Serve the frontend UI
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/assets/data', express.static(DATA_DIR));
-
-// Set up multer for file uploads (50 MB size cap to prevent disk-exhaustion DoS)
-const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
-
-// Define paths based on whether we are in Docker or local dev
-const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
-
-app.get('/api/scripts', (req, res) => {
+app.get('/api/scripts', requireRole(['admin']), (req, res) => {
     try {
         const files = fs.readdirSync(RUNNERS_DIR).filter(f => f.endsWith('.json'));
-        const scripts = files.map(file => {
-            const content = fs.readFileSync(path.join(RUNNERS_DIR, file), 'utf8');
-            const data = JSON.parse(content);
-            data.id = file.replace('.json', '');
-            return data;
+        // Gracefully skip malformed JSON files instead of crashing the whole endpoint
+        const scripts = files.flatMap(file => {
+            try {
+                const content = fs.readFileSync(path.join(RUNNERS_DIR, file), 'utf8');
+                const data = JSON.parse(content);
+                data.id = file.replace('.json', '');
+                return [data];
+            } catch {
+                console.warn(`[Scripts] Skipping malformed runner config: ${file}`);
+                return [];
+            }
         });
-        
-        // Sort alphabetically by name
         scripts.sort((a, b) => a.name.localeCompare(b.name));
         res.json(scripts);
     } catch (err) {
@@ -234,7 +596,89 @@ app.get('/api/scripts', (req, res) => {
     }
 });
 
-// Production Trackers Endpoints
+// Allowlist of directories from which runner scripts may be executed
+const ALLOWED_SCRIPT_DIRS = [
+    path.resolve(RUNNERS_DIR),
+    path.resolve('/app/scripts'),
+    path.resolve('/app/conf/scripts'),
+];
+
+app.post('/api/execute/:id', requireRole(['admin']), upload.any(), (req, res) => {
+    const scriptId = path.basename(req.params.id);
+    const configPath = path.join(RUNNERS_DIR, `${scriptId}.json`);
+
+    if (!fs.existsSync(configPath)) {
+        return res.status(404).json({ error: 'Script configuration not found' });
+    }
+
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+        // Security: validate script_path is within an allowed directory (prevents arbitrary execution)
+        const resolvedPath = path.resolve(config.script_path || '');
+        const isAllowed = ALLOWED_SCRIPT_DIRS.some(d => resolvedPath.startsWith(d));
+        if (!isAllowed) {
+            console.error(`[Runner] Blocked execution of out-of-allowlist path: ${resolvedPath}`);
+            return res.status(403).json({ error: 'Script path is outside allowed directories.' });
+        }
+
+        const args = [];
+
+        if (config.parameters) {
+            config.parameters.forEach(p => {
+                let val = req.body[p.name];
+                if (p.type === 'file_upload') {
+                    const file = req.files ? req.files.find(f => f.fieldname === p.name) : null;
+                    if (file) val = file.path;
+                }
+                if (val !== undefined && val !== '') {
+                    if (p.param) args.push(p.param);
+                    args.push(val);
+                }
+            });
+        }
+
+        // Log parameter names only (not values) to avoid sensitive data in audit logs
+        const paramNames = (config.parameters || []).map(p => p.name).join(', ');
+        logAction({ req, user: req.user, action: 'runner.execute', details: `Executed runner: ${config.name || scriptId} | params: ${paramNames}` });
+
+        const child = spawn(resolvedPath, args);
+        let output = '';
+        let errorOutput = '';
+
+        child.stdout.on('data', (data) => output += data.toString());
+        child.stderr.on('data', (data) => errorOutput += data.toString());
+
+        child.on('error', (err) => {
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    code: -1,
+                    output: output,
+                    error: 'Failed to spawn process: ' + err.message
+                });
+            }
+        });
+
+        child.on('close', (code) => {
+            if (code === 0) syncToCloud();
+            if (!res.headersSent) {
+                res.json({
+                    success: code === 0,
+                    code: code,
+                    output: output,
+                    error: errorOutput
+                });
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to execute script' });
+    }
+});
+
+// ── Production Trackers Endpoints ───────────────────────────────────────────
+
 app.get('/api/trackers', (req, res) => {
     try {
         const trackersPath = path.join(DATA_DIR, 'trackers.json');
@@ -249,7 +693,7 @@ app.get('/api/trackers', (req, res) => {
     }
 });
 
-// Features & Theme Toggles Endpoints
+// ── Features & Theme Toggles Endpoints ──────────────────────────────────────
 const FEATURES_PATH = process.env.FEATURES_PATH || path.join(DATA_DIR, 'features.json');
 
 app.get('/api/features', (req, res) => {
@@ -284,11 +728,12 @@ app.get('/api/features', (req, res) => {
     }
 });
 
-app.post('/api/features', (req, res) => {
+app.post('/api/features', requireRole(['admin']), (req, res) => {
     try {
         const data = req.body;
         fs.writeFileSync(FEATURES_PATH, JSON.stringify(data, null, 4), 'utf8');
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'features.update', details: 'Updated features & theme configuration.' });
         syncToCloud();
         res.json({ success: true, message: 'Features & theme configuration saved successfully.' });
     } catch (err) {
@@ -297,8 +742,8 @@ app.post('/api/features', (req, res) => {
     }
 });
 
-// Native Markdown Editor Endpoints
-const REMINDERS_PATH = process.env.REMINDERS_PATH || path.join(DATA_DIR, 'reminders.md'); // Mapped from ./html/assets/data
+// ── Native Markdown Editor Endpoints ────────────────────────────────────────
+const REMINDERS_PATH = process.env.REMINDERS_PATH || path.join(DATA_DIR, 'reminders.md');
 
 app.get('/api/reminders', (req, res) => {
     try {
@@ -313,25 +758,25 @@ app.get('/api/reminders', (req, res) => {
     }
 });
 
-app.post('/api/reminders', express.text({type: '*/*'}), (req, res) => {
+app.post('/api/reminders', requireRole(['admin']), express.text({ type: '*/*' }), (req, res) => {
     try {
         let body = req.body;
-        // Convert !LIMIT DD-HH into an absolute !EXPIRE YYYY-MM-DD-HH timestamp
         body = body.replace(/!LIMIT\s+(\d{2})-(\d{2})/gi, (match, dd, hh) => {
             const now = new Date();
             now.setDate(now.getDate() + parseInt(dd, 10));
             now.setHours(now.getHours() + parseInt(hh, 10));
-            
+
             const expYear = now.getFullYear();
             const expMonth = String(now.getMonth() + 1).padStart(2, '0');
             const expDay = String(now.getDate()).padStart(2, '0');
             const expHour = String(now.getHours()).padStart(2, '0');
-            
+
             return `!EXPIRE ${expYear}-${expMonth}-${expDay}-${expHour}`;
         });
-        
+
         fs.writeFileSync(REMINDERS_PATH, body, 'utf8');
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'reminders.update', details: 'Updated Markdown announcements deck.' });
         syncToCloud();
         res.json({ success: true, message: 'Reminders saved successfully.' });
     } catch (err) {
@@ -339,19 +784,19 @@ app.post('/api/reminders', express.text({type: '*/*'}), (req, res) => {
     }
 });
 
-// Native Equipment Editor Endpoints
-const EQUIPMENT_PATH = process.env.EQUIPMENT_PATH || path.join(DATA_DIR, 'equipment.json'); // Mapped from ./html/assets/data
+// ── Native Equipment Editor Endpoints ───────────────────────────────────────
+const EQUIPMENT_PATH = process.env.EQUIPMENT_PATH || path.join(DATA_DIR, 'equipment.json');
 
 function getLatestSunday11PMEpoch(date = new Date()) {
     const d = new Date(date);
-    const day = d.getDay(); // 0 = Sunday, 1 = Monday...
+    const day = d.getDay();
     const hours = d.getHours();
-    
+
     let daysToSubtract = day;
     if (day === 0 && hours < 23) {
         daysToSubtract = 7;
     }
-    
+
     const sunday11pm = new Date(d);
     sunday11pm.setDate(d.getDate() - daysToSubtract);
     sunday11pm.setHours(23, 0, 0, 0);
@@ -361,7 +806,7 @@ function getLatestSunday11PMEpoch(date = new Date()) {
 function processWeeklyAuditReset(data) {
     if (!data || !data.categories) return false;
     const latestSundayReset = getLatestSunday11PMEpoch();
-    
+
     if (!data.last_audit_reset || data.last_audit_reset < latestSundayReset) {
         let changed = false;
         data.categories.forEach(cat => {
@@ -386,7 +831,7 @@ function checkAndPerformAuditReset() {
         const raw = fs.readFileSync(EQUIPMENT_PATH, 'utf8');
         let data = JSON.parse(raw);
         if (processWeeklyAuditReset(data)) {
-            console.log('[Audit Engine] Sunday 11:00 PM weekly audit reset executed. Resetting all Mobile Cranes audits to false.');
+            console.log('[Audit Engine] Sunday 11:00 PM weekly audit reset executed.');
             fs.writeFileSync(EQUIPMENT_PATH, JSON.stringify(data, null, 2), 'utf8');
             try {
                 fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
@@ -420,19 +865,27 @@ app.get('/api/equipment', (req, res) => {
     }
 });
 
-app.post('/api/equipment', express.json(), (req, res) => {
+// RBAC: Accessible by both admin and maintenance workers!
+app.post('/api/equipment', requireRole(['admin', 'maintenance']), express.json(), (req, res) => {
     try {
         const payload = req.body || { categories: [] };
-        payload.last_audit_reset = getLatestSunday11PMEpoch();
+        payload.last_audit_reset = payload.last_audit_reset || getLatestSunday11PMEpoch();
         fs.writeFileSync(EQUIPMENT_PATH, JSON.stringify(payload, null, 2), 'utf8');
-        
+
         // Bump version.txt to instantly refresh Kiosk TVs
         try {
             fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
         } catch (vErr) {
             console.error('Failed to bump version.txt', vErr);
         }
-        
+
+        logAction({
+            req,
+            user: req.user,
+            action: 'equipment.update',
+            details: `Updated equipment state (${(payload.categories || []).length} categories).`
+        });
+
         syncToCloud();
         res.json({ success: true, message: 'Equipment saved successfully.' });
     } catch (err) {
@@ -440,7 +893,7 @@ app.post('/api/equipment', express.json(), (req, res) => {
     }
 });
 
-// Native Shift Schedule Editor Endpoints
+// ── Native Shift Schedule Editor Endpoints ──────────────────────────────────
 const SHIFTS_PATH = process.env.SHIFTS_PATH || path.join(DATA_DIR, 'shifts.json');
 
 app.get('/api/shifts', (req, res) => {
@@ -457,7 +910,7 @@ app.get('/api/shifts', (req, res) => {
     }
 });
 
-app.post('/api/shifts', express.json(), (req, res) => {
+app.post('/api/shifts', requireRole(['admin']), express.json(), (req, res) => {
     try {
         fs.writeFileSync(SHIFTS_PATH, JSON.stringify(req.body, null, 2), 'utf8');
         try {
@@ -465,6 +918,7 @@ app.post('/api/shifts', express.json(), (req, res) => {
         } catch (vErr) {
             console.error('Failed to bump version.txt', vErr);
         }
+        logAction({ req, user: req.user, action: 'shifts.update', details: 'Updated facility shift schedules.' });
         syncToCloud();
         res.json({ success: true, message: 'Shift schedules saved successfully.' });
     } catch (err) {
@@ -472,7 +926,7 @@ app.post('/api/shifts', express.json(), (req, res) => {
     }
 });
 
-// Native Seniority Overrides API Endpoints
+// ── Native Seniority Overrides API Endpoints ────────────────────────────────
 const SENIORITY_PATH = process.env.SENIORITY_PATH || path.join(DATA_DIR, 'seniority.json');
 
 app.get('/api/seniority', (req, res) => {
@@ -488,12 +942,13 @@ app.get('/api/seniority', (req, res) => {
     }
 });
 
-app.post('/api/seniority', express.json(), (req, res) => {
+app.post('/api/seniority', requireRole(['admin']), express.json(), (req, res) => {
     try {
         fs.writeFileSync(SENIORITY_PATH, JSON.stringify(req.body, null, 2), 'utf8');
         try {
             fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
         } catch (vErr) {}
+        logAction({ req, user: req.user, action: 'seniority.update', details: 'Updated employee seniority milestone records.' });
         syncToCloud();
         res.json({ success: true, message: 'Seniority records saved and synced successfully.' });
     } catch (err) {
@@ -501,86 +956,8 @@ app.post('/api/seniority', express.json(), (req, res) => {
     }
 });
 
-// We accept any file uploads. Multer handles it.
-app.post('/api/execute/:id', upload.any(), (req, res) => {
-    const scriptId = path.basename(req.params.id);
-    const configPath = path.join(RUNNERS_DIR, `${scriptId}.json`);
-    
-    if (!fs.existsSync(configPath)) {
-        return res.status(404).json({ error: 'Script configuration not found' });
-    }
-    
-    try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        const args = [];
-        
-        // Build arguments list based on the configuration parameters
-        if (config.parameters) {
-            config.parameters.forEach(p => {
-                let val = req.body[p.name];
-                
-                if (p.type === 'file_upload') {
-                    // Find the uploaded file in req.files
-                    const file = req.files.find(f => f.fieldname === p.name);
-                    if (file) {
-                        val = file.path;
-                    }
-                }
-                
-                if (val !== undefined && val !== '') {
-                    if (p.param) {
-                        args.push(p.param);
-                    }
-                    args.push(val);
-                }
-            });
-        }
-        
-        console.log(`Executing: ${config.script_path} ${args.join(' ')}`);
-        
-        const child = spawn(config.script_path, args);
-        
-        let output = '';
-        let errorOutput = '';
-        
-        child.stdout.on('data', (data) => {
-            output += data.toString();
-        });
-        
-        child.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
-        
-        child.on('error', (err) => {
-            if (!res.headersSent) {
-                res.status(500).json({
-                    success: false,
-                    code: -1,
-                    output: output,
-                    error: 'Failed to spawn process: ' + err.message
-                });
-            }
-        });
+// ── Special Event API ───────────────────────────────────────────────────────
 
-        child.on('close', (code) => {
-            if (code === 0) syncToCloud();
-            if (!res.headersSent) {
-                res.json({
-                    success: code === 0,
-                    code: code,
-                    output: output,
-                    error: errorOutput
-                });
-            }
-        });
-        
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to execute script' });
-    }
-});
-
-// Special Event API
 app.get('/api/special-event', (req, res) => {
     try {
         const specialPath = path.join(DATA_DIR, 'special.json');
@@ -595,21 +972,20 @@ app.get('/api/special-event', (req, res) => {
     }
 });
 
-app.post('/api/special-event', upload.single('image'), (req, res) => {
+app.post('/api/special-event', requireRole(['admin']), upload.single('image'), (req, res) => {
     try {
         let currentData = {};
         const specialPath = path.join(DATA_DIR, 'special.json');
         if (fs.existsSync(specialPath)) {
             currentData = JSON.parse(fs.readFileSync(specialPath, 'utf8'));
         }
-        
+
         currentData.title = req.body.title || '';
         currentData.description = req.body.description || '';
         currentData.duration = req.body.duration || '20';
         currentData.endTime = req.body.endTime || '';
-        
+
         if (req.file) {
-            // SECURITY: Whitelist safe image extensions only. Reject anything not in the list.
             const ALLOWED_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
             const ext = path.extname(req.file.originalname).toLowerCase();
             if (!ALLOWED_IMAGE_EXTS.includes(ext)) {
@@ -620,9 +996,10 @@ app.post('/api/special-event', upload.single('image'), (req, res) => {
             fs.copyFileSync(req.file.path, imgPath);
             currentData.image = `assets/data/special_img${ext}`;
         }
-        
+
         fs.writeFileSync(specialPath, JSON.stringify(currentData, null, 2));
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'special_event.update', details: `Configured special event: ${currentData.title}` });
         syncToCloud();
         res.json({ success: true, image: currentData.image });
     } catch (e) {
@@ -630,7 +1007,7 @@ app.post('/api/special-event', upload.single('image'), (req, res) => {
     }
 });
 
-app.delete('/api/special-event', (req, res) => {
+app.delete('/api/special-event', requireRole(['admin']), (req, res) => {
     try {
         const specialPath = path.join(DATA_DIR, 'special.json');
         if (fs.existsSync(specialPath)) {
@@ -642,6 +1019,7 @@ app.delete('/api/special-event', (req, res) => {
             fs.unlinkSync(specialPath);
         }
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'special_event.delete', details: 'Cleared special event alert.' });
         syncToCloud();
         res.json({ success: true });
     } catch (e) {
@@ -678,7 +1056,7 @@ app.get('/api/tracks', (req, res) => {
     }
 });
 
-app.post('/api/tracks', express.json(), (req, res) => {
+app.post('/api/tracks', requireRole(['admin']), express.json(), (req, res) => {
     try {
         const tracks = req.body;
         if (!Array.isArray(tracks)) {
@@ -686,6 +1064,7 @@ app.post('/api/tracks', express.json(), (req, res) => {
         }
         fs.writeFileSync(TRACKS_PATH, JSON.stringify(tracks, null, 2), 'utf8');
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'tracks.update', details: `Updated ${tracks.length} track records.` });
         syncToCloud();
         res.json({ success: true, count: tracks.length });
     } catch (e) {
@@ -693,11 +1072,10 @@ app.post('/api/tracks', express.json(), (req, res) => {
     }
 });
 
-app.post('/api/tracks/upload', uploadTrack.single('file'), async (req, res) => {
+app.post('/api/tracks/upload', requireRole(['admin']), uploadTrack.single('file'), async (req, res) => {
     try {
         let uploadedPath = req.file ? req.file.path : null;
 
-        // If file was sent via JSON base64 body instead of multipart
         if (!uploadedPath && req.body && (req.body.file_base64 || req.body.content)) {
             const rawBase64 = req.body.file_base64 || req.body.content;
             const b64 = typeof rawBase64 === 'object' && rawBase64.$content ? rawBase64.$content : rawBase64;
@@ -711,13 +1089,14 @@ app.post('/api/tracks/upload', uploadTrack.single('file'), async (req, res) => {
         }
 
         const parsed = await executeTrackParser(uploadedPath);
+        logAction({ req, user: req.user, action: 'tracks.upload', details: `Uploaded and parsed track spreadsheet (${parsed.length} tracks).` });
         res.json({ success: true, count: parsed.length, tracks: parsed });
     } catch (e) {
         res.status(500).json({ error: 'Upload processing failed: ' + e.message });
     }
 });
 
-app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
+app.post('/api/track-map/upload', requireRole(['admin']), uploadTrack.single('file'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -728,9 +1107,6 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
             fs.unlinkSync(uploadedPath);
             return res.status(400).json({ error: 'File is not a valid SVG drawing' });
         }
-        // SECURITY: Comprehensive SVG XSS sanitization.
-        // Block <script> tags, <foreignObject> (can embed HTML), event handler attributes,
-        // and javascript: URIs in href / xlink:href to prevent stored XSS via SVG.
         const lowerContent = content.toLowerCase();
         if (lowerContent.includes('<script')) {
             fs.unlinkSync(uploadedPath);
@@ -748,6 +1124,7 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
             fs.unlinkSync(uploadedPath);
             return res.status(400).json({ error: 'SVG contains javascript: URIs which are not allowed' });
         }
+
         fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
         if (process.env.NODE_ENV !== 'test') {
             const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');
@@ -761,6 +1138,7 @@ app.post('/api/track-map/upload', uploadTrack.single('file'), (req, res) => {
         }
         try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+        logAction({ req, user: req.user, action: 'track_map.upload', details: 'Uploaded new SVG track map vector.' });
         syncToCloud();
         res.json({ success: true, message: 'Track map SVG uploaded successfully.' });
     } catch (e) {
@@ -856,19 +1234,17 @@ app.get('/api/commodity-rules', (req, res) => {
     }
 });
 
-app.post('/api/commodity-rules', express.json(), (req, res) => {
+app.post('/api/commodity-rules', requireRole(['admin']), express.json(), (req, res) => {
     try {
         const payload = req.body;
         if (!payload || !Array.isArray(payload.categories)) {
             return res.status(400).json({ error: 'Expected object with categories array' });
         }
         const formattedJson = JSON.stringify(payload, null, 2);
-        
-        // Write to container /data path if directory exists
+
         if (fs.existsSync(path.dirname(COMMODITY_RULES_PATH))) {
             fs.writeFileSync(COMMODITY_RULES_PATH, formattedJson, 'utf8');
         }
-        // Write to local repo data path if present and not running unit tests
         if (process.env.NODE_ENV !== 'test') {
             const localPath = path.join(__dirname, '../html/assets/data/commodity_rules.json');
             if (fs.existsSync(path.dirname(localPath))) {
@@ -878,6 +1254,7 @@ app.post('/api/commodity-rules', express.json(), (req, res) => {
             if (fs.existsSync(path.dirname(localVer))) fs.writeFileSync(localVer, Date.now().toString(), 'utf8');
         }
 
+        logAction({ req, user: req.user, action: 'commodity_rules.update', details: `Saved ${payload.categories.length} commodity rules.` });
         syncToCloud();
         res.json({ success: true, count: payload.categories.length });
     } catch (e) {
@@ -886,7 +1263,6 @@ app.post('/api/commodity-rules', express.json(), (req, res) => {
 });
 
 // ── Site Settings API ──────────────────────────────────────────────────────
-// Reads and writes /opt/config.json (mounted from /opt/kiosk-data/config.json on the host)
 const CONFIG_DEFAULTS = {
     site_name: 'Kiosk — Location Name',
     site_id: 'kiosk-location',
@@ -897,14 +1273,13 @@ const CONFIG_DEFAULTS = {
     admin_username: 'admin'
 };
 
-app.get('/api/site-config', (req, res) => {
+app.get('/api/site-config', requireRole(['admin']), (req, res) => {
     try {
         let data = {};
         if (fs.existsSync(CONFIG_PATH)) {
             data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
         }
         const safeConfig = { ...CONFIG_DEFAULTS, ...data };
-        // Never return raw password to frontend
         delete safeConfig.admin_password;
         res.json(safeConfig);
     } catch (e) {
@@ -912,34 +1287,32 @@ app.get('/api/site-config', (req, res) => {
     }
 });
 
-app.post('/api/site-config', express.json(), (req, res) => {
+app.post('/api/site-config', requireRole(['admin']), express.json(), (req, res) => {
     try {
         const current = fs.existsSync(CONFIG_PATH)
             ? JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
             : {};
 
-        // Allow known safe keys
         const allowed = ['site_name', 'site_id', 'latitude', 'longitude', 'timezone', 'vercel_api_url', 'admin_username'];
         const updated = { ...current };
         allowed.forEach(key => {
             if (req.body[key] !== undefined) updated[key] = req.body[key];
         });
 
-        // Update password if a new non-empty password was supplied
         if (typeof req.body.admin_password === 'string' && req.body.admin_password.trim().length > 0) {
             updated.admin_password = req.body.admin_password.trim();
         }
 
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), 'utf8');
-        // Also save sanitized config to /data/config.json so the kiosk frontend reads it cleanly
+
         const safeFrontendConfig = { ...updated };
         delete safeFrontendConfig.admin_password;
         fs.writeFileSync(path.join(DATA_DIR, 'config.json'), JSON.stringify(safeFrontendConfig, null, 2), 'utf8');
-
-        // Bump version.txt so the kiosk reloads and picks up the new config
         fs.writeFileSync(path.join(DATA_DIR, 'version.txt'), Date.now().toString(), 'utf8');
+
+        logAction({ req, user: req.user, action: 'config.update', details: 'Updated site configuration settings.' });
         syncToCloud();
-        
+
         const returnConfig = { ...updated };
         delete returnConfig.admin_password;
         res.json({ success: true, config: returnConfig });
@@ -955,7 +1328,9 @@ if (require.main === module) {
         checkAndPerformAuditReset();
         setTimeout(syncToCloud, 3000);
         setInterval(syncToCloud, 5 * 60 * 1000);
-        setInterval(checkAndPerformAuditReset, 60 * 1000); // Check every 60s for Sunday 11:00 PM audit reset
+        setInterval(checkAndPerformAuditReset, 60 * 1000);
+        setInterval(cleanupExpiredSessions, 60 * 60 * 1000); // Clean expired sessions hourly
+        setInterval(() => pruneAuditLogs(5000), 24 * 60 * 60 * 1000); // Daily audit log maintenance
     });
 }
 
