@@ -541,7 +541,6 @@ app.get('/api/audit-logs/export', requireRole(['admin']), (req, res) => {
 
 // ── File Uploads Setup ──────────────────────────────────────────────────────
 const upload = multer({ dest: '/tmp/uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
-const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
 
 // Executes Python parsing engine for uploaded spreadsheets
 function executeTrackParser(uploadedPath) {
