@@ -1,3 +1,5 @@
+name: yardstik-dev
+
 services:
   yardstik-dev-app:
     image: yardstik-dev-webserver:latest
@@ -5,7 +7,7 @@ services:
     container_name: yardstik-dev-app
     restart: always
     networks:
-      default:
+      yardstik-dev-net:
     ports:
       - "8081:80"
     volumes:
@@ -20,11 +22,16 @@ services:
       - /opt/docker/kiosk-dev/kiosk-data/safety-slides:/usr/share/nginx/html/assets/safety-slides
 
   yardstik-dev-control-panel:
+    image: yardstik-dev-control-panel:latest
     build: ./control-panel
     container_name: yardstik-dev-control-panel
     restart: always
+    environment:
+      - KIOSK_CONTAINER=yardstik-dev-app
+      - DATA_DIR=/data
+      - CONFIG_PATH=/opt/config.json
     networks:
-      default:
+      yardstik-dev-net:
         aliases:
           - control-panel
     ports:
@@ -43,4 +50,9 @@ services:
       - /opt/docker/kiosk-dev/kiosk-data/config.json:/opt/config.json
       - /opt/docker/kiosk-dev/kiosk-data/safety-slides:/safety-slides:ro
       - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  yardstik-dev-net:
+    driver: bridge
+
 

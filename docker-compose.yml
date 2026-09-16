@@ -1,9 +1,13 @@
+name: yardstik-prod
+
 services:
   kiosk-app:
-    image: kiosk-webserver:latest
+    image: yardstik-webserver:latest
     build: .
     container_name: yardstik-app
     restart: always
+    networks:
+      yardstik-prod-net:
     ports:
       - "8080:80"
     volumes:
@@ -18,9 +22,18 @@ services:
       - /opt/kiosk-data/safety-slides:/usr/share/nginx/html/assets/safety-slides
 
   control-panel:
+    image: yardstik-control-panel:latest
     build: ./control-panel
     container_name: yardstik-control-panel
     restart: always
+    environment:
+      - KIOSK_CONTAINER=yardstik-app
+      - DATA_DIR=/data
+      - CONFIG_PATH=/opt/config.json
+    networks:
+      yardstik-prod-net:
+        aliases:
+          - control-panel
     ports:
       - "1337:5000"
     volumes:
@@ -37,3 +50,8 @@ services:
       - /opt/kiosk-data/config.json:/opt/config.json
       - /opt/kiosk-data/safety-slides:/safety-slides:ro
       - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  yardstik-prod-net:
+    driver: bridge
+
