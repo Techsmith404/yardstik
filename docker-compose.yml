@@ -6,6 +6,8 @@ services:
     build: .
     container_name: yardstik-app
     restart: always
+    depends_on:
+      - control-panel
     networks:
       yardstik-prod-net:
     ports:
