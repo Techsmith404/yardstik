@@ -45,8 +45,8 @@ app.use(express.urlencoded({ extended: true }));
 const CONFIG_PATH = process.env.CONFIG_PATH || '/opt/config.json';
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const RUNNERS_DIR = process.env.RUNNERS_DIR || '/app/conf/runners';
-// Hoisted early — also referenced by executeTrackParser (avoids TDZ confusion)
-const TRACKS_PATH = path.join(DATA_DIR, 'tracks.json');
+const TRACKS_PATH = process.env.TRACKS_PATH || path.join(DATA_DIR, 'tracks.json');
+const TRACK_MAP_PATH = process.env.TRACK_MAP_PATH || path.join(DATA_DIR, 'track-map.svg');
 // 11 PM shift rollover offset in ms (1 hour) — configurable per SSoT §3.4
 const SHIFT_ROLLOVER_OFFSET_MS = parseInt(process.env.SHIFT_ROLLOVER_OFFSET_MS || '3600000', 10);
 
@@ -1027,9 +1027,6 @@ app.delete('/api/special-event', requireRole(['admin']), (req, res) => {
 });
 
 // ── Track Management & Track Check API ──────────────────────────────────────
-const TRACKS_PATH = process.env.TRACKS_PATH || path.join(DATA_DIR, 'tracks.json');
-const TRACK_MAP_PATH = process.env.TRACK_MAP_PATH || path.join(DATA_DIR, 'track-map.svg');
-
 const trackStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dest = '/tmp';
