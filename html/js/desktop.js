@@ -10,6 +10,7 @@ import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 import { updateSafetySlide } from './modules/slideshow.js';
+import { sanitizeMarkdownHtml } from './modules/sanitize.js';
 
 // 1. Device Routing (Redirects phones to mobile.html)
 if (initDeviceRouting()) {
@@ -133,7 +134,8 @@ export async function renderDesktopReminders() {
 
         let cardsHtml = '';
         parsedReminders.forEach(r => {
-            const parsedBody = typeof marked !== 'undefined' ? marked.parse(r.body.trim()) : r.body;
+            const rawParsed = typeof marked !== 'undefined' ? marked.parse(r.body.trim()) : r.body;
+            const parsedBody = sanitizeMarkdownHtml(rawParsed);
             let priorityBadge = '';
             let widgetBorder = '1px solid rgba(255, 255, 255, 0.12)';
             let widgetShadow = '0 10px 30px rgba(0,0,0,0.5)';

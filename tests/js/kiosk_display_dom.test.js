@@ -131,4 +131,24 @@ describe('YardStik Kiosk TV Display & Viewport Ergonomics (SSoT §2, §5, §9.7)
         // Must contain defensive error catching so network drops do not crash the rotation loop
         expect(configJs).toMatch(/catch\s*\(e\)/);
     });
+
+    test('6. Markdown reminders sanitize HTML output to prevent XSS (IDEA-Q05)', () => {
+        const sanitizeModulePath = path.resolve(__dirname, '../../html/js/modules/sanitize.js');
+        expect(fs.existsSync(sanitizeModulePath)).toBe(true);
+
+        const html = fs.readFileSync(htmlPath, 'utf8');
+        expect(html).toContain('dompurify');
+
+        const remindersJsPath = path.resolve(__dirname, '../../html/js/modules/reminders.js');
+        const remindersJs = fs.readFileSync(remindersJsPath, 'utf8');
+        expect(remindersJs).toContain('sanitizeMarkdownHtml');
+
+        const desktopJsPath = path.resolve(__dirname, '../../html/js/desktop.js');
+        const desktopJs = fs.readFileSync(desktopJsPath, 'utf8');
+        expect(desktopJs).toContain('sanitizeMarkdownHtml');
+
+        const mobileJsPath = path.resolve(__dirname, '../../html/js/mobile.js');
+        const mobileJs = fs.readFileSync(mobileJsPath, 'utf8');
+        expect(mobileJs).toContain('sanitizeMarkdownHtml');
+    });
 });
