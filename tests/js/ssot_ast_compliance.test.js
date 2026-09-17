@@ -107,4 +107,30 @@ describe('SSoT §9.1 Architectural AST Compliance: Zero Lookbehinds & Zero Top-L
 
         expect(allViolations).toEqual([]);
     });
+
+    test('Daily toolbox talk slide enforces mandatory +1h offset for 11:00 PM rollover (SSoT §9.3)', () => {
+        const slideshowPath = path.resolve(__dirname, '../../html/js/modules/slideshow.js');
+        expect(fs.existsSync(slideshowPath)).toBe(true);
+        const code = fs.readFileSync(slideshowPath, 'utf8');
+        expect(code).toMatch(/60\s*\*\s*60\s*\*\s*1000/);
+    });
+
+    test('Nginx configuration enforces strict cache-control and SSE streaming proxy timeouts (SSoT §9.2, §9.11)', () => {
+        const nginxPath = path.resolve(__dirname, '../../nginx.conf');
+        expect(fs.existsSync(nginxPath)).toBe(true);
+        const nginxConf = fs.readFileSync(nginxPath, 'utf8');
+
+        // §9.2: No-store cache-control on dynamic data
+        expect(nginxConf).toContain('no-store, no-cache, must-revalidate');
+
+        // §9.11 & IDEA-I03: SSE runner proxy streaming settings
+        expect(nginxConf).toContain('proxy_read_timeout 3600;');
+        expect(nginxConf).toContain('proxy_buffering off;');
+
+        // IDEA-I04: Gzip compression enabled for json and svg
+        expect(nginxConf).toContain('gzip on;');
+        expect(nginxConf).toContain('application/json');
+        expect(nginxConf).toContain('image/svg+xml');
+    });
 });
+
