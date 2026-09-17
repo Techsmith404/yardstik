@@ -31,6 +31,7 @@ const {
     exportAuditLogsCsv,
     pruneAuditLogs
 } = require('./lib/audit');
+const { createRateLimiter } = require('./lib/rate-limit');
 
 const app = express();
 
@@ -419,7 +420,14 @@ app.post('/api/novara/sync', async (req, res) => {
 
 // ── Auth Endpoints (Issue #14) ──────────────────────────────────────────────
 
-app.post('/api/auth/login', (req, res) => {
+// Rate limit auth endpoints: max 20 login attempts per 15 minutes per IP (IDEA-S02)
+const loginLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: 'Too many login attempts. Try again in 15 minutes.' }
+});
+
+app.post('/api/auth/login', loginLimiter, (req, res) => {
     try {
         const { username, password } = req.body || {};
         // Validate inputs before hitting the DB — prevents null audit log entries
@@ -1427,5 +1435,6 @@ module.exports = {
     processWeeklyAuditReset,
     checkAndPerformAuditReset,
     syncToCloud,
-    syncNovaraData
+    syncNovaraData,
+    loginLimiter
 };

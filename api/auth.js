@@ -71,6 +71,25 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
+        // IDEA-S02: Rate limit cloud login attempts (max 20 per 15 minutes per IP)
+        const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').toString().split(',')[0].trim();
+        const ipHash = crypto.createHash('md5').update(clientIp).digest('hex').slice(0, 16);
+        const rateKey = `kiosk:${siteId}:ratelimit:login:${ipHash}`;
+        const rClient = getRedisClient();
+        if (rClient) {
+            try {
+                if (rClient.status === 'wait' || rClient.status === 'close') await rClient.connect();
+                const attempts = await rClient.incr(rateKey);
+                if (attempts === 1) {
+                    await rClient.expire(rateKey, 15 * 60);
+                }
+                if (attempts > 20) {
+                    res.setHeader('Retry-After', '900');
+                    return res.status(429).json({ error: 'Too many login attempts. Try again in 15 minutes.' });
+                }
+            } catch {}
+        }
+
         const users = await ensureAdminUser(siteId);
         const cleanUser = username.trim().toLowerCase();
         const user = users[cleanUser];
