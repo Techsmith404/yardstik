@@ -12,6 +12,12 @@ services:
       yardstik-dev-net:
     ports:
       - "8081:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/version.txt || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     volumes:
       # Sync host timezone to docker container so python has the exact correct time
       - /etc/localtime:/etc/localtime:ro
@@ -39,6 +45,12 @@ services:
           - control-panel
     ports:
       - "1338:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     volumes:
       # Sync host timezone to docker container so node/python have the exact correct time
       - /etc/localtime:/etc/localtime:ro

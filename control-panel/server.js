@@ -96,6 +96,15 @@ function getAuthConfig() {
     return { username, password };
 }
 
+// ── Health Check Endpoint (IDEA-I01) ─────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: Date.now()
+    });
+});
+
 // ── Auth & RBAC Middleware ──────────────────────────────────────────────────
 function getSessionToken(req) {
     // 1. Authorization: Bearer <token>

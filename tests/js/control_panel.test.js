@@ -38,6 +38,16 @@ afterAll(() => {
     } catch {}
 });
 
+describe('Control Panel Health Check Endpoint (IDEA-I01)', () => {
+    test('GET /api/health returns 200 with status ok and process uptime without requiring auth', async () => {
+        const res = await request(app).get('/api/health');
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('ok');
+        expect(typeof res.body.uptime).toBe('number');
+        expect(typeof res.body.timestamp).toBe('number');
+    });
+});
+
 describe('Control Panel Authentication Middleware', () => {
     test('Denies requests without authentication (401)', async () => {
         const res = await request(app).get('/api/site-config');
