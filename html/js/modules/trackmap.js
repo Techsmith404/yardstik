@@ -808,8 +808,9 @@ function updateHeaderStats() {
 }
 
 let svgTemplateCache = null;
+let lastRenderedTrackHash = null;
 
-export async function renderTrackMap() {
+export async function renderTrackMap(force = false) {
     const container = document.getElementById("trackmap-viewport");
     if (!container) return;
 
@@ -819,6 +820,16 @@ export async function renderTrackMap() {
         widget.style.display = isEnabled ? "flex" : "none";
     }
     if (!isEnabled) return;
+
+    // Diff check: skip expensive SVG DOM teardown and handler re-binding if data hasn't changed (IDEA-Q04)
+    const currentHash = JSON.stringify({
+        tracks: (cachedTracks || []).map(t => [t.track_id || t.id, t.cars, t.hold_count, t.status, t.notes, t.updated_at]),
+        rulesCount: commodityRules?.categories?.length || 0
+    });
+
+    if (!force && lastRenderedTrackHash === currentHash && container.children.length > 0) {
+        return;
+    }
 
     container.classList.add("clickable-trackmap");
     container.onclick = (e) => {
@@ -843,8 +854,10 @@ export async function renderTrackMap() {
         if (svgTemplateCache) {
             container.innerHTML = svgTemplateCache;
             bindSvgInteractivity(container, false);
+            lastRenderedTrackHash = currentHash;
         } else {
             renderFallbackCardGrid(container);
+            lastRenderedTrackHash = currentHash;
         }
     } catch (e) {
         console.warn("SVG Track Map load error, falling back to card grid:", e);
