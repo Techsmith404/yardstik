@@ -58,7 +58,7 @@ describe('1. Audit Logging Core Engine', () => {
 
     test('Exports RFC-4180 compliant CSV', () => {
         const csv = exportAuditLogsCsv();
-        expect(csv).toContain('Timestamp,Username,Role,Action,Details,IP Address');
+        expect(csv).toContain('"Timestamp","Username","Role","Action","Details","IP Address"');
         expect(csv).toContain('john_doe');
         expect(csv).toContain('equipment.update');
     });
@@ -109,6 +109,6 @@ describe('2. Audit Logging REST Endpoints', () => {
 
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toContain('text/csv');
-        expect(res.text).toContain('Timestamp,Username,Role');
+        expect(res.text).toContain('"Timestamp","Username","Role"');
     });
 });
