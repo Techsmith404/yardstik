@@ -2,18 +2,7 @@
 // Uses native Redis connection via ioredis for ultra-fast (2ms) responses and 100% reliability.
 
 const { getRedisClient, ensureRedis } = require('./lib/redis');
-
-function getLatestSunday11PMEpoch(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const hours = d.getHours();
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) daysToSubtract = 7;
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return sunday11pm.getTime();
-}
+const { getLatestSunday11PMEpoch } = require('./lib/audit-reset');
 
 function processWeeklyAuditReset(data) {
     if (!data || !data.categories) return false;

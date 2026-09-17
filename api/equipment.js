@@ -7,20 +7,9 @@ const {
     getSession,
     logAudit
 } = require('./lib/cloud-auth');
+const { getLatestSunday11PMEpoch, isAuditResetCurrent } = require('./lib/audit-reset');
 
 let memoryEquipment = null;
-
-function getLatestSunday11PMEpoch(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const hours = d.getHours();
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) daysToSubtract = 7;
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return sunday11pm.getTime();
-}
 
 function processWeeklyAuditReset(data) {
     if (!data || !data.categories) return false;

@@ -2,21 +2,11 @@
 import { getHolidayEquipmentIcon } from './theme.js';
 import { cachedFeatures } from './features.js';
 import { fetchJson, cacheBustUrl } from './http.js';
+import { isAuditResetCurrent } from './audit-utils.js';
 
+export { isAuditResetCurrent };
 export let cachedEquipment = { categories: [] };
 let equipScrollInterval = null;
-
-export function isAuditResetCurrent(lastAuditResetEpoch) {
-    const d = new Date();
-    const day = d.getDay();
-    const hours = d.getHours();
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) daysToSubtract = 7;
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return !!(lastAuditResetEpoch && lastAuditResetEpoch >= sunday11pm.getTime());
-}
 
 export async function fetchEquipmentStatus() {
     try {

@@ -131,6 +131,23 @@ describe('Sunday 11:00 PM Weekly Audit Reset Protocol (SSoT §9.4)', () => {
         // Checkmark preserved because audit was already reset after Sunday 11:00 PM
         expect(mockData.categories[0].items[0].blend_audit).toBe(true);
     });
+
+    test('isAuditResetCurrent accurately validates current vs stale timestamps across tiers (IDEA-A05)', () => {
+        const { isAuditResetCurrent: cpAuditCheck } = require('../../control-panel/lib/audit-reset');
+        const { isAuditResetCurrent: apiAuditCheck } = require('../../api/lib/audit-reset');
+
+        const tuesday = new Date('2026-09-15T14:00:00');
+        const recentSundayReset = new Date('2026-09-13T23:01:00').getTime();
+        const staleReset = new Date('2026-09-06T23:00:00').getTime();
+
+        expect(cpAuditCheck(recentSundayReset, tuesday)).toBe(true);
+        expect(cpAuditCheck(staleReset, tuesday)).toBe(false);
+        expect(cpAuditCheck(null, tuesday)).toBe(false);
+
+        expect(apiAuditCheck(recentSundayReset, tuesday)).toBe(true);
+        expect(apiAuditCheck(staleReset, tuesday)).toBe(false);
+        expect(apiAuditCheck(null, tuesday)).toBe(false);
+    });
 });
 
 describe('Control Panel CRUD & Operational Endpoints', () => {

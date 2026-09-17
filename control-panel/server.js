@@ -32,6 +32,7 @@ const {
     pruneAuditLogs
 } = require('./lib/audit');
 const { createRateLimiter } = require('./lib/rate-limit');
+const { getLatestSunday11PMEpoch, isAuditResetCurrent } = require('./lib/audit-reset');
 
 const app = express();
 
@@ -881,22 +882,6 @@ app.post('/api/reminders', requireRole(['admin']), express.text({ type: '*/*' })
 
 // ── Native Equipment Editor Endpoints ───────────────────────────────────────
 const EQUIPMENT_PATH = process.env.EQUIPMENT_PATH || path.join(DATA_DIR, 'equipment.json');
-
-function getLatestSunday11PMEpoch(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const hours = d.getHours();
-
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) {
-        daysToSubtract = 7;
-    }
-
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return sunday11pm.getTime();
-}
 
 function processWeeklyAuditReset(data) {
     if (!data || !data.categories) return false;
