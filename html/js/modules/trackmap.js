@@ -735,22 +735,24 @@ export async function fetchTracks() {
         const res = await fetch("assets/data/tracks.json?t=" + new Date().getTime());
         if (res.ok) {
             const lastModified = res.headers.get("Last-Modified");
-            cachedTracks = await res.json();
+            const data = await res.json();
+            cachedTracks = Array.isArray(data) ? data : [];
             
             const itemDate = cachedTracks.find(t => t.updated_at)?.updated_at;
             const targetDateStr = itemDate || lastModified;
             if (targetDateStr) {
                 lastTracksUpdated = formatAsOfTimestamp(targetDateStr);
             }
-
-            calculateTrackStats();
-            await renderTrackMap();
-            if (isTheaterOpen) {
-                updateTheaterMap();
-            }
+        }
+        calculateTrackStats();
+        await renderTrackMap();
+        if (isTheaterOpen) {
+            updateTheaterMap();
         }
     } catch (e) {
         console.warn("Could not load tracks.json:", e);
+        calculateTrackStats();
+        await renderTrackMap();
     }
 }
 

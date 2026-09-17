@@ -504,6 +504,7 @@ def main():
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=out_dir, delete=False, suffix=".tmp") as tf:
         json.dump(result, tf, indent=2)
         tmp_path = tf.name
+    os.chmod(tmp_path, 0o664)
     os.replace(tmp_path, out_file)
 
     print(f"Successfully parsed {len(result)} tracks into {out_file}")
