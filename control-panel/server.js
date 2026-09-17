@@ -33,6 +33,7 @@ const {
 } = require('./lib/audit');
 const { createRateLimiter } = require('./lib/rate-limit');
 const { getLatestSunday11PMEpoch, isAuditResetCurrent } = require('./lib/audit-reset');
+const { validateAndSanitizeSvg } = require('./lib/svg-sanitizer');
 
 const app = express();
 
@@ -1189,37 +1190,22 @@ app.post('/api/track-map/upload', requireRole(['admin']), uploadTrack.single('fi
         }
         const uploadedPath = req.file.path;
         const content = fs.readFileSync(uploadedPath, 'utf8');
-        if (!content.includes('<svg') && !content.includes('</svg>')) {
+        const validation = validateAndSanitizeSvg(content);
+        if (!validation.valid) {
             fs.unlinkSync(uploadedPath);
-            return res.status(400).json({ error: 'File is not a valid SVG drawing' });
-        }
-        const lowerContent = content.toLowerCase();
-        if (lowerContent.includes('<script')) {
-            fs.unlinkSync(uploadedPath);
-            return res.status(400).json({ error: 'SVG contains script tags which are not allowed' });
-        }
-        if (lowerContent.includes('<foreignobject')) {
-            fs.unlinkSync(uploadedPath);
-            return res.status(400).json({ error: 'SVG contains foreignObject elements which are not allowed' });
-        }
-        if (/\bon\w+\s*=/.test(lowerContent)) {
-            fs.unlinkSync(uploadedPath);
-            return res.status(400).json({ error: 'SVG contains event handler attributes which are not allowed' });
-        }
-        if (/\bhref\s*=\s*["']?\s*javascript:/i.test(content) || /xlink:href\s*=\s*["']?\s*javascript:/i.test(content)) {
-            fs.unlinkSync(uploadedPath);
-            return res.status(400).json({ error: 'SVG contains javascript: URIs which are not allowed' });
+            return res.status(400).json({ error: validation.error });
         }
 
-        fs.writeFileSync(TRACK_MAP_PATH, content, 'utf8');
+        const cleanSvg = validation.cleanSvg;
+        fs.writeFileSync(TRACK_MAP_PATH, cleanSvg, 'utf8');
         if (process.env.NODE_ENV !== 'test') {
             const localImgPath = path.join(__dirname, '../html/assets/images/track-map.svg');
             if (fs.existsSync(path.dirname(localImgPath))) {
-                try { fs.writeFileSync(localImgPath, content, 'utf8'); } catch {}
+                try { fs.writeFileSync(localImgPath, cleanSvg, 'utf8'); } catch {}
             }
             const localDataPath = path.join(__dirname, '../html/assets/data/track-map.svg');
             if (fs.existsSync(path.dirname(localDataPath))) {
-                try { fs.writeFileSync(localDataPath, content, 'utf8'); } catch {}
+                try { fs.writeFileSync(localDataPath, cleanSvg, 'utf8'); } catch {}
             }
         }
         try { if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath); } catch {}
