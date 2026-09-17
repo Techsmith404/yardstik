@@ -18,6 +18,16 @@ function getRedisClient() {
     return redisClient;
 }
 
+function generateInitialsAvatar(firstname, lastname, bgColor = '#202830', textColor = '#cbd5e1') {
+    const f = (firstname || '').trim();
+    const l = (lastname || '').trim();
+    const i1 = f ? f[0].toUpperCase() : '';
+    const i2 = l ? l[0].toUpperCase() : '';
+    const initials = (i1 + i2) || '??';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="${bgColor}"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="${textColor}" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="600">${initials}</text></svg>`;
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 module.exports = async function handler(req, res) {
     // SECURITY: Restrict CORS origin to the configured allowed origin.
     // Access-Control-Allow-Credentials: true is incompatible with wildcard '*' origin.
@@ -98,7 +108,7 @@ module.exports = async function handler(req, res) {
             
             if (isAtLocation && isEmployed) {
                 activeIds.push(u.id);
-                const fallbackAvatar = `https://ui-avatars.com/api/?name=${u.firstname}+${u.lastname}&background=202830&color=cbd5e1&size=150`;
+                const fallbackAvatar = generateInitialsAvatar(u.firstname, u.lastname);
                 userMap[u.id] = {
                     name: `${u.firstname} ${u.lastname}`,
                     photoUrl: fallbackAvatar
