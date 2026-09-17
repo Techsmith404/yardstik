@@ -26,6 +26,7 @@ function getDb(customPath) {
     db.exec('PRAGMA busy_timeout = 5000;');    // 5s wait before SQLITE_BUSY error
 
     initSchema(db);
+    runMigrations(db);
     return db;
 }
 
@@ -93,6 +94,36 @@ function initSchema(db) {
     `);
 }
 
+const MIGRATIONS = [
+    {
+        version: 1,
+        description: 'Baseline schema tracking and SQLite index optimization',
+        sql: 'PRAGMA optimize;'
+    }
+];
+
+function runMigrations(db, customMigrations = null) {
+    const migrations = customMigrations || MIGRATIONS;
+    const row = db.prepare('PRAGMA user_version;').get();
+    const currentVersion = row ? (Number(row.user_version) || 0) : 0;
+
+    const pending = migrations
+        .filter(m => m.version > currentVersion)
+        .sort((a, b) => a.version - b.version);
+
+    for (const m of pending) {
+        if (typeof m.sql === 'string') {
+            db.exec(m.sql);
+        } else if (typeof m.up === 'function') {
+            m.up(db);
+        }
+        db.exec(`PRAGMA user_version = ${m.version};`);
+        if (process.env.NODE_ENV !== 'test') {
+            console.log(`[DB] Applied migration v${m.version}: ${m.description || ''}`);
+        }
+    }
+}
+
 function resetDbForTesting() {
     if (dbInstance) {
         try {
@@ -104,5 +135,7 @@ function resetDbForTesting() {
 
 module.exports = {
     getDb,
-    resetDbForTesting
+    resetDbForTesting,
+    runMigrations,
+    MIGRATIONS
 };

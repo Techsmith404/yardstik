@@ -336,3 +336,34 @@ describe('6. Auth Rate Limiting Middleware (IDEA-S02)', () => {
         expect(res.statusCode).toBe(200);
     });
 });
+
+const { getDb, runMigrations } = require('../../control-panel/lib/db');
+
+describe('7. Database Migration Framework (IDEA-A02)', () => {
+    test('Initializes DB with user_version >= 1', () => {
+        const db = getDb();
+        const row = db.prepare('PRAGMA user_version;').get();
+        expect(Number(row.user_version)).toBeGreaterThanOrEqual(1);
+    });
+
+    test('Applies pending migrations in sequence and bumps user_version', () => {
+        const db = getDb();
+        const testMigrations = [
+            { version: 100, description: 'Add test column', sql: 'ALTER TABLE users ADD COLUMN test_migrated TEXT DEFAULT NULL;' },
+            { version: 101, description: 'Add custom index', sql: 'CREATE INDEX IF NOT EXISTS idx_users_test ON users(test_migrated);' }
+        ];
+
+        runMigrations(db, testMigrations);
+        const row = db.prepare('PRAGMA user_version;').get();
+        expect(Number(row.user_version)).toBe(101);
+
+        // Verify column was added
+        const users = db.prepare('SELECT test_migrated FROM users LIMIT 1;').all();
+        expect(Array.isArray(users)).toBe(true);
+
+        // Idempotency: Running migrations again leaves version unchanged
+        runMigrations(db, testMigrations);
+        const rowAfter = db.prepare('PRAGMA user_version;').get();
+        expect(Number(rowAfter.user_version)).toBe(101);
+    });
+});
