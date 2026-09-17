@@ -682,13 +682,9 @@
         function fetchFallbackAnniversaries() {
             if (anniversariesLoaded) return;
             
-            const fallbackUrl = vercelBase ? (vercelBase + '/api/novara?type=anniversaries') : getDataUrl('anniversaries.json');
-            fetch(fallbackUrl)
+            fetch(getDataUrl('anniversaries.json'))
                 .then(function(res) {
                     if (res.ok) return res.json();
-                    if (vercelBase) {
-                        return fetch(getDataUrl('anniversaries.json')).then(function(r) { return r.ok ? r.json() : null; });
-                    }
                     return null;
                 })
                 .then(function(data) {
@@ -698,23 +694,13 @@
                     if (emps && emps.length > 0) anniversariesLoaded = true;
                 })
                 .catch(function(err) {
-                    console.warn("Anniversaries fallback fetch error:", err);
-                    if (!anniversariesLoaded) {
-                        fetch(getDataUrl('anniversaries.json'))
-                            .then(function(r) { return r.ok ? r.json() : null; })
-                            .then(function(data) {
-                                const emps = (data && data.employees) || (data && Array.isArray(data.anniversaries) ? data.anniversaries : null);
-                                renderAnniversariesList(emps || []);
-                            })
-                            .catch(function() {
-                                renderAnniversariesList([]);
-                            });
-                    }
+                    console.warn("Anniversaries fetch error:", err);
+                    renderAnniversariesList([]);
                 });
         }
 
         // Novara Safety Training
-        fetch(vercelBase + '/api/novara')
+        fetch(getDataUrl('safety_videos.json'))
             .then(function(res) {
                 if (res.ok) return res.json();
                 return null;

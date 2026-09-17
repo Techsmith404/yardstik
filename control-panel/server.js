@@ -276,7 +276,12 @@ async function syncToCloud() {
         const siteId = siteConfig.site_id || 'default-site';
 
         const filesToSync = {};
-        const syncFiles = ['reminders.md', 'equipment.json', 'trackers.json', 'special.json', 'shifts.json', 'version.txt', 'config.json', 'seniority.json', 'features.json', 'tracks.json', 'track-map.svg', 'commodity_rules.json'];
+        const syncFiles = [
+            'reminders.md', 'equipment.json', 'trackers.json', 'special.json',
+            'shifts.json', 'version.txt', 'config.json', 'seniority.json',
+            'features.json', 'tracks.json', 'track-map.svg', 'commodity_rules.json',
+            'anniversaries.json', 'safety_videos.json'
+        ];
 
         syncFiles.forEach(f => {
             const p = path.join(DATA_DIR, f);
@@ -330,6 +335,87 @@ async function syncToCloud() {
         console.warn(`[Cloud Sync] Offline / skipped (${e.message})`);
     }
 }
+
+/**
+ * Periodically pulls Novara LMS video compliance and anniversary data
+ * from Vercel using the secure x-sync-secret header and caches flat-files locally.
+ */
+async function syncNovaraData() {
+    try {
+        let siteConfig = {};
+        if (fs.existsSync(CONFIG_PATH)) {
+            siteConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+        }
+        if (!siteConfig.vercel_api_url || !siteConfig.sync_secret) return;
+        const vercelBase = siteConfig.vercel_api_url.replace(/\/+$/, '');
+        const siteId = siteConfig.site_id || 'default-site';
+
+        const res = await fetch(`${vercelBase}/api/novara?site=${encodeURIComponent(siteId)}`, {
+            headers: { 'x-sync-secret': siteConfig.sync_secret }
+        });
+        if (!res.ok) {
+            console.warn(`[Novara Sync] Remote /api/novara returned HTTP ${res.status}`);
+            return;
+        }
+        const data = await res.json();
+        if (!data || !data.success) return;
+
+        let changed = false;
+
+        // 1. Process safety videos
+        const safetyVideosPayload = {
+            success: true,
+            totalMissing: data.totalMissing || 0,
+            totalIncomplete: data.totalIncomplete || 0,
+            totalExpiring: data.totalExpiring || 0,
+            employeeCount: data.employeeCount || 0,
+            response: data.response || [],
+            updated_at: Date.now()
+        };
+        const safetyVideosPath = path.join(DATA_DIR, 'safety_videos.json');
+        const prevSafetyVideos = fs.existsSync(safetyVideosPath) ? fs.readFileSync(safetyVideosPath, 'utf8') : '';
+        const newSafetyVideosStr = JSON.stringify(safetyVideosPayload, null, 2);
+        if (prevSafetyVideos !== newSafetyVideosStr) {
+            fs.writeFileSync(safetyVideosPath, newSafetyVideosStr, 'utf8');
+            changed = true;
+        }
+
+        // 2. Process anniversaries
+        const anniversariesPayload = {
+            is_today: data.anniversaries?.is_today || false,
+            employees: data.anniversaries?.employees || [],
+            updated_at: Date.now()
+        };
+        const anniversariesPath = path.join(DATA_DIR, 'anniversaries.json');
+        const prevAnniversaries = fs.existsSync(anniversariesPath) ? fs.readFileSync(anniversariesPath, 'utf8') : '';
+        const newAnniversariesStr = JSON.stringify(anniversariesPayload, null, 2);
+        if (prevAnniversaries !== newAnniversariesStr) {
+            fs.writeFileSync(anniversariesPath, newAnniversariesStr, 'utf8');
+            changed = true;
+        }
+
+        if (changed) {
+            console.log('[Novara Sync] Refreshed safety_videos.json and anniversaries.json');
+            bumpVersion();
+            triggerSync();
+        }
+    } catch (e) {
+        console.warn('[Novara Sync] Error syncing Novara data:', e.message);
+    }
+}
+
+app.post('/api/novara/sync', async (req, res) => {
+    try {
+        const user = getSessionUser(req);
+        if (!user && !getBasicAuthUser(req)) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        await syncNovaraData();
+        res.json({ success: true, message: 'Novara sync triggered' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to sync Novara: ' + e.message });
+    }
+});
 
 // ── Auth Endpoints (Issue #14) ──────────────────────────────────────────────
 
@@ -1326,6 +1412,8 @@ if (require.main === module) {
         checkAndPerformAuditReset();
         setTimeout(syncToCloud, 3000);
         setInterval(syncToCloud, 5 * 60 * 1000);
+        setTimeout(syncNovaraData, 5000);
+        setInterval(syncNovaraData, 15 * 60 * 1000); // Poll Novara LMS every 15m (SSoT §6.2)
         setInterval(checkAndPerformAuditReset, 60 * 1000);
         setInterval(cleanupExpiredSessions, 60 * 60 * 1000); // Clean expired sessions hourly
         setInterval(() => pruneAuditLogs(5000), 24 * 60 * 60 * 1000); // Daily audit log maintenance
@@ -1338,5 +1426,6 @@ module.exports = {
     getLatestSunday11PMEpoch,
     processWeeklyAuditReset,
     checkAndPerformAuditReset,
-    syncToCloud
+    syncToCloud,
+    syncNovaraData
 };

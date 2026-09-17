@@ -27,11 +27,36 @@ module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Sync-Secret, Authorization');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
+    }
+
+    // SECURITY: IDEA-S04 - Gating /api/novara behind authentication.
+    // Callers must provide x-sync-secret matching SYNC_SECRET, or a valid user session token.
+    const secretHeader = (req.headers['x-sync-secret'] || (req.query && req.query.secret) || '').toString().trim();
+    const expectedSecret = (process.env.SYNC_SECRET || '').trim();
+    const isSecretAuth = expectedSecret && secretHeader && secretHeader === expectedSecret;
+
+    let isSessionAuth = false;
+    const authHeader = (req.headers['authorization'] || '').toString().trim();
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7).trim();
+        const rClient = getRedisClient();
+        if (rClient && token) {
+            try {
+                if (rClient.status === 'wait' || rClient.status === 'close') await rClient.connect();
+                const siteKey = req.query.site || process.env.DEFAULT_SITE_ID || 'default-site';
+                const sessionRaw = await rClient.get(`kiosk:${siteKey}:session:${token}`);
+                if (sessionRaw) isSessionAuth = true;
+            } catch {}
+        }
+    }
+
+    if (!isSecretAuth && !isSessionAuth) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Valid x-sync-secret or session token required' });
     }
 
     try {

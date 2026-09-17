@@ -2,6 +2,7 @@ const syncHandler = require('../../api/sync');
 const lightningHandler = require('../../api/lightning');
 const authHandler = require('../../api/auth');
 const equipmentHandler = require('../../api/equipment');
+const novaraHandler = require('../../api/novara');
 
 // Mock request / response helper
 function createMockReqRes(options = {}) {
@@ -419,5 +420,62 @@ describe('Serverless Cloud Equipment API (api/equipment.js)', () => {
         expect(res.statusCode).toBe(200);
         expect(res.data.success).toBe(true);
         expect(res.data.version).toBeDefined();
+    });
+});
+
+describe('Serverless Cloud Novara LMS API (api/novara.js) - IDEA-S04', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+        process.env = originalEnv;
+    });
+
+    test('Responds with 200 on OPTIONS preflight', async () => {
+        const { req, res } = createMockReqRes({ method: 'OPTIONS' });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.headers['access-control-allow-headers'].toLowerCase()).toContain('x-sync-secret');
+    });
+
+    test('Rejects unauthenticated request without x-sync-secret or session with 401', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara'
+        });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(401);
+        expect(res.data.error).toContain('Unauthorized');
+    });
+
+    test('Rejects request with invalid x-sync-secret with 401', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara',
+            headers: { 'x-sync-secret': 'wrong_secret' }
+        });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(401);
+        expect(res.data.error).toContain('Unauthorized');
+    });
+
+    test('Passes authentication with valid x-sync-secret (returns 500 when NOVARA_API_KEY missing)', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        delete process.env.NOVARA_API_KEY;
+        delete process.env.NOVARA_API_TOKEN;
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara',
+            headers: { 'x-sync-secret': 'valid_sync_secret' }
+        });
+        await novaraHandler(req, res);
+        // Authenticated successfully, then reached API key check
+        expect(res.statusCode).toBe(500);
+        expect(res.data.error).toContain('NOVARA_API_KEY');
     });
 });
