@@ -1,38 +1,4 @@
-let redis = null;
-
-function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-    if (!redisUrl) return null;
-    
-    if (!redis) {
-        try {
-            const Redis = require('ioredis');
-            redis = new Redis(redisUrl, {
-                connectTimeout: 4000,
-                maxRetriesPerRequest: 1,
-                enableReadyCheck: false,
-                lazyConnect: true
-            });
-        } catch (e) {
-            console.error('Failed to initialize Redis client:', e);
-            return null;
-        }
-    }
-    return redis;
-}
-
-async function ensureRedis(client) {
-    if (!client) return null;
-    try {
-        if (client.status === 'wait' || client.status === 'close') {
-            await client.connect();
-        }
-        return client;
-    } catch (e) {
-        console.error('Redis connection failed in api/lightning.js:', e.message);
-        return null;
-    }
-}
+const { getRedisClient, ensureRedis } = require('./lib/redis');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');

@@ -479,3 +479,43 @@ describe('Serverless Cloud Novara LMS API (api/novara.js) - IDEA-S04', () => {
         expect(res.data.error).toContain('NOVARA_API_KEY');
     });
 });
+
+describe('Redis Abstraction Layer (api/lib/redis.js, IDEA-A04)', () => {
+    const { getRedisClient, ensureRedis, resetRedisClient } = require('../../api/lib/redis');
+
+    afterEach(() => {
+        resetRedisClient();
+        delete process.env.REDIS_URL;
+        delete process.env.KV_URL;
+        delete process.env.UPSTASH_REDIS_URL;
+    });
+
+    test('getRedisClient returns null when no Redis environment variables are configured', () => {
+        delete process.env.REDIS_URL;
+        delete process.env.KV_URL;
+        delete process.env.UPSTASH_REDIS_URL;
+        expect(getRedisClient()).toBeNull();
+    });
+
+    test('getRedisClient instantiates singleton client when REDIS_URL is configured', () => {
+        process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+        const client1 = getRedisClient();
+        expect(client1).not.toBeNull();
+        const client2 = getRedisClient();
+        expect(client2).toBe(client1);
+    });
+
+    test('ensureRedis handles null client gracefully', async () => {
+        const result = await ensureRedis(null);
+        expect(result).toBeNull();
+    });
+
+    test('resetRedisClient clears cached instance', () => {
+        process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+        const client1 = getRedisClient();
+        resetRedisClient();
+        const client2 = getRedisClient();
+        expect(client2).not.toBe(client1);
+    });
+});
+

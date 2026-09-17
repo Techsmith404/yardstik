@@ -1,22 +1,4 @@
-let redisClient = null;
-function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-    if (!redisUrl) return null;
-    if (!redisClient) {
-        try {
-            const Redis = require('ioredis');
-            redisClient = new Redis(redisUrl, {
-                connectTimeout: 3000,
-                maxRetriesPerRequest: 1,
-                enableReadyCheck: false,
-                lazyConnect: true
-            });
-        } catch (e) {
-            return null;
-        }
-    }
-    return redisClient;
-}
+const { getRedisClient, ensureRedis } = require('./lib/redis');
 
 function generateInitialsAvatar(firstname, lastname, bgColor = '#202830', textColor = '#cbd5e1') {
     const f = (firstname || '').trim();
