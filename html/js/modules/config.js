@@ -1,4 +1,6 @@
 // Mode Detection & Site Configuration Module
+import { fetchJson, fetchText, cacheBustUrl } from './http.js';
+
 const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 const viewParam = (urlParams.get('view') || '').toLowerCase();
 
@@ -194,25 +196,22 @@ let currentVersion = null;
 
 export async function fetchSiteConfig(onLoaded) {
     try {
-        const res = await fetch('assets/data/config.json?t=' + new Date().getTime());
-        if (res.ok) {
-            const data = await res.json();
-            Object.assign(siteConfig, data);
-            if (siteConfig.vercel_api_url) {
-                siteConfig.vercel_api_url = siteConfig.vercel_api_url.replace(/\/+$/, '');
+        const data = await fetchJson(cacheBustUrl('assets/data/config.json'));
+        Object.assign(siteConfig, data);
+        if (siteConfig.vercel_api_url) {
+            siteConfig.vercel_api_url = siteConfig.vercel_api_url.replace(/\/+$/, '');
+        }
+        if (siteConfig.site_name) {
+            document.title = siteConfig.site_name;
+            const desktopText = document.getElementById('desktop-title-text');
+            if (desktopText) {
+                desktopText.innerText = siteConfig.site_name;
+            } else {
+                const desktopTitle = document.getElementById('desktop-title');
+                if (desktopTitle) desktopTitle.innerText = siteConfig.site_name;
             }
-            if (siteConfig.site_name) {
-                document.title = siteConfig.site_name;
-                const desktopText = document.getElementById('desktop-title-text');
-                if (desktopText) {
-                    desktopText.innerText = siteConfig.site_name;
-                } else {
-                    const desktopTitle = document.getElementById('desktop-title');
-                    if (desktopTitle) desktopTitle.innerText = siteConfig.site_name;
-                }
-                const headerTitle = document.getElementById('header-dashboard-title');
-                if (headerTitle) headerTitle.innerText = siteConfig.site_name;
-            }
+            const headerTitle = document.getElementById('header-dashboard-title');
+            if (headerTitle) headerTitle.innerText = siteConfig.site_name;
         }
     } catch (e) {
         console.warn('Using default site configuration:', e);
@@ -239,8 +238,7 @@ export async function fetchSiteConfig(onLoaded) {
 
 export async function checkVersion() {
     try {
-        const res = await fetch('assets/data/version.txt?t=' + new Date().getTime());
-        const version = await res.text();
+        const version = await fetchText(cacheBustUrl('assets/data/version.txt'));
         if (currentVersion === null) {
             currentVersion = version;
         } else if (currentVersion !== version) {

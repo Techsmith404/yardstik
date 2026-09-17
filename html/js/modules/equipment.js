@@ -1,6 +1,7 @@
 // Equipment Status, Scales, Weekly Audit & Autoscroll Module
 import { getHolidayEquipmentIcon } from './theme.js';
 import { cachedFeatures } from './features.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let cachedEquipment = { categories: [] };
 let equipScrollInterval = null;
@@ -19,8 +20,7 @@ export function isAuditResetCurrent(lastAuditResetEpoch) {
 
 export async function fetchEquipmentStatus() {
     try {
-        const res = await fetch('assets/data/equipment.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/equipment.json'));
         
         // Prevent unnecessary DOM rebuilds if data hasn't changed (deep comparison)
         if (JSON.stringify(data) !== JSON.stringify(cachedEquipment)) {

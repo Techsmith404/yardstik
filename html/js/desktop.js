@@ -11,6 +11,7 @@ import { fetchFeatures } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { sanitizeMarkdownHtml } from './modules/sanitize.js';
+import { fetchText, cacheBustUrl } from './modules/http.js';
 
 // 1. Device Routing (Redirects phones to mobile.html)
 if (initDeviceRouting()) {
@@ -63,9 +64,7 @@ export async function renderDesktopReminders() {
     if (!listContainer) return;
 
     try {
-        const res = await fetch('assets/data/reminders.md?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('Not found');
-        const rawText = await res.text();
+        const rawText = await fetchText(cacheBustUrl('assets/data/reminders.md'));
 
         const sections = rawText.split(/^# /m).filter(s => s.trim().length > 0);
         let parsedReminders = [];

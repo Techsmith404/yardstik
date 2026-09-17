@@ -1,5 +1,6 @@
 // Novara Safety Curriculum & Action Required Video Parser Module
 import { siteConfig, isDesktopMode } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 let safetyScrollPos = 0;
 let safetyScrollDirection = 1;
@@ -80,10 +81,7 @@ export async function fetchSafetyVideos() {
         let data = null;
         // 1. Try local flat-file first (instant load, 100% air-gapped autonomy)
         try {
-            const localRes = await fetch('assets/data/safety_videos.json?t=' + new Date().getTime());
-            if (localRes.ok) {
-                data = await localRes.json();
-            }
+            data = await fetchJson(cacheBustUrl('assets/data/safety_videos.json'));
         } catch (localErr) {
             console.warn("Local safety_videos.json fetch skipped:", localErr);
         }
@@ -92,10 +90,11 @@ export async function fetchSafetyVideos() {
         if (!data) {
             const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
             const siteId = siteConfig.site_id || 'default-site';
-            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=safety_videos.json&t=` + new Date().getTime() : '/api/sync?file=safety_videos.json';
-            const cloudRes = await fetch(cloudUrl);
-            if (cloudRes.ok) {
-                data = await cloudRes.json();
+            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=safety_videos.json` : '/api/sync?file=safety_videos.json';
+            try {
+                data = await fetchJson(cacheBustUrl(cloudUrl));
+            } catch (cloudErr) {
+                console.warn("Cloud safety sync skipped:", cloudErr);
             }
         }
         

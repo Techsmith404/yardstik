@@ -1,6 +1,7 @@
 // Markdown Reminders & Magic Words Parser Module
 import { isDesktopMode, isHandoffActive } from './config.js';
 import { sanitizeMarkdownHtml } from './sanitize.js';
+import { fetchText, cacheBustUrl } from './http.js';
 
 export let remindersList = [];
 export let currentReminderIndex = 0;
@@ -324,9 +325,7 @@ export function renderDesktopReminders() {
 
 export async function fetchReminders() {
     try {
-        const res = await fetch('assets/data/reminders.md?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('Not found');
-        const rawText = await res.text();
+        const rawText = await fetchText(cacheBustUrl('assets/data/reminders.md'));
         
         // Split by H1 tags (starts with exactly one # and a space)
         const sections = rawText.split(/^# /m).filter(s => s.trim().length > 0);

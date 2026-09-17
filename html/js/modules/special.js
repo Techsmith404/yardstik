@@ -1,10 +1,9 @@
 // Special Event High-Priority Override Module
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export async function fetchSpecialEvent() {
     try {
-        const res = await fetch('assets/data/special.json?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('No special event');
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/special.json'));
         
         // Check end time
         if (data.endTime) {

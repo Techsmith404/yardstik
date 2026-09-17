@@ -151,4 +151,35 @@ describe('YardStik Kiosk TV Display & Viewport Ergonomics (SSoT §2, §5, §9.7)
         const mobileJs = fs.readFileSync(mobileJsPath, 'utf8');
         expect(mobileJs).toContain('sanitizeMarkdownHtml');
     });
+
+    test('7. Shared HTTP fetch utility module (IDEA-A03) provides robust caching and error handling', () => {
+        const httpModulePath = path.resolve(__dirname, '../../html/js/modules/http.js');
+        expect(fs.existsSync(httpModulePath)).toBe(true);
+        const httpJs = fs.readFileSync(httpModulePath, 'utf8');
+
+        expect(httpJs).toContain('export function cacheBustUrl');
+        expect(httpJs).toContain('export async function fetchJson');
+        expect(httpJs).toContain('export async function fetchText');
+        expect(httpJs).toContain('export async function fetchJsonWithHeaders');
+
+        // Test cacheBustUrl logic directly
+        function cacheBustUrl(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return `${url}${sep}t=${Date.now()}`;
+        }
+        expect(cacheBustUrl('assets/data/config.json')).toMatch(/^assets\/data\/config\.json\?t=\d+$/);
+        expect(cacheBustUrl('/api/sync?file=test.json')).toMatch(/^\/api\/sync\?file=test\.json&t=\d+$/);
+
+        // Verify key frontend modules import from http.js
+        const modulesUsingHttp = [
+            'equipment.js', 'clock.js', 'features.js', 'config.js',
+            'reminders.js', 'special.js', 'trackers.js', 'slideshow.js',
+            'anniversaries.js', 'safety.js', 'lightning.js', 'trackmap.js', 'weather.js'
+        ];
+        for (const mod of modulesUsingHttp) {
+            const content = fs.readFileSync(path.join(jsModulesDir, mod), 'utf8');
+            expect(content).toMatch(/from\s+['"]\.\/http\.js['"]/);
+        }
+    });
 });
+

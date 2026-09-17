@@ -1,6 +1,7 @@
 // Clock, Shift Tracker & Countdown Engine Module
 import { applyTheme, getSeasonalTheme } from './theme.js';
 import { setupHandoffLayout, isExplicitHandoff } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let cachedShifts = [];
 let lastTrackedShiftName = '__INIT__';
@@ -39,8 +40,7 @@ export function getCurrentDate() {
 
 export async function fetchShifts() {
     try {
-        const res = await fetch('assets/data/shifts.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/shifts.json'));
         cachedShifts = data.shifts || [];
     } catch (e) {
         console.warn('Error loading shifts.json:', e);

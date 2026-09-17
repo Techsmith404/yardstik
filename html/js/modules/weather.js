@@ -4,6 +4,7 @@ import { cachedShifts, fetchShifts, updateShiftTracker } from './clock.js';
 import { startWeatherAnimation } from './fx.js';
 import { hasAllocatedLightningSlot } from './lightning.js';
 import { cachedFeatures } from './features.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let activeAlertCount = 0;
 export let currentWeatherCode = 0;
@@ -180,9 +181,8 @@ export async function getWeather() {
         const lon = siteConfig.longitude || -87.100;
 
         // Request current stats + daily precipitation outlook blocks + hourly conditions + apparent temp + precipitation + snowfall + weathercode + sunrise/sunset
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall,weathercode&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&t=` + new Date().getTime();
-        const res = await fetch(url);
-        const data = await res.json();
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall,weathercode&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto`;
+        const data = await fetchJson(cacheBustUrl(url));
         
         let currentTemp = Math.round(data.current_weather ? data.current_weather.temperature : (data.current ? data.current.temperature_2m : 70));
         let currentWind = Math.round(data.current_weather ? data.current_weather.windspeed : (data.current ? data.current.wind_speed_10m : 0));
@@ -339,9 +339,7 @@ export async function getWeather() {
         
         // 3. National Weather Service (NWS) Active Alerts
         try {
-            const nwsRes = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, { cache: 'no-store' });
-            if (!nwsRes.ok) throw new Error('NWS HTTP ' + nwsRes.status);
-            const nwsData = await nwsRes.json();
+            const nwsData = await fetchJson(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, { cache: 'no-store' });
             
             // -- DEV MOCK NWS --
             if (mock === 'storm' || mock === 'lightning') nwsData.features = [{ properties: { event: 'Severe Thunderstorm Warning', ends: new Date(Date.now() + 2*3600000).toISOString() } }];

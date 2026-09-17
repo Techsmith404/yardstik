@@ -1,5 +1,6 @@
 // Employee Milestones & Anniversaries Engine Module
 import { siteConfig, isDesktopMode } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let rawAnniversariesData = null;
 export let isAnniversariesExpanded = false;
@@ -46,11 +47,10 @@ export function renderAllAnniversaries(employees) {
 
 export async function getAnniversaries() {
     try {
-        const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+        let data = null;
         // 1. Try local flat-file first (instant load, 100% air-gapped autonomy)
         try {
-            const localRes = await fetch('assets/data/anniversaries.json?t=' + new Date().getTime());
-            if (localRes.ok) data = await localRes.json();
+            data = await fetchJson(cacheBustUrl('assets/data/anniversaries.json'));
         } catch (localErr) {
             console.warn('Local anniversaries.json check skipped:', localErr);
         }
@@ -59,10 +59,9 @@ export async function getAnniversaries() {
         if (!data || !data.employees) {
             const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
             const siteId = siteConfig.site_id || 'default-site';
-            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=anniversaries.json&t=` + new Date().getTime() : '/api/sync?file=anniversaries.json';
+            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=anniversaries.json` : '/api/sync?file=anniversaries.json';
             try {
-                const cloudRes = await fetch(cloudUrl);
-                if (cloudRes.ok) data = await cloudRes.json();
+                data = await fetchJson(cacheBustUrl(cloudUrl));
             } catch (cloudErr) {
                 console.warn('Cloud anniversaries sync skipped:', cloudErr);
             }
