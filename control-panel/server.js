@@ -377,7 +377,9 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/me', (req, res) => {
-    if (!req.user) {
+    // Session token MUST be present for interactive session auth state.
+    // This prevents cached HTTP Basic Auth headers from triggering unwanted auto-login loops on login.html after logout.
+    if (!req.user || !req.sessionToken) {
         return res.json({ authenticated: false, user: null });
     }
     res.json({

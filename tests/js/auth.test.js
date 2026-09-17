@@ -198,6 +198,14 @@ describe('4. Session Management & Auth REST Endpoints', () => {
             .get('/api/auth/me')
             .set('Authorization', `Bearer ${tempToken}`);
         expect(meRes.body.authenticated).toBe(false);
+
+        // Even if browser sends cached Basic Auth, /api/auth/me must reject it without active session token
+        const basicAuthHeader = 'Basic ' + Buffer.from(`${TEST_ADMIN}:${TEST_PASS}`).toString('base64');
+        const basicMeRes = await request(app)
+            .get('/api/auth/me')
+            .set('Authorization', basicAuthHeader);
+        expect(basicMeRes.body.authenticated).toBe(false);
+        expect(basicMeRes.body.user).toBeNull();
     });
 });
 
