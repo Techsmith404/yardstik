@@ -2,6 +2,7 @@
 import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
 import { renderEquipmentDashboard } from './equipment.js';
 import { cachedFeatures } from './features.js';
+import { globalActiveShiftName } from './clock.js';
 
 const themeIcons = {
     halloween: {
@@ -55,7 +56,7 @@ export function getSeasonalTheme(date = new Date()) {
 
     // Per-Shift Theme Dedication
     if (cachedFeatures && cachedFeatures.shift_theme_dedication) {
-        const activeShiftName = window.globalActiveShiftName;
+        const activeShiftName = globalActiveShiftName || (typeof window !== 'undefined' ? window.globalActiveShiftName : null);
         if (activeShiftName && cachedFeatures.shift_themes) {
             const lowerActive = activeShiftName.toLowerCase().trim();
             for (const [sName, themeVal] of Object.entries(cachedFeatures.shift_themes)) {

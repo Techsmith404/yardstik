@@ -1,6 +1,6 @@
 // Advanced Weather Matrix & Dynamic Slot Allocator Module
 import { siteConfig } from './config.js';
-import { cachedShifts, fetchShifts, updateShiftTracker } from './clock.js';
+import { cachedShifts, fetchShifts, updateShiftTracker, globalActiveShiftName, globalActiveShiftMinsLeft, globalNextShiftName } from './clock.js';
 import { startWeatherAnimation } from './fx.js';
 import { hasAllocatedLightningSlot } from './lightning.js';
 import { cachedFeatures } from './features.js';
@@ -260,15 +260,19 @@ export async function getWeather() {
         let label1 = "NEXT 12H";
         let label2 = "";
         
-        if (window.globalActiveShiftName) {
-            h1 = Math.ceil(window.globalActiveShiftMinsLeft / 60);
+        const activeName = globalActiveShiftName || (typeof window !== 'undefined' ? window.globalActiveShiftName : null);
+        const minsLeft = globalActiveShiftMinsLeft || (typeof window !== 'undefined' ? window.globalActiveShiftMinsLeft : 0);
+        const nextName = globalNextShiftName || (typeof window !== 'undefined' ? window.globalNextShiftName : null);
+        
+        if (activeName) {
+            h1 = Math.ceil(minsLeft / 60);
             if (h1 === 0) h1 = 1; // At least current hour
-            label1 = window.globalActiveShiftName;
+            label1 = activeName;
             
-            if (window.globalActiveShiftMinsLeft <= 60) {
+            if (minsLeft <= 60) {
                 showNextShift = true;
                 h2 = 8; // Next shift is 8 hours
-                label2 = window.globalNextShiftName || "NEXT SHIFT";
+                label2 = nextName || "NEXT SHIFT";
             }
         }
         
@@ -289,7 +293,7 @@ export async function getWeather() {
                     currentShiftPrecip += amt;
                 } else if (showNextShift && i < h1 + h2) {
                     nextShiftPrecip += amt;
-                } else if (!window.globalActiveShiftName) {
+                } else if (!activeName) {
                     currentShiftPrecip += amt; // Fallback to 12h
                 }
                 
