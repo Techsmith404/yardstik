@@ -138,7 +138,7 @@ describe('Serverless Lightning Radar API (api/lightning.js)', () => {
         expect(res.headers['cache-control']).toBeDefined();
     });
 
-    test('Rejects request with 500 when no Xweather keys are configured', async () => {
+    test('Returns 200 all-clear when no Xweather keys are configured and no strikes present', async () => {
         const originalEnv = { ...process.env };
         delete process.env.XWEATHER_ID;
         delete process.env.XWEATHER_SECRET;
@@ -151,15 +151,96 @@ describe('Serverless Lightning Radar API (api/lightning.js)', () => {
         delete process.env.XWEATHER_SECRET4;
         delete process.env.XWEATHER_ID5;
         delete process.env.XWEATHER_SECRET5;
+        delete process.env.FREE_XWEATHER_API;
+        delete process.env.FREE_XWEATHER_KEYS;
+        delete process.env.FREE_XWEATHER_ID;
+        delete process.env.FREE_XWEATHER_SECRET;
+        delete process.env.PAID_XWEATHER_API;
+        delete process.env.PAID_XWEATHER_KEYS;
+        delete process.env.PAID_XWEATHER_ID;
+        delete process.env.PAID_XWEATHER_SECRET;
 
         const { req, res } = createMockReqRes({
             method: 'GET',
             query: { lat: '41.604', lon: '-87.131' }
         });
         await lightningHandler(req, res);
-        expect(res.statusCode).toBe(500);
-        expect(res.data.error).toContain('No Xweather API Keys configured');
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.count).toBe(0);
+        expect(res.data.response).toEqual([]);
+        expect(res.data.provider).toBe('blitzortung');
 
+        process.env = originalEnv;
+    });
+
+    test('Queries free Xweather key first when both free and paid are configured', async () => {
+        const originalEnv = { ...process.env };
+        process.env.FREE_XWEATHER_API = 'free_id:free_secret';
+        process.env.PAID_XWEATHER_API = 'paid_id:paid_secret';
+
+        const originalFetch = global.fetch;
+        const queriedUrls = [];
+        global.fetch = jest.fn().mockImplementation(async (url) => {
+            queriedUrls.push(url);
+            return {
+                json: async () => ({
+                    success: true,
+                    count: 1,
+                    response: [{ ob: { dateTimeISO: new Date().toISOString() }, loc: { lat: 41.6, long: -87.1 } }]
+                })
+            };
+        });
+
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            query: { lat: '41.604', lon: '-87.131' }
+        });
+        await lightningHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.provider).toBe('xweather-free');
+        expect(queriedUrls.length).toBe(1);
+        expect(queriedUrls[0]).toContain('client_id=free_id');
+
+        global.fetch = originalFetch;
+        process.env = originalEnv;
+    });
+
+    test('Fails over to paid key when free keys are exhausted', async () => {
+        const originalEnv = { ...process.env };
+        process.env.FREE_XWEATHER_API = 'free_id:free_secret';
+        process.env.PAID_XWEATHER_API = 'paid_id:paid_secret';
+
+        const originalFetch = global.fetch;
+        const queriedUrls = [];
+        global.fetch = jest.fn().mockImplementation(async (url) => {
+            queriedUrls.push(url);
+            if (url.includes('client_id=free_id')) {
+                return {
+                    json: async () => ({ error: { code: 'maxhits', description: 'Quota exceeded' } })
+                };
+            }
+            return {
+                json: async () => ({
+                    success: true,
+                    count: 1,
+                    response: [{ ob: { dateTimeISO: new Date().toISOString() }, loc: { lat: 41.6, long: -87.1 } }]
+                })
+            };
+        });
+
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            query: { lat: '41.604', lon: '-87.131' }
+        });
+        await lightningHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.provider).toBe('xweather-paid');
+        expect(queriedUrls.length).toBe(2);
+        expect(queriedUrls[0]).toContain('client_id=free_id');
+        expect(queriedUrls[1]).toContain('client_id=paid_id');
+
+        global.fetch = originalFetch;
         process.env = originalEnv;
     });
 
