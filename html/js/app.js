@@ -13,6 +13,11 @@ import { fetchSpecialEvent } from './modules/special.js';
 import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures, isTrackMapActive } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
+import { registerServiceWorker } from './modules/sw-register.js';
+
+// 0. Register Offline-First Service Worker (IDEA-F03)
+registerServiceWorker();
+
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 if (initMobileRedirect()) {

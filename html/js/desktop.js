@@ -12,6 +12,11 @@ import { fetchTracks } from './modules/trackmap.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { sanitizeMarkdownHtml } from './modules/sanitize.js';
 import { fetchText, cacheBustUrl } from './modules/http.js';
+import { registerServiceWorker } from './modules/sw-register.js';
+
+// Register Offline-First Service Worker (IDEA-F03)
+registerServiceWorker();
+
 
 // 1. Device Routing (Redirects phones to mobile.html)
 if (initDeviceRouting()) {

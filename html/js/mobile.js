@@ -142,6 +142,9 @@
                 } else if (currentVersion !== trimmed) {
                     console.log("New version detected, refreshing data feeds:", trimmed);
                     currentVersion = trimmed;
+                    if (typeof navigator !== 'undefined' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+                    }
                     refreshAllData(true);
                 }
             })
@@ -1696,6 +1699,14 @@
         fetchSiteConfig().then(function() {
             refreshAllData();
         });
+
+        // Register Offline-First Service Worker (IDEA-F03)
+        var hostname = window.location.hostname || '';
+        var isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+        var isSecure = window.location.protocol === 'https:' || isLocalhost;
+        if ('serviceWorker' in navigator && isSecure) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        }
 
         // Polling Intervals
         setInterval(checkVersion, 5000); // 5s Version check

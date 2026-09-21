@@ -143,6 +143,9 @@ export async function checkVersion() {
             currentVersion = version;
         } else if (currentVersion !== version) {
             console.log("New version detected, refreshing kiosk...");
+            if (typeof navigator !== 'undefined' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+            }
             location.reload();
         }
     } catch (e) {}
