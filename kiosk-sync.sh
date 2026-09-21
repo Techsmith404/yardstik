@@ -39,8 +39,8 @@ if [ "$BEFORE_HASH" != "$AFTER_HASH" ]; then
         echo "$(date +%s)" > "$REPO_DIR/html/assets/data/version.txt" 2>/dev/null || true
     fi
 
-    # Recreate / restart containers to apply any server.js or compose changes
-    docker compose up -d --remove-orphans >/dev/null 2>&1 || docker compose restart control-panel >/dev/null 2>&1 || true
+    # Recreate / rebuild containers to apply any server.js, dependency, or compose changes
+    docker compose up -d --build --remove-orphans >/dev/null 2>&1 || docker compose restart control-panel >/dev/null 2>&1 || true
     log "Kiosk services updated and reloaded."
 else
     log "Already up to date. No restart needed."

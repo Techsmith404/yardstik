@@ -59,6 +59,8 @@ services:
       - ./control-panel/scripts:/app/scripts
       - ./control-panel/public:/app/public
       - ./control-panel/lib:/app/lib
+      - ./control-panel/routes:/app/routes
+      - ./control-panel/middleware:/app/middleware
       - ./control-panel/server.js:/app/server.js
       # Control panel reads/writes ephemeral data and site config from isolated dev staging path
       - /opt/docker/kiosk-dev/kiosk-data/data:/data
