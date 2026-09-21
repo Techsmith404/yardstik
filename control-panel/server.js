@@ -34,6 +34,7 @@ const {
 const { createRateLimiter } = require('./lib/rate-limit');
 const { getLatestSunday11PMEpoch, isAuditResetCurrent } = require('./lib/audit-reset');
 const { validateAndSanitizeSvg } = require('./lib/svg-sanitizer');
+const { getBlitzortungService } = require('./lib/blitzortung');
 
 const app = express();
 
@@ -292,7 +293,7 @@ async function syncToCloud() {
             'reminders.md', 'equipment.json', 'trackers.json', 'special.json',
             'shifts.json', 'version.txt', 'config.json', 'seniority.json',
             'features.json', 'tracks.json', 'track-map.svg', 'commodity_rules.json',
-            'anniversaries.json', 'safety_videos.json'
+            'anniversaries.json', 'safety_videos.json', 'lightning.json'
         ];
 
         syncFiles.forEach(f => {
@@ -1239,6 +1240,53 @@ app.get('/api/tracks/template-excel', (req, res) => {
     res.status(404).json({ error: 'Excel starter template not found.' });
 });
 
+// ── Blitzortung Community Lightning API (SSoT §6.2 / IDEA-F04) ──────────────
+app.get('/api/lightning', (req, res) => {
+    try {
+        let siteConfig = {};
+        if (fs.existsSync(CONFIG_PATH)) {
+            try { siteConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
+        }
+        let lat = parseFloat(req.query.lat);
+        let lon = parseFloat(req.query.lon);
+        let radius = parseFloat(req.query.radius) || 15;
+        if (isNaN(lat)) lat = siteConfig.latitude || 41.6045;
+        if (isNaN(lon)) lon = siteConfig.longitude || -87.1311;
+
+        const lightningFilePath = path.join(DATA_DIR, 'lightning.json');
+        const blitz = getBlitzortungService({
+            latitude: lat,
+            longitude: lon,
+            radiusMiles: radius,
+            dataDir: DATA_DIR,
+            onStrike: () => {
+                syncToCloud().catch(() => {});
+            }
+        });
+
+        const liveData = blitz.getStrikes(lat, lon, radius);
+        if (liveData.count > 0 || !fs.existsSync(lightningFilePath)) {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30');
+            return res.json(liveData);
+        }
+
+        try {
+            const raw = fs.readFileSync(lightningFilePath, 'utf8');
+            const parsed = JSON.parse(raw);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30');
+            return res.json(parsed);
+        } catch {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30');
+            return res.json(liveData);
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message, response: [] });
+    }
+});
+
 // ── Commodity Rules & Classification API ────────────────────────────────────
 const COMMODITY_RULES_PATH = process.env.COMMODITY_RULES_PATH || path.join(DATA_DIR, 'commodity_rules.json');
 const DEFAULT_COMMODITY_RULES = {
@@ -1398,6 +1446,30 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Control Panel Server running on port ${PORT}`);
         checkAndPerformAuditReset();
+
+        // Start Blitzortung Community Lightning Service (IDEA-F04)
+        if (process.env.ENABLE_BLITZORTUNG !== 'false') {
+            try {
+                let siteConfig = {};
+                if (fs.existsSync(CONFIG_PATH)) {
+                    try { siteConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
+                }
+                const blitz = getBlitzortungService({
+                    latitude: siteConfig.latitude || 41.6045,
+                    longitude: siteConfig.longitude || -87.1311,
+                    radiusMiles: 15,
+                    dataDir: DATA_DIR,
+                    onStrike: () => {
+                        syncToCloud().catch(() => {});
+                    }
+                });
+                blitz.start();
+                console.log('[Blitzortung] Real-time community lightning monitor initialized.');
+            } catch (bErr) {
+                console.warn('[Blitzortung] Failed to initialize lightning service:', bErr.message);
+            }
+        }
+
         setTimeout(syncToCloud, 3000);
         setInterval(syncToCloud, 5 * 60 * 1000);
         setTimeout(syncNovaraData, 5000);
@@ -1416,5 +1488,6 @@ module.exports = {
     checkAndPerformAuditReset,
     syncToCloud,
     syncNovaraData,
-    loginLimiter
+    loginLimiter,
+    getBlitzortungService
 };

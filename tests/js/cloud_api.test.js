@@ -162,6 +162,47 @@ describe('Serverless Lightning Radar API (api/lightning.js)', () => {
 
         process.env = originalEnv;
     });
+
+    test('Serves synced Blitzortung community lightning data from Redis when present (IDEA-F04)', async () => {
+        const fakeRedis = {
+            status: 'ready',
+            get: jest.fn().mockImplementation(async (key) => {
+                if (key === 'kiosk:default-site:lightning.json') {
+                    return JSON.stringify({
+                        success: true,
+                        count: 1,
+                        response: [
+                            {
+                                ob: { dateTimeISO: new Date(Date.now() - 60000).toISOString(), timestamp: Math.floor(Date.now() / 1000) },
+                                loc: { lat: 41.62, long: -87.12 },
+                                relativeTo: { distanceMI: 3.5, distanceKM: 5.6, bearing: 45, bearingENG: 'NE' },
+                                provider: 'blitzortung'
+                            }
+                        ]
+                    });
+                }
+                return null;
+            })
+        };
+        const redisLib = require('../../api/lib/redis');
+        jest.spyOn(redisLib, 'getRedisClient').mockReturnValue(fakeRedis);
+        jest.spyOn(redisLib, 'ensureRedis').mockResolvedValue(fakeRedis);
+
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            query: { lat: '41.604', lon: '-87.131', site: 'default-site' }
+        });
+        const freshLightningHandler = require('../../api/lightning');
+        await freshLightningHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.provider).toBe('blitzortung');
+        expect(res.data.response.length).toBe(1);
+        expect(res.data.response[0].relativeTo.distanceMI).toBe(3.5);
+
+        redisLib.getRedisClient.mockRestore();
+        redisLib.ensureRedis.mockRestore();
+    });
 });
 
 describe('Serverless Cloud Auth API (api/auth.js)', () => {

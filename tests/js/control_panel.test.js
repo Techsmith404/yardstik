@@ -255,6 +255,14 @@ describe('Control Panel CRUD & Operational Endpoints', () => {
         expect(getRes.status).toBe(200);
         expect(getRes.body.categories[0].id).toBe('custom_scrap');
     });
+
+    test('GET /api/lightning returns live or static Blitzortung community lightning status (IDEA-F04)', async () => {
+        const res = await request(app).get('/api/lightning?lat=41.6045&lon=-87.1311');
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.provider).toBe('blitzortung');
+        expect(Array.isArray(res.body.response)).toBe(true);
+    });
 });
 
 describe('SVG Track Map Upload & Security Sanitization (SSoT §8 / Security Hardening)', () => {
