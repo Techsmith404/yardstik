@@ -19,6 +19,7 @@
     { "source": "/mobile.html", "destination": "/html/mobile.html" },
     { "source": "/desktop.html", "destination": "/html/desktop.html" },
     { "source": "/version.txt", "destination": "/html/assets/data/version.txt" },
+    { "source": "/sw.js", "destination": "/html/sw.js" },
     { "source": "/", "destination": "/html/index.html" }
   ]
 }

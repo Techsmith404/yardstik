@@ -1,9 +1,10 @@
 // Advanced Weather Matrix & Dynamic Slot Allocator Module
 import { siteConfig } from './config.js';
-import { cachedShifts, fetchShifts, updateShiftTracker } from './clock.js';
+import { cachedShifts, fetchShifts, updateShiftTracker, globalActiveShiftName, globalActiveShiftMinsLeft, globalNextShiftName } from './clock.js';
 import { startWeatherAnimation } from './fx.js';
 import { hasAllocatedLightningSlot } from './lightning.js';
 import { cachedFeatures } from './features.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let activeAlertCount = 0;
 export let currentWeatherCode = 0;
@@ -180,9 +181,8 @@ export async function getWeather() {
         const lon = siteConfig.longitude || -87.100;
 
         // Request current stats + daily precipitation outlook blocks + hourly conditions + apparent temp + precipitation + snowfall + weathercode + sunrise/sunset
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall,weathercode&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&t=` + new Date().getTime();
-        const res = await fetch(url);
-        const data = await res.json();
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,wind_speed_10m&hourly=precipitation_probability,windspeed_10m,apparent_temperature,precipitation,snowfall,weathercode&daily=weathercode,sunrise,sunset,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto`;
+        const data = await fetchJson(cacheBustUrl(url));
         
         let currentTemp = Math.round(data.current_weather ? data.current_weather.temperature : (data.current ? data.current.temperature_2m : 70));
         let currentWind = Math.round(data.current_weather ? data.current_weather.windspeed : (data.current ? data.current.wind_speed_10m : 0));
@@ -260,15 +260,19 @@ export async function getWeather() {
         let label1 = "NEXT 12H";
         let label2 = "";
         
-        if (window.globalActiveShiftName) {
-            h1 = Math.ceil(window.globalActiveShiftMinsLeft / 60);
+        const activeName = globalActiveShiftName || (typeof window !== 'undefined' ? window.globalActiveShiftName : null);
+        const minsLeft = globalActiveShiftMinsLeft || (typeof window !== 'undefined' ? window.globalActiveShiftMinsLeft : 0);
+        const nextName = globalNextShiftName || (typeof window !== 'undefined' ? window.globalNextShiftName : null);
+        
+        if (activeName) {
+            h1 = Math.ceil(minsLeft / 60);
             if (h1 === 0) h1 = 1; // At least current hour
-            label1 = window.globalActiveShiftName;
+            label1 = activeName;
             
-            if (window.globalActiveShiftMinsLeft <= 60) {
+            if (minsLeft <= 60) {
                 showNextShift = true;
                 h2 = 8; // Next shift is 8 hours
-                label2 = window.globalNextShiftName || "NEXT SHIFT";
+                label2 = nextName || "NEXT SHIFT";
             }
         }
         
@@ -289,7 +293,7 @@ export async function getWeather() {
                     currentShiftPrecip += amt;
                 } else if (showNextShift && i < h1 + h2) {
                     nextShiftPrecip += amt;
-                } else if (!window.globalActiveShiftName) {
+                } else if (!activeName) {
                     currentShiftPrecip += amt; // Fallback to 12h
                 }
                 
@@ -339,9 +343,7 @@ export async function getWeather() {
         
         // 3. National Weather Service (NWS) Active Alerts
         try {
-            const nwsRes = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, { cache: 'no-store' });
-            if (!nwsRes.ok) throw new Error('NWS HTTP ' + nwsRes.status);
-            const nwsData = await nwsRes.json();
+            const nwsData = await fetchJson(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, { cache: 'no-store' });
             
             // -- DEV MOCK NWS --
             if (mock === 'storm' || mock === 'lightning') nwsData.features = [{ properties: { event: 'Severe Thunderstorm Warning', ends: new Date(Date.now() + 2*3600000).toISOString() } }];

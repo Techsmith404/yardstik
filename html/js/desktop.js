@@ -10,6 +10,13 @@ import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
 import { updateSafetySlide } from './modules/slideshow.js';
+import { sanitizeMarkdownHtml } from './modules/sanitize.js';
+import { fetchText, cacheBustUrl } from './modules/http.js';
+import { registerServiceWorker } from './modules/sw-register.js';
+
+// Register Offline-First Service Worker (IDEA-F03)
+registerServiceWorker();
+
 
 // 1. Device Routing (Redirects phones to mobile.html)
 if (initDeviceRouting()) {
@@ -62,9 +69,7 @@ export async function renderDesktopReminders() {
     if (!listContainer) return;
 
     try {
-        const res = await fetch('assets/data/reminders.md?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('Not found');
-        const rawText = await res.text();
+        const rawText = await fetchText(cacheBustUrl('assets/data/reminders.md'));
 
         const sections = rawText.split(/^# /m).filter(s => s.trim().length > 0);
         let parsedReminders = [];
@@ -133,7 +138,8 @@ export async function renderDesktopReminders() {
 
         let cardsHtml = '';
         parsedReminders.forEach(r => {
-            const parsedBody = typeof marked !== 'undefined' ? marked.parse(r.body.trim()) : r.body;
+            const rawParsed = typeof marked !== 'undefined' ? marked.parse(r.body.trim()) : r.body;
+            const parsedBody = sanitizeMarkdownHtml(rawParsed);
             let priorityBadge = '';
             let widgetBorder = '1px solid rgba(255, 255, 255, 0.12)';
             let widgetShadow = '0 10px 30px rgba(0,0,0,0.5)';

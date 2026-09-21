@@ -1,8 +1,12 @@
 // Clock, Shift Tracker & Countdown Engine Module
 import { applyTheme, getSeasonalTheme } from './theme.js';
 import { setupHandoffLayout, isExplicitHandoff } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let cachedShifts = [];
+export let globalActiveShiftName = null;
+export let globalNextShiftName = null;
+export let globalActiveShiftMinsLeft = 0;
 let lastTrackedShiftName = '__INIT__';
 let timeOffsetMs = 0;
 let hasSimulatedTime = false;
@@ -39,8 +43,7 @@ export function getCurrentDate() {
 
 export async function fetchShifts() {
     try {
-        const res = await fetch('assets/data/shifts.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/shifts.json'));
         cachedShifts = data.shifts || [];
     } catch (e) {
         console.warn('Error loading shifts.json:', e);
@@ -101,8 +104,8 @@ export function updateShiftTracker() {
                         const mns = Math.floor(minsLeft % 60);
                         timeRemainingStr = `${hrs}h ${mns}m remaining`;
                         
-                        window.globalActiveShiftName = activeShift.name.toUpperCase();
-                        window.globalActiveShiftMinsLeft = minsLeft;
+                        globalActiveShiftName = activeShift.name.toUpperCase();
+                        globalActiveShiftMinsLeft = minsLeft;
                         
                         let nextShiftName = "NEXT SHIFT";
                         for (let s of cachedShifts) {
@@ -111,7 +114,13 @@ export function updateShiftTracker() {
                                 break;
                             }
                         }
-                        window.globalNextShiftName = nextShiftName;
+                        globalNextShiftName = nextShiftName;
+
+                        if (typeof window !== 'undefined') {
+                            window.globalActiveShiftName = globalActiveShiftName;
+                            window.globalActiveShiftMinsLeft = globalActiveShiftMinsLeft;
+                            window.globalNextShiftName = globalNextShiftName;
+                        }
                         
                         return true; // Found active schedule
                     }
@@ -140,11 +149,18 @@ export function updateShiftTracker() {
             if (sName) sName.innerText = "Shift Change";
             if (sProg) sProg.style.width = '0%';
             if (sText) sText.innerText = "Standby...";
-            window.globalActiveShiftName = null;
+            globalActiveShiftName = null;
+            globalNextShiftName = null;
+            globalActiveShiftMinsLeft = 0;
+            if (typeof window !== 'undefined') {
+                window.globalActiveShiftName = null;
+                window.globalNextShiftName = null;
+                window.globalActiveShiftMinsLeft = 0;
+            }
         }
 
-        if (lastTrackedShiftName !== window.globalActiveShiftName) {
-            lastTrackedShiftName = window.globalActiveShiftName;
+        if (lastTrackedShiftName !== globalActiveShiftName) {
+            lastTrackedShiftName = globalActiveShiftName;
             applyTheme(getSeasonalTheme());
         }
     } catch (e) {}

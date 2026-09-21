@@ -1,38 +1,4 @@
-let redis = null;
-
-function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-    if (!redisUrl) return null;
-    
-    if (!redis) {
-        try {
-            const Redis = require('ioredis');
-            redis = new Redis(redisUrl, {
-                connectTimeout: 4000,
-                maxRetriesPerRequest: 1,
-                enableReadyCheck: false,
-                lazyConnect: true
-            });
-        } catch (e) {
-            console.error('Failed to initialize Redis client:', e);
-            return null;
-        }
-    }
-    return redis;
-}
-
-async function ensureRedis(client) {
-    if (!client) return null;
-    try {
-        if (client.status === 'wait' || client.status === 'close') {
-            await client.connect();
-        }
-        return client;
-    } catch (e) {
-        console.error('Redis connection failed in api/lightning.js:', e.message);
-        return null;
-    }
-}
+const redisModule = require('./lib/redis');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -68,10 +34,6 @@ module.exports = async (req, res) => {
         keyPairs.push(...extraPairs);
     }
 
-    if (keyPairs.length === 0) {
-        return res.status(500).json({ error: "No Xweather API Keys configured in Vercel Environment variables." });
-    }
-
     // Normalize coordinates to 3 decimals to maximize global cache hit rate across all clients
     let latNum = parseFloat(req.query.lat);
     if (isNaN(latNum)) latNum = 41.6045;
@@ -82,14 +44,35 @@ module.exports = async (req, res) => {
     const lon = lonNum.toFixed(3);
     
     const radius = req.query.radius || '10mi';
+    const site = req.query.site || 'default-site';
     const cacheKey = `xweather:cache:${lat}:${lon}:${radius}`;
 
-    const client = await ensureRedis(getRedisClient());
+    const client = await redisModule.ensureRedis(redisModule.getRedisClient());
 
-    // SECURITY: ?inspect=keys and ?inspect=status debug endpoints removed.
-    // They exposed API key metadata (masked IDs, exhaustion status) without authentication.
+    // 1. Check for synced Blitzortung community lightning data from local kiosk (IDEA-F04)
+    if (client) {
+        try {
+            const syncedLightning = await client.get(`kiosk:${site}:lightning.json`);
+            if (syncedLightning) {
+                const parsed = JSON.parse(syncedLightning);
+                if (parsed && parsed.response && parsed.response.length > 0) {
+                    const strikeTime = new Date(parsed.response[0].ob.dateTimeISO).getTime();
+                    // If strike occurred within the 35-minute OSHA cooldown window
+                    if (Date.now() - strikeTime < 35 * 60 * 1000) {
+                        return res.status(200).json({ ...parsed, provider: 'blitzortung', _synced: true });
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Redis Blitzortung read error:', e);
+        }
+    }
 
-    // 2. Check Server-Side Redis Cache (2 minute TTL)
+    if (keyPairs.length === 0) {
+        return res.status(500).json({ error: "No Xweather API Keys configured in Vercel Environment variables." });
+    }
+
+    // 2. Check Server-Side Redis Cache for Xweather fallback (2 minute TTL)
     if (client) {
         try {
             const cached = await client.get(cacheKey);

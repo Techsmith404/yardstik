@@ -1,40 +1,8 @@
 // api/sync.js - Vercel Serverless Function for Multi-Site Ephemeral Cloud Sync
 // Uses native Redis connection via ioredis for ultra-fast (2ms) responses and 100% reliability.
 
-let redis = null;
-
-function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-    if (!redisUrl) return null;
-    
-    if (!redis) {
-        try {
-            const Redis = require('ioredis');
-            redis = new Redis(redisUrl, {
-                connectTimeout: 4000,
-                maxRetriesPerRequest: 1,
-                enableReadyCheck: false,
-                lazyConnect: true
-            });
-        } catch (e) {
-            console.error('Failed to initialize Redis client:', e);
-            return null;
-        }
-    }
-    return redis;
-}
-
-function getLatestSunday11PMEpoch(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const hours = d.getHours();
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) daysToSubtract = 7;
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return sunday11pm.getTime();
-}
+const { getRedisClient, ensureRedis } = require('./lib/redis');
+const { getLatestSunday11PMEpoch } = require('./lib/audit-reset');
 
 function processWeeklyAuditReset(data) {
     if (!data || !data.categories) return false;

@@ -38,6 +38,16 @@ afterAll(() => {
     } catch {}
 });
 
+describe('Control Panel Health Check Endpoint (IDEA-I01)', () => {
+    test('GET /api/health returns 200 with status ok and process uptime without requiring auth', async () => {
+        const res = await request(app).get('/api/health');
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('ok');
+        expect(typeof res.body.uptime).toBe('number');
+        expect(typeof res.body.timestamp).toBe('number');
+    });
+});
+
 describe('Control Panel Authentication Middleware', () => {
     test('Denies requests without authentication (401)', async () => {
         const res = await request(app).get('/api/site-config');
@@ -130,6 +140,23 @@ describe('Sunday 11:00 PM Weekly Audit Reset Protocol (SSoT §9.4)', () => {
         expect(changed).toBe(false);
         // Checkmark preserved because audit was already reset after Sunday 11:00 PM
         expect(mockData.categories[0].items[0].blend_audit).toBe(true);
+    });
+
+    test('isAuditResetCurrent accurately validates current vs stale timestamps across tiers (IDEA-A05)', () => {
+        const { isAuditResetCurrent: cpAuditCheck } = require('../../control-panel/lib/audit-reset');
+        const { isAuditResetCurrent: apiAuditCheck } = require('../../api/lib/audit-reset');
+
+        const tuesday = new Date('2026-09-15T14:00:00');
+        const recentSundayReset = new Date('2026-09-13T23:01:00').getTime();
+        const staleReset = new Date('2026-09-06T23:00:00').getTime();
+
+        expect(cpAuditCheck(recentSundayReset, tuesday)).toBe(true);
+        expect(cpAuditCheck(staleReset, tuesday)).toBe(false);
+        expect(cpAuditCheck(null, tuesday)).toBe(false);
+
+        expect(apiAuditCheck(recentSundayReset, tuesday)).toBe(true);
+        expect(apiAuditCheck(staleReset, tuesday)).toBe(false);
+        expect(apiAuditCheck(null, tuesday)).toBe(false);
     });
 });
 
@@ -228,6 +255,14 @@ describe('Control Panel CRUD & Operational Endpoints', () => {
         expect(getRes.status).toBe(200);
         expect(getRes.body.categories[0].id).toBe('custom_scrap');
     });
+
+    test('GET /api/lightning returns live or static Blitzortung community lightning status (IDEA-F04)', async () => {
+        const res = await request(app).get('/api/lightning?lat=41.6045&lon=-87.1311');
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.provider).toBe('blitzortung');
+        expect(Array.isArray(res.body.response)).toBe(true);
+    });
 });
 
 describe('SVG Track Map Upload & Security Sanitization (SSoT §8 / Security Hardening)', () => {
@@ -280,6 +315,36 @@ describe('SVG Track Map Upload & Security Sanitization (SSoT §8 / Security Hard
         expect(res.body.error).toContain('javascript: URIs which are not allowed');
     });
 
+    test('Rejects SVG containing external xlink:href or href references (IDEA-S03)', async () => {
+        const maliciousSvg = '<svg xmlns="http://www.w3.org/2000/svg"><use xlink:href="http://attacker.com/malicious.svg#icon"/></svg>';
+        const res = await request(app)
+            .post('/api/track-map/upload')
+            .set('Authorization', authHeader)
+            .attach('file', Buffer.from(maliciousSvg), 'external-use.svg');
+        expect(res.status).toBe(400);
+        expect(res.body.error).toContain('external references or network URLs');
+    });
+
+    test('Rejects SVG containing external image beacons (IDEA-S03)', async () => {
+        const maliciousSvg = '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://attacker.com/beacon.png"/></svg>';
+        const res = await request(app)
+            .post('/api/track-map/upload')
+            .set('Authorization', authHeader)
+            .attach('file', Buffer.from(maliciousSvg), 'beacon.svg');
+        expect(res.status).toBe(400);
+        expect(res.body.error).toContain('external references or network URLs');
+    });
+
+    test('Rejects SVG containing external CSS URL references in style blocks (IDEA-S03)', async () => {
+        const maliciousSvg = '<svg xmlns="http://www.w3.org/2000/svg"><style>rect { background: url(https://evil.com/leak); }</style><rect width="10" height="10"/></svg>';
+        const res = await request(app)
+            .post('/api/track-map/upload')
+            .set('Authorization', authHeader)
+            .attach('file', Buffer.from(maliciousSvg), 'css-leak.svg');
+        expect(res.status).toBe(400);
+        expect(res.body.error).toContain('external CSS URL references');
+    });
+
     test('Accepts clean SVG vector drawings', async () => {
         const cleanSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#00f0ff" id="track-01" data-capacity="15"/></svg>';
         const res = await request(app)
@@ -290,3 +355,42 @@ describe('SVG Track Map Upload & Security Sanitization (SSoT §8 / Security Hard
         expect(res.body.success).toBe(true);
     });
 });
+
+describe('Control Panel Modular Route Architecture (IDEA-A01)', () => {
+    test('All route modules and middleware files exist in expected directory structure', () => {
+        const cpDir = path.resolve(__dirname, '../../control-panel');
+        const expectedModules = [
+            'routes/auth.js',
+            'routes/users.js',
+            'routes/audit.js',
+            'routes/equipment.js',
+            'routes/tracks.js',
+            'routes/shifts.js',
+            'routes/features.js',
+            'routes/reminders.js',
+            'routes/runners.js',
+            'routes/lightning.js',
+            'routes/novara.js',
+            'middleware/auth.js',
+            'lib/cloud.js',
+            'lib/version.js'
+        ];
+
+        expectedModules.forEach(mod => {
+            expect(fs.existsSync(path.join(cpDir, mod))).toBe(true);
+        });
+    });
+
+    test('server.js exports all legacy helpers and app instance', () => {
+        const server = require('../../control-panel/server');
+        expect(server.app).toBeDefined();
+        expect(typeof server.getAuthConfig).toBe('function');
+        expect(typeof server.getLatestSunday11PMEpoch).toBe('function');
+        expect(typeof server.processWeeklyAuditReset).toBe('function');
+        expect(typeof server.checkAndPerformAuditReset).toBe('function');
+        expect(typeof server.syncToCloud).toBe('function');
+        expect(typeof server.syncNovaraData).toBe('function');
+        expect(typeof server.getBlitzortungService).toBe('function');
+    });
+});
+

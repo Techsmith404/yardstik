@@ -1,35 +1,14 @@
 // api/lib/cloud-auth.js - Shared Cloud Auth & Redis Storage Layer for Vercel Serverless
 
 const crypto = require('crypto');
+const { getRedisClient } = require('./redis');
 
-let redis = null;
 const memoryStore = {
     users: {},
     sessions: {},
     invites: {},
     audit_logs: []
 };
-
-function getRedisClient() {
-    const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
-    if (!redisUrl) return null;
-    
-    if (!redis) {
-        try {
-            const Redis = require('ioredis');
-            redis = new Redis(redisUrl, {
-                connectTimeout: 4000,
-                maxRetriesPerRequest: 1,
-                enableReadyCheck: false,
-                lazyConnect: true
-            });
-        } catch (e) {
-            console.error('Failed to initialize Redis client:', e);
-            return null;
-        }
-    }
-    return redis;
-}
 
 function hashPassword(password, salt) {
     if (!salt) {

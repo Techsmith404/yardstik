@@ -1,5 +1,6 @@
 // YardStik Universal Interactive Track Map & Track Check Module
 import { cachedFeatures } from "./features.js";
+import { fetchJson, fetchText, fetchJsonWithHeaders, cacheBustUrl } from "./http.js";
 
 export let cachedTracks = [];
 export let trackStats = {
@@ -61,12 +62,9 @@ export let commodityRules = {
 
 export async function fetchCommodityRules() {
     try {
-        const res = await fetch("assets/data/commodity_rules.json?t=" + new Date().getTime());
-        if (res.ok) {
-            const data = await res.json();
-            if (data && Array.isArray(data.categories)) {
-                commodityRules = data;
-            }
+        const data = await fetchJson(cacheBustUrl("assets/data/commodity_rules.json"));
+        if (data && Array.isArray(data.categories)) {
+            commodityRules = data;
         }
     } catch (e) {
         console.warn("Using default commodity rules:", e);
@@ -732,27 +730,22 @@ function formatAsOfTimestamp(dateInput) {
 export async function fetchTracks() {
     try {
         await fetchCommodityRules();
-        const res = await fetch("assets/data/tracks.json?t=" + new Date().getTime());
-        if (res.ok) {
-            const lastModified = res.headers.get("Last-Modified");
-            const data = await res.json();
-            cachedTracks = Array.isArray(data) ? data : [];
-            
-            const itemDate = cachedTracks.find(t => t.updated_at)?.updated_at;
-            const targetDateStr = itemDate || lastModified;
-            if (targetDateStr) {
-                lastTracksUpdated = formatAsOfTimestamp(targetDateStr);
-            }
-        }
-        calculateTrackStats();
-        await renderTrackMap();
-        if (isTheaterOpen) {
-            updateTheaterMap();
+        const { data, headers } = await fetchJsonWithHeaders(cacheBustUrl("assets/data/tracks.json"));
+        const lastModified = headers.get("Last-Modified");
+        cachedTracks = Array.isArray(data) ? data : [];
+        
+        const itemDate = cachedTracks.find(t => t.updated_at)?.updated_at;
+        const targetDateStr = itemDate || lastModified;
+        if (targetDateStr) {
+            lastTracksUpdated = formatAsOfTimestamp(targetDateStr);
         }
     } catch (e) {
-        console.warn("Could not load tracks.json:", e);
-        calculateTrackStats();
-        await renderTrackMap();
+        console.warn("Failed to fetch tracks.json:", e);
+    }
+    calculateTrackStats();
+    await renderTrackMap();
+    if (isTheaterOpen) {
+        updateTheaterMap();
     }
 }
 
@@ -815,8 +808,9 @@ function updateHeaderStats() {
 }
 
 let svgTemplateCache = null;
+let lastRenderedTrackHash = null;
 
-export async function renderTrackMap() {
+export async function renderTrackMap(force = false) {
     const container = document.getElementById("trackmap-viewport");
     if (!container) return;
 
@@ -826,6 +820,16 @@ export async function renderTrackMap() {
         widget.style.display = isEnabled ? "flex" : "none";
     }
     if (!isEnabled) return;
+
+    // Diff check: skip expensive SVG DOM teardown and handler re-binding if data hasn't changed (IDEA-Q04)
+    const currentHash = JSON.stringify({
+        tracks: (cachedTracks || []).map(t => [t.track_id || t.id, t.cars, t.hold_count, t.status, t.notes, t.updated_at]),
+        rulesCount: commodityRules?.categories?.length || 0
+    });
+
+    if (!force && lastRenderedTrackHash === currentHash && container.children.length > 0) {
+        return;
+    }
 
     container.classList.add("clickable-trackmap");
     container.onclick = (e) => {
@@ -837,25 +841,23 @@ export async function renderTrackMap() {
     try {
         if (!svgTemplateCache) {
             try {
-                const resData = await fetch("assets/data/track-map.svg?t=" + new Date().getTime());
-                if (resData.ok) {
-                    svgTemplateCache = await resData.text();
-                }
+                svgTemplateCache = await fetchText(cacheBustUrl("assets/data/track-map.svg"));
             } catch {}
 
             if (!svgTemplateCache) {
-                const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
-                if (res.ok) {
-                    svgTemplateCache = await res.text();
-                }
+                try {
+                    svgTemplateCache = await fetchText(cacheBustUrl("assets/images/track-map.svg"));
+                } catch {}
             }
         }
 
         if (svgTemplateCache) {
             container.innerHTML = svgTemplateCache;
             bindSvgInteractivity(container, false);
+            lastRenderedTrackHash = currentHash;
         } else {
             renderFallbackCardGrid(container);
+            lastRenderedTrackHash = currentHash;
         }
     } catch (e) {
         console.warn("SVG Track Map load error, falling back to card grid:", e);
@@ -1502,13 +1504,11 @@ export async function openExpandedTrackMap() {
 
     if (!svgTemplateCache) {
         try {
-            const resData = await fetch("assets/data/track-map.svg?t=" + new Date().getTime());
-            if (resData.ok) svgTemplateCache = await resData.text();
+            svgTemplateCache = await fetchText(cacheBustUrl("assets/data/track-map.svg"));
         } catch {}
         if (!svgTemplateCache) {
             try {
-                const res = await fetch("assets/images/track-map.svg?t=" + new Date().getTime());
-                if (res.ok) svgTemplateCache = await res.text();
+                svgTemplateCache = await fetchText(cacheBustUrl("assets/images/track-map.svg"));
             } catch (e) {
                 console.warn("Could not load SVG for theater mode:", e);
             }

@@ -1,5 +1,6 @@
 // Employee Milestones & Anniversaries Engine Module
 import { siteConfig, isDesktopMode } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export let rawAnniversariesData = null;
 export let isAnniversariesExpanded = false;
@@ -46,21 +47,24 @@ export function renderAllAnniversaries(employees) {
 
 export async function getAnniversaries() {
     try {
-        const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
         let data = null;
-
+        // 1. Try local flat-file first (instant load, 100% air-gapped autonomy)
         try {
-            const res = await fetch(`${apiBase}/api/novara?type=anniversaries&t=` + new Date().getTime());
-            if (res.ok) {
-                data = await res.json();
-            }
-        } catch (apiErr) {
-            console.warn('Novara API offline, checking local anniversaries.json fallback:', apiErr);
+            data = await fetchJson(cacheBustUrl('assets/data/anniversaries.json'));
+        } catch (localErr) {
+            console.warn('Local anniversaries.json check skipped:', localErr);
         }
 
+        // 2. Fallback to cloud sync edge endpoint if on Vercel or local file missing
         if (!data || !data.employees) {
-            const localRes = await fetch('assets/data/anniversaries.json?t=' + new Date().getTime());
-            if (localRes.ok) data = await localRes.json();
+            const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+            const siteId = siteConfig.site_id || 'default-site';
+            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=anniversaries.json` : '/api/sync?file=anniversaries.json';
+            try {
+                data = await fetchJson(cacheBustUrl(cloudUrl));
+            } catch (cloudErr) {
+                console.warn('Cloud anniversaries sync skipped:', cloudErr);
+            }
         }
 
         rawAnniversariesData = data;

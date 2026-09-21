@@ -1,5 +1,6 @@
 // Novara Safety Curriculum & Action Required Video Parser Module
 import { siteConfig, isDesktopMode } from './config.js';
+import { fetchJson, cacheBustUrl } from './http.js';
 
 let safetyScrollPos = 0;
 let safetyScrollDirection = 1;
@@ -77,12 +78,27 @@ export async function fetchSafetyVideos() {
     if (!list) return;
 
     try {
-        const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
-        const res = await fetch(`${apiBase}/api/novara?t=` + new Date().getTime());
-        if (!res.ok) throw new Error("Novara API not available");
-        const data = await res.json();
+        let data = null;
+        // 1. Try local flat-file first (instant load, 100% air-gapped autonomy)
+        try {
+            data = await fetchJson(cacheBustUrl('assets/data/safety_videos.json'));
+        } catch (localErr) {
+            console.warn("Local safety_videos.json fetch skipped:", localErr);
+        }
+
+        // 2. Fallback to cloud sync edge endpoint if on Vercel or local file missing
+        if (!data) {
+            const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
+            const siteId = siteConfig.site_id || 'default-site';
+            const cloudUrl = apiBase ? `${apiBase}/api/sync?site=${encodeURIComponent(siteId)}&file=safety_videos.json` : '/api/sync?file=safety_videos.json';
+            try {
+                data = await fetchJson(cacheBustUrl(cloudUrl));
+            } catch (cloudErr) {
+                console.warn("Cloud safety sync skipped:", cloudErr);
+            }
+        }
         
-        if (!data.success || !data.response || data.response.length === 0) {
+        if (!data || !data.success || !data.response || data.response.length === 0) {
             list.innerHTML = '<li style="grid-column: 1 / -1; color: #4ade80; font-style: italic; padding: 15px; text-align: center;">All employees are 100% up to date! 🎉</li>';
             if (titleEl) titleEl.innerHTML = 'Action Required: Safety Videos <span style="opacity: 0.7; font-size: 0.85em; font-weight: 400; margin-left: 8px;">(0 This Month • 0 Total)</span>';
             return;

@@ -267,3 +267,103 @@ describe('5. Role-Based Access Control (RBAC) Enforcement', () => {
         expect(res.status).toBe(401);
     });
 });
+
+const { createRateLimiter } = require('../../control-panel/lib/rate-limit');
+
+describe('6. Auth Rate Limiting Middleware (IDEA-S02)', () => {
+    test('Allows requests up to limit and rejects subsequent requests with 429', () => {
+        const limiter = createRateLimiter({
+            windowMs: 60000,
+            max: 3,
+            message: { error: 'Too many attempts' }
+        });
+
+        const req = { ip: '192.168.1.50' };
+        const res = {
+            headers: {},
+            statusCode: 200,
+            setHeader(k, v) { this.headers[k] = v; },
+            status(code) { this.statusCode = code; return this; },
+            json(data) { this.body = data; return this; }
+        };
+        let nextCalled = 0;
+        const next = () => { nextCalled++; };
+
+        // Attempt 1
+        limiter(req, res, next);
+        expect(nextCalled).toBe(1);
+        expect(res.headers['RateLimit-Remaining']).toBe(2);
+
+        // Attempt 2
+        limiter(req, res, next);
+        expect(nextCalled).toBe(2);
+        expect(res.headers['RateLimit-Remaining']).toBe(1);
+
+        // Attempt 3
+        limiter(req, res, next);
+        expect(nextCalled).toBe(3);
+        expect(res.headers['RateLimit-Remaining']).toBe(0);
+
+        // Attempt 4: Blocked with 429
+        limiter(req, res, next);
+        expect(nextCalled).toBe(3);
+        expect(res.statusCode).toBe(429);
+        expect(res.body.error).toContain('Too many attempts');
+        expect(res.headers['Retry-After']).toBeDefined();
+    });
+
+    test('Differentiates between different client IP addresses', () => {
+        const limiter = createRateLimiter({ windowMs: 60000, max: 2 });
+        const res = {
+            headers: {},
+            statusCode: 200,
+            setHeader(k, v) { this.headers[k] = v; },
+            status(code) { this.statusCode = code; return this; },
+            json(data) { this.body = data; return this; }
+        };
+
+        limiter({ ip: '10.0.0.1' }, res, () => {});
+        limiter({ ip: '10.0.0.1' }, res, () => {});
+        // IP 1 hits limit
+        limiter({ ip: '10.0.0.1' }, res, () => {});
+        expect(res.statusCode).toBe(429);
+
+        // IP 2 is separate and allowed
+        res.statusCode = 200;
+        let ip2NextCalled = false;
+        limiter({ ip: '10.0.0.2' }, res, () => { ip2NextCalled = true; });
+        expect(ip2NextCalled).toBe(true);
+        expect(res.statusCode).toBe(200);
+    });
+});
+
+const { getDb, runMigrations } = require('../../control-panel/lib/db');
+
+describe('7. Database Migration Framework (IDEA-A02)', () => {
+    test('Initializes DB with user_version >= 1', () => {
+        const db = getDb();
+        const row = db.prepare('PRAGMA user_version;').get();
+        expect(Number(row.user_version)).toBeGreaterThanOrEqual(1);
+    });
+
+    test('Applies pending migrations in sequence and bumps user_version', () => {
+        const db = getDb();
+        const testMigrations = [
+            { version: 100, description: 'Add test column', sql: 'ALTER TABLE users ADD COLUMN test_migrated TEXT DEFAULT NULL;' },
+            { version: 101, description: 'Add custom index', sql: 'CREATE INDEX IF NOT EXISTS idx_users_test ON users(test_migrated);' }
+        ];
+
+        runMigrations(db, testMigrations);
+        const row = db.prepare('PRAGMA user_version;').get();
+        expect(Number(row.user_version)).toBe(101);
+
+        // Verify column was added
+        const users = db.prepare('SELECT test_migrated FROM users LIMIT 1;').all();
+        expect(Array.isArray(users)).toBe(true);
+
+        // Idempotency: Running migrations again leaves version unchanged
+        runMigrations(db, testMigrations);
+        const rowAfter = db.prepare('PRAGMA user_version;').get();
+        expect(Number(rowAfter.user_version)).toBe(101);
+    });
+});

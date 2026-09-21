@@ -4,7 +4,9 @@
   "description": "Industrial Operations Dashboard, Kiosk Display & Multi-Site Cloud Sync Engine",
   "main": "api/sync.js",
   "dependencies": {
-    "ioredis": "^5.4.1"
+    "dompurify": "^3.4.15",
+    "ioredis": "^5.4.1",
+    "jsdom": "^25.0.1"
   },
   "scripts": {
     "test": "./scripts/run-all-tests.sh",

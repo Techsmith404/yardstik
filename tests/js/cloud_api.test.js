@@ -2,6 +2,7 @@ const syncHandler = require('../../api/sync');
 const lightningHandler = require('../../api/lightning');
 const authHandler = require('../../api/auth');
 const equipmentHandler = require('../../api/equipment');
+const novaraHandler = require('../../api/novara');
 
 // Mock request / response helper
 function createMockReqRes(options = {}) {
@@ -160,6 +161,47 @@ describe('Serverless Lightning Radar API (api/lightning.js)', () => {
         expect(res.data.error).toContain('No Xweather API Keys configured');
 
         process.env = originalEnv;
+    });
+
+    test('Serves synced Blitzortung community lightning data from Redis when present (IDEA-F04)', async () => {
+        const fakeRedis = {
+            status: 'ready',
+            get: jest.fn().mockImplementation(async (key) => {
+                if (key === 'kiosk:default-site:lightning.json') {
+                    return JSON.stringify({
+                        success: true,
+                        count: 1,
+                        response: [
+                            {
+                                ob: { dateTimeISO: new Date(Date.now() - 60000).toISOString(), timestamp: Math.floor(Date.now() / 1000) },
+                                loc: { lat: 41.62, long: -87.12 },
+                                relativeTo: { distanceMI: 3.5, distanceKM: 5.6, bearing: 45, bearingENG: 'NE' },
+                                provider: 'blitzortung'
+                            }
+                        ]
+                    });
+                }
+                return null;
+            })
+        };
+        const redisLib = require('../../api/lib/redis');
+        jest.spyOn(redisLib, 'getRedisClient').mockReturnValue(fakeRedis);
+        jest.spyOn(redisLib, 'ensureRedis').mockResolvedValue(fakeRedis);
+
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            query: { lat: '41.604', lon: '-87.131', site: 'default-site' }
+        });
+        const freshLightningHandler = require('../../api/lightning');
+        await freshLightningHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+        expect(res.data.provider).toBe('blitzortung');
+        expect(res.data.response.length).toBe(1);
+        expect(res.data.response[0].relativeTo.distanceMI).toBe(3.5);
+
+        redisLib.getRedisClient.mockRestore();
+        redisLib.ensureRedis.mockRestore();
     });
 });
 
@@ -421,3 +463,100 @@ describe('Serverless Cloud Equipment API (api/equipment.js)', () => {
         expect(res.data.version).toBeDefined();
     });
 });
+
+describe('Serverless Cloud Novara LMS API (api/novara.js) - IDEA-S04', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+        process.env = originalEnv;
+    });
+
+    test('Responds with 200 on OPTIONS preflight', async () => {
+        const { req, res } = createMockReqRes({ method: 'OPTIONS' });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.headers['access-control-allow-headers'].toLowerCase()).toContain('x-sync-secret');
+    });
+
+    test('Rejects unauthenticated request without x-sync-secret or session with 401', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara'
+        });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(401);
+        expect(res.data.error).toContain('Unauthorized');
+    });
+
+    test('Rejects request with invalid x-sync-secret with 401', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara',
+            headers: { 'x-sync-secret': 'wrong_secret' }
+        });
+        await novaraHandler(req, res);
+        expect(res.statusCode).toBe(401);
+        expect(res.data.error).toContain('Unauthorized');
+    });
+
+    test('Passes authentication with valid x-sync-secret (returns 500 when NOVARA_API_KEY missing)', async () => {
+        process.env.SYNC_SECRET = 'valid_sync_secret';
+        delete process.env.NOVARA_API_KEY;
+        delete process.env.NOVARA_API_TOKEN;
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/novara',
+            headers: { 'x-sync-secret': 'valid_sync_secret' }
+        });
+        await novaraHandler(req, res);
+        // Authenticated successfully, then reached API key check
+        expect(res.statusCode).toBe(500);
+        expect(res.data.error).toContain('NOVARA_API_KEY');
+    });
+});
+
+describe('Redis Abstraction Layer (api/lib/redis.js, IDEA-A04)', () => {
+    const { getRedisClient, ensureRedis, resetRedisClient } = require('../../api/lib/redis');
+
+    afterEach(() => {
+        resetRedisClient();
+        delete process.env.REDIS_URL;
+        delete process.env.KV_URL;
+        delete process.env.UPSTASH_REDIS_URL;
+    });
+
+    test('getRedisClient returns null when no Redis environment variables are configured', () => {
+        delete process.env.REDIS_URL;
+        delete process.env.KV_URL;
+        delete process.env.UPSTASH_REDIS_URL;
+        expect(getRedisClient()).toBeNull();
+    });
+
+    test('getRedisClient instantiates singleton client when REDIS_URL is configured', () => {
+        process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+        const client1 = getRedisClient();
+        expect(client1).not.toBeNull();
+        const client2 = getRedisClient();
+        expect(client2).toBe(client1);
+    });
+
+    test('ensureRedis handles null client gracefully', async () => {
+        const result = await ensureRedis(null);
+        expect(result).toBeNull();
+    });
+
+    test('resetRedisClient clears cached instance', () => {
+        process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+        const client1 = getRedisClient();
+        resetRedisClient();
+        const client2 = getRedisClient();
+        expect(client2).not.toBe(client1);
+    });
+});
+

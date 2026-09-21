@@ -1,4 +1,5 @@
 // Safety Stand-down & Metrics Slideshow Module
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export async function updateSafetySlide() {
     try {
@@ -9,9 +10,7 @@ export async function updateSafetySlide() {
         const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
         
         // Fetch trackers to check for daily override
-        const res = await fetch('assets/data/trackers.json?t=' + new Date().getTime());
-        if (!res.ok) throw new Error(`trackers.json fetch failed: ${res.status}`);
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/trackers.json'));
         
         const label = document.getElementById('toolbox-slide-number');
         const img = document.getElementById('slow-slide-img');

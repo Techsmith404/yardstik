@@ -1,4 +1,5 @@
-import { initMobileRedirect, setupDesktopLayout, setupHandoffLayout, syncKioskPanels, fetchSiteConfig, checkVersion, isDesktopMode, isHandoffActive } from './modules/config.js';
+import { initMobileRedirect, fetchSiteConfig, checkVersion } from './modules/config.js';
+import { setupDesktopLayout, setupHandoffLayout, syncKioskPanels, isDesktopMode, isHandoffActive } from './modules/layout.js';
 import { fetchShifts, startClockLoop } from './modules/clock.js';
 import { updateTrackers } from './modules/trackers.js';
 import { getWeather } from './modules/weather.js';
@@ -12,6 +13,11 @@ import { fetchSpecialEvent } from './modules/special.js';
 import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures, isTrackMapActive } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
+import { registerServiceWorker } from './modules/sw-register.js';
+
+// 0. Register Offline-First Service Worker (IDEA-F03)
+registerServiceWorker();
+
 
 // 1. Initialize Device Modes, Themes, Features & Layouts
 if (initMobileRedirect()) {

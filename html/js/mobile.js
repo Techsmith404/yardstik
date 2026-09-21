@@ -55,6 +55,25 @@
         return 'assets/data/' + filename + '?t=' + Date.now();
     }
 
+    // Helper: Sanitize Markdown HTML using DOMPurify with fallback
+    function sanitizeMarkdownHtml(dirtyHtml) {
+        if (!dirtyHtml || typeof dirtyHtml !== 'string') return '';
+        if (typeof window !== 'undefined' && window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+            return window.DOMPurify.sanitize(dirtyHtml, {
+                ALLOWED_TAGS: [
+                    'b', 'i', 'em', 'strong', 'u', 's', 'ul', 'ol', 'li', 'p', 'br',
+                    'a', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span',
+                    'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr'
+                ],
+                ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style']
+            });
+        }
+        return dirtyHtml
+            .replace(/<\/?(?:script|object|embed|iframe|form|input|button|link|meta)\b[^>]*>/gi, '')
+            .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+            .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+    }
+
     // Helper: Format Dates and Times
     function pad2(n) {
         return (n < 10 ? '0' : '') + n;
@@ -123,6 +142,9 @@
                 } else if (currentVersion !== trimmed) {
                     console.log("New version detected, refreshing data feeds:", trimmed);
                     currentVersion = trimmed;
+                    if (typeof navigator !== 'undefined' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+                    }
                     refreshAllData(true);
                 }
             })
@@ -682,13 +704,9 @@
         function fetchFallbackAnniversaries() {
             if (anniversariesLoaded) return;
             
-            const fallbackUrl = vercelBase ? (vercelBase + '/api/novara?type=anniversaries') : getDataUrl('anniversaries.json');
-            fetch(fallbackUrl)
+            fetch(getDataUrl('anniversaries.json'))
                 .then(function(res) {
                     if (res.ok) return res.json();
-                    if (vercelBase) {
-                        return fetch(getDataUrl('anniversaries.json')).then(function(r) { return r.ok ? r.json() : null; });
-                    }
                     return null;
                 })
                 .then(function(data) {
@@ -698,23 +716,13 @@
                     if (emps && emps.length > 0) anniversariesLoaded = true;
                 })
                 .catch(function(err) {
-                    console.warn("Anniversaries fallback fetch error:", err);
-                    if (!anniversariesLoaded) {
-                        fetch(getDataUrl('anniversaries.json'))
-                            .then(function(r) { return r.ok ? r.json() : null; })
-                            .then(function(data) {
-                                const emps = (data && data.employees) || (data && Array.isArray(data.anniversaries) ? data.anniversaries : null);
-                                renderAnniversariesList(emps || []);
-                            })
-                            .catch(function() {
-                                renderAnniversariesList([]);
-                            });
-                    }
+                    console.warn("Anniversaries fetch error:", err);
+                    renderAnniversariesList([]);
                 });
         }
 
         // Novara Safety Training
-        fetch(vercelBase + '/api/novara')
+        fetch(getDataUrl('safety_videos.json'))
             .then(function(res) {
                 if (res.ok) return res.json();
                 return null;
@@ -871,7 +879,8 @@
                     // Clean other magic words
                     body = body.replace(/!(HIGH|CRITICAL|SPLIT|LARGE|CENTER|LONG|ONLY|QR https?:\/\/[^\s]+)/ig, '');
 
-                    let parsedBody = typeof window.marked !== 'undefined' ? window.marked.parse(body) : body;
+                    let rawParsed = typeof window.marked !== 'undefined' ? window.marked.parse(body) : body;
+                    let parsedBody = sanitizeMarkdownHtml(rawParsed);
 
                     parsedHtml += 
                         '<div class="reminder-card ' + priority + '">' +
@@ -1398,7 +1407,10 @@
 
     function checkMobileAuth() {
         return fetch('/api/auth/me', { headers: getAuthHeaders() })
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                if (res.ok) return res.json();
+                throw new Error('HTTP ' + res.status);
+            })
             .then(function(data) {
                 if (data && data.authenticated && data.user) {
                     currentMobileUser = data.user;
@@ -1479,7 +1491,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username, password: password })
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
         .then(function(data) {
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -1613,7 +1630,12 @@
             headers: getAuthHeaders(),
             body: JSON.stringify(rawEquipmentData)
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
         .then(function(data) {
             if (saveBtn) {
                 saveBtn.disabled = false;
@@ -1677,6 +1699,14 @@
         fetchSiteConfig().then(function() {
             refreshAllData();
         });
+
+        // Register Offline-First Service Worker (IDEA-F03)
+        var hostname = window.location.hostname || '';
+        var isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+        var isSecure = window.location.protocol === 'https:' || isLocalhost;
+        if ('serviceWorker' in navigator && isSecure) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        }
 
         // Polling Intervals
         setInterval(checkVersion, 5000); // 5s Version check
