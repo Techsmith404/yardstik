@@ -3,23 +3,28 @@ const path = require('path');
 
 describe('Handoff Mode Lifecycle & Shift Tracker Boundary Logic', () => {
     test('config.js and clock.js contain clean handoff lifecycle state transition hooks', () => {
+        const layoutCode = fs.readFileSync(path.resolve(__dirname, '../../html/js/modules/layout.js'), 'utf8');
         const configCode = fs.readFileSync(path.resolve(__dirname, '../../html/js/modules/config.js'), 'utf8');
         const clockCode = fs.readFileSync(path.resolve(__dirname, '../../html/js/modules/clock.js'), 'utf8');
         const featuresCode = fs.readFileSync(path.resolve(__dirname, '../../html/js/modules/features.js'), 'utf8');
         const remindersCode = fs.readFileSync(path.resolve(__dirname, '../../html/js/modules/reminders.js'), 'utf8');
 
-        // Verify setupHandoffLayout handles transitions and re-applies feature flags
+        // Verify setupHandoffLayout in layout.js handles transitions, re-exports from config.js, and notifies listeners
+        expect(layoutCode).toContain('setupHandoffLayout');
+        expect(layoutCode).toContain('applyFeatureFlags');
+        expect(layoutCode).toContain('advanceReminderSlide');
+        expect(layoutCode).toContain('prevHandoffActive');
+        expect(layoutCode).toContain('onLayoutTransition');
         expect(configCode).toContain('setupHandoffLayout');
-        expect(configCode).toContain('applyFeatureFlags');
-        expect(configCode).toContain('advanceReminderSlide');
-        expect(configCode).toContain('prevHandoffActive');
 
         // Verify clock.js calls setupHandoffLayout(false) when no active shift is present
         expect(clockCode).toContain('setupHandoffLayout(false)');
         expect(clockCode).toContain('testMins < endMinsWeek');
 
-        // Verify features.js and reminders.js expose hooks
+        // Verify features.js and reminders.js register layout listeners and expose hooks
+        expect(featuresCode).toContain('onLayoutTransition');
         expect(featuresCode).toContain('window.applyFeatureFlags = applyFeatureFlags');
+        expect(remindersCode).toContain('onLayoutTransition');
         expect(remindersCode).toContain('window.advanceReminderSlide = advanceReminderSlide');
         expect(remindersCode).toContain("singleBox.id = 'reminders-widget-container'");
     });

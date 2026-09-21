@@ -1,5 +1,5 @@
 // Markdown Reminders & Magic Words Parser Module
-import { isDesktopMode, isHandoffActive } from './config.js';
+import { isDesktopMode, isHandoffActive, onLayoutTransition } from './layout.js';
 import { sanitizeMarkdownHtml } from './sanitize.js';
 import { fetchText, cacheBustUrl } from './http.js';
 
@@ -430,6 +430,12 @@ export async function fetchReminders() {
     }
 }
 
+// Register layout transition listener to update reminders on handoff state change
+onLayoutTransition(() => {
+    advanceReminderSlide();
+});
+
 if (typeof window !== 'undefined') {
     window.advanceReminderSlide = advanceReminderSlide;
 }
+

@@ -2,7 +2,7 @@
 import { allocateSlots, activeAlertCount } from './weather.js';
 import { startWeatherAnimation } from './fx.js';
 import { updateLightningWidget } from './lightning.js';
-import { syncKioskPanels } from './config.js';
+import { syncKioskPanels, onLayoutTransition } from './layout.js';
 import { fetchJson, cacheBustUrl } from './http.js';
 
 export let cachedFeatures = {
@@ -162,6 +162,12 @@ export function applyFeatureFlags() {
     syncKioskPanels();
 }
 
+// Register layout transition listener to adapt layout when handoff state changes
+onLayoutTransition(() => {
+    applyFeatureFlags();
+});
+
 if (typeof window !== 'undefined') {
     window.applyFeatureFlags = applyFeatureFlags;
 }
+
