@@ -714,6 +714,96 @@ body.feature-no-mobile-qr #mobile-qr-img {
     border: 1px solid rgba(0, 243, 255, 0.2);
 }
 
+/* Equipment Masonry & Dynamic Cards (IDEA-Q03) */
+.equipment-category {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    break-inside: avoid;
+    margin-bottom: 20px;
+}
+
+.equipment-category-title {
+    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.equipment-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.equipment-name {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.equipment-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.equipment-status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.equipment-pill.status-ok {
+    border-left-color: var(--success, #10b981);
+}
+.equipment-pill.status-ok .equipment-status-badge {
+    background: var(--success, #10b981);
+    color: #ffffff;
+}
+
+.equipment-pill.status-os {
+    border-left-color: var(--danger, #ef4444);
+    background: rgba(239, 68, 68, 0.1);
+}
+.equipment-pill.status-os .equipment-status-badge {
+    background: var(--danger, #ef4444);
+    color: #ffffff;
+}
+
+.equipment-pill.status-pm {
+    border-left-color: var(--warning, #f59e0b);
+}
+.equipment-pill.status-pm .equipment-status-badge {
+    background: var(--warning, #f59e0b);
+    color: #ffffff;
+}
+
+.equipment-pill.status-unknown {
+    border-left-color: #6b7280;
+}
+.equipment-pill.status-unknown .equipment-status-badge {
+    background: #6b7280;
+    color: #ffffff;
+}
+
 /* Mobile Cranes Scale & Audit Badges */
 .badge-scale {
     padding: 2px 8px;
