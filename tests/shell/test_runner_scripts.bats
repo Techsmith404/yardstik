@@ -72,3 +72,33 @@ teardown() {
     [ "$status" -eq 1 ]
     [[ "$output" =~ "Error: Invalid file type" ]]
 }
+
+@test "restart_kiosk.sh: Uses DATA_DIR env var and updates version.txt (IDEA-T03)" {
+    run "$SCRIPT_DIR/restart_kiosk.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Kiosk TV successfully refreshed" ]]
+    [ -f "$TEST_DATA_DIR/version.txt" ]
+}
+
+@test "trigger_scan.sh: Uses DATA_DIR env var and updates version.txt (IDEA-T03)" {
+    run "$SCRIPT_DIR/trigger_scan.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Scan completed" ]]
+    [ -f "$TEST_DATA_DIR/version.txt" ]
+}
+
+@test "trigger_scan.sh: Emits warning on parser failure (IDEA-T03)" {
+    local failing_parser="$TEST_DATA_DIR/fail_parser.py"
+    echo "import sys; sys.exit(1)" > "$failing_parser"
+
+    PARSER_SCRIPT="$failing_parser" run "$SCRIPT_DIR/trigger_scan.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "WARNING: Track scan parser exited with errors" ]]
+    [ -f "$TEST_DATA_DIR/version.txt" ]
+}
+
+@test "reboot_system.sh: Safely simulates reboot when docker socket is unavailable (IDEA-T03)" {
+    DOCKER_SOCK="/tmp/nonexistent-docker.sock" run "$SCRIPT_DIR/reboot_system.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "System reboot intercepted and simulated" ]]
+}
