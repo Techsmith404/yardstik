@@ -355,3 +355,42 @@ describe('SVG Track Map Upload & Security Sanitization (SSoT §8 / Security Hard
         expect(res.body.success).toBe(true);
     });
 });
+
+describe('Control Panel Modular Route Architecture (IDEA-A01)', () => {
+    test('All route modules and middleware files exist in expected directory structure', () => {
+        const cpDir = path.resolve(__dirname, '../../control-panel');
+        const expectedModules = [
+            'routes/auth.js',
+            'routes/users.js',
+            'routes/audit.js',
+            'routes/equipment.js',
+            'routes/tracks.js',
+            'routes/shifts.js',
+            'routes/features.js',
+            'routes/reminders.js',
+            'routes/runners.js',
+            'routes/lightning.js',
+            'routes/novara.js',
+            'middleware/auth.js',
+            'lib/cloud.js',
+            'lib/version.js'
+        ];
+
+        expectedModules.forEach(mod => {
+            expect(fs.existsSync(path.join(cpDir, mod))).toBe(true);
+        });
+    });
+
+    test('server.js exports all legacy helpers and app instance', () => {
+        const server = require('../../control-panel/server');
+        expect(server.app).toBeDefined();
+        expect(typeof server.getAuthConfig).toBe('function');
+        expect(typeof server.getLatestSunday11PMEpoch).toBe('function');
+        expect(typeof server.processWeeklyAuditReset).toBe('function');
+        expect(typeof server.checkAndPerformAuditReset).toBe('function');
+        expect(typeof server.syncToCloud).toBe('function');
+        expect(typeof server.syncNovaraData).toBe('function');
+        expect(typeof server.getBlitzortungService).toBe('function');
+    });
+});
+

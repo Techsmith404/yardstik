@@ -29,7 +29,64 @@ function isAuditResetCurrent(lastAuditResetEpoch, now = new Date()) {
     return Number(lastAuditResetEpoch) >= getLatestSunday11PMEpoch(now);
 }
 
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Resets mobile crane blend audit flags if weekly boundary crossed.
+ * @param {object} data Equipment JSON object
+ * @returns {boolean} True if audit was reset
+ */
+function processWeeklyAuditReset(data) {
+    if (!data || !data.categories) return false;
+    const latestSundayReset = getLatestSunday11PMEpoch();
+
+    if (!data.last_audit_reset || data.last_audit_reset < latestSundayReset) {
+        let changed = false;
+        data.categories.forEach(cat => {
+            if ((cat.name || '').trim().toLowerCase() === 'mobile cranes' && Array.isArray(cat.items)) {
+                cat.items.forEach(item => {
+                    if (item.blend_audit === true) {
+                        item.blend_audit = false;
+                        changed = true;
+                    }
+                });
+            }
+        });
+        data.last_audit_reset = latestSundayReset;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Daemon check to perform Sunday 11:00 PM audit reset on disk.
+ */
+function checkAndPerformAuditReset() {
+    const dataDir = process.env.DATA_DIR || '/data';
+    const equipmentPath = process.env.EQUIPMENT_PATH || path.join(dataDir, 'equipment.json');
+    try {
+        if (!fs.existsSync(equipmentPath)) return false;
+        const raw = fs.readFileSync(equipmentPath, 'utf8');
+        let data = JSON.parse(raw);
+        if (processWeeklyAuditReset(data)) {
+            console.log('[Audit Engine] Sunday 11:00 PM weekly audit reset executed.');
+            fs.writeFileSync(equipmentPath, JSON.stringify(data, null, 2), 'utf8');
+            try {
+                fs.writeFileSync(path.join(dataDir, 'version.txt'), Math.floor(Date.now() / 1000).toString(), 'utf8');
+            } catch {}
+            return true;
+        }
+    } catch (e) {
+        console.error('[Audit Engine] Error checking weekly audit reset:', e);
+    }
+    return false;
+}
+
 module.exports = {
     getLatestSunday11PMEpoch,
-    isAuditResetCurrent
+    isAuditResetCurrent,
+    processWeeklyAuditReset,
+    checkAndPerformAuditReset
 };
+
