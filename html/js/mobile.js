@@ -1404,7 +1404,10 @@
 
     function checkMobileAuth() {
         return fetch('/api/auth/me', { headers: getAuthHeaders() })
-            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                if (res.ok) return res.json();
+                throw new Error('HTTP ' + res.status);
+            })
             .then(function(data) {
                 if (data && data.authenticated && data.user) {
                     currentMobileUser = data.user;
@@ -1485,7 +1488,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username, password: password })
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
         .then(function(data) {
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -1619,7 +1627,12 @@
             headers: getAuthHeaders(),
             body: JSON.stringify(rawEquipmentData)
         })
-        .then(function(res) { return res.json(); })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
         .then(function(data) {
             if (saveBtn) {
                 saveBtn.disabled = false;
