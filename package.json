@@ -1,6 +1,6 @@
 {
   "name": "yardstik",
-  "version": "4.5.4",
+  "version": "5.0.0",
   "description": "Industrial Operations Dashboard, Kiosk Display & Multi-Site Cloud Sync Engine",
   "main": "api/sync.js",
   "dependencies": {

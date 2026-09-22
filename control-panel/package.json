@@ -1,6 +1,6 @@
 {
-  "name": "kiosk-control-panel",
-  "version": "1.0.0",
+  "name": "control-panel",
+  "version": "5.0.0",
   "description": "Custom Control Panel for Kiosk",
   "main": "server.js",
   "scripts": {

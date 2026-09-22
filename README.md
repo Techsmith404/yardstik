@@ -1,6 +1,6 @@
 # 🚀 YardStik — Industrial Operations Dashboard & Break Room Kiosk System
 
-[![Version](https://img.shields.io/badge/version-v4.10.0-blue.svg)](https://github.com/TechSmith404/yardstik/releases)
+[![Version](https://img.shields.io/badge/version-v5.0.0-blue.svg)](https://github.com/TechSmith404/yardstik/releases)
 [![Automated Tests](https://img.shields.io/badge/tests-197%20passed%20(100%25)-brightgreen.svg)](https://github.com/TechSmith404/yardstik/actions)
 [![Docker](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Ubuntu Frame](https://img.shields.io/badge/wayland-Ubuntu%20Frame-E95420.svg?logo=ubuntu&logoColor=white)](https://mir-server.io/ubuntu-frame)
