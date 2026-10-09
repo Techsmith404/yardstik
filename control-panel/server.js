@@ -44,6 +44,14 @@ seedDefaultAdminIfNeeded(CONFIG_PATH);
 // Authentication & Session Middleware
 app.use(authenticateUser);
 
+// Redirect unauthenticated visitors of the dashboard root or index.html to /login.html
+app.get(['/', '/index.html'], (req, res, next) => {
+    if (!req.user) {
+        return res.redirect('/login.html');
+    }
+    next();
+});
+
 // Serve the frontend UI and data
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/assets/data', express.static(DATA_DIR));

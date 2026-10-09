@@ -1,7 +1,10 @@
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const {
+    createUser,
     verifyUser,
+    updateUserPassword,
     createSession,
     deleteSession,
     createInvite,
@@ -12,7 +15,7 @@ const {
 } = require('../lib/auth');
 const { logAction } = require('../lib/audit');
 const { createRateLimiter } = require('../lib/rate-limit');
-const { requireRole, getSessionToken } = require('../middleware/auth');
+const { requireRole, getSessionToken, getAuthConfig } = require('../middleware/auth');
 
 // Rate limit auth endpoints: max 20 login attempts per 15 minutes per IP (IDEA-S02)
 const loginLimiter = createRateLimiter({
@@ -28,7 +31,36 @@ router.post('/login', loginLimiter, (req, res) => {
         if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
             return res.status(400).json({ error: 'Username and password are required.' });
         }
-        const user = verifyUser(username, password);
+        let user = verifyUser(username, password);
+
+        // Fallback: If not found in SQLite, check if credentials match configured admin in config.json/env
+        if (!user) {
+            const legacy = getAuthConfig();
+            if (legacy.username && legacy.password && username.trim().toLowerCase() === legacy.username.trim().toLowerCase()) {
+                try {
+                    const isLegacyMatch = crypto.timingSafeEqual(
+                        Buffer.from(password),
+                        Buffer.from(legacy.password)
+                    );
+                    if (isLegacyMatch) {
+                        try {
+                            updateUserPassword(legacy.username, password);
+                            user = verifyUser(username, password);
+                        } catch (uErr) {
+                            user = createUser({
+                                username: legacy.username,
+                                password: password,
+                                displayName: 'System Administrator',
+                                role: 'admin'
+                            });
+                        }
+                    }
+                } catch {
+                    // Password buffers length mismatch
+                }
+            }
+        }
+
         if (!user) {
             logAction({ req, user: null, action: 'auth.login_failed', details: `Failed login attempt for username: ${username}` });
             return res.status(401).json({ error: 'Invalid username or password' });

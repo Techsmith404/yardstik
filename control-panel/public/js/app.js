@@ -55,11 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check authentication state on page load
     let currentUser = null;
     fetch('/api/auth/me')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('Auth verification failed');
+            return res.json();
+        })
         .then(data => {
             if (data && data.authenticated && data.user) {
                 currentUser = data.user;
                 updateUserProfileUI(currentUser);
+                loadInitialData(currentUser);
             } else {
                 window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
             }
@@ -67,6 +71,24 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(() => {
             window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
         });
+
+    function loadInitialData(user) {
+        // Only administrators have permissions for script runners
+        if (user && user.role === 'admin') {
+            fetch('/api/scripts')
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to load scripts config');
+                    return res.json();
+                })
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        scriptsConfig = data;
+                        renderSidebar();
+                    }
+                })
+                .catch(err => console.error("Failed to load scripts:", err));
+        }
+    }
 
     function updateUserProfileUI(user) {
         const nameEl = document.getElementById('user-display-name');
@@ -113,17 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         });
     }
-
-    // Fetch available scripts from backend
-    fetch('/api/scripts')
-        .then(res => res.json())
-        .then(data => {
-            if (Array.isArray(data)) {
-                scriptsConfig = data;
-                renderSidebar();
-            }
-        })
-        .catch(err => console.error("Failed to load scripts:", err));
 
     // Markdown Editor Logic
     navEditorBtn.addEventListener('click', () => {

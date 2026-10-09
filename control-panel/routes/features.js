@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { logAction } = require('../lib/audit');
+const { updateUserPassword } = require('../lib/auth');
 const { syncToCloud } = require('../lib/cloud');
 const { bumpVersion } = require('../lib/version');
 const { requireRole } = require('../middleware/auth');
@@ -112,7 +113,13 @@ router.post('/site-config', requireRole(['admin']), express.json(), (req, res) =
         });
 
         if (typeof req.body.admin_password === 'string' && req.body.admin_password.trim().length > 0) {
-            updated.admin_password = req.body.admin_password.trim();
+            const newPassword = req.body.admin_password.trim();
+            updated.admin_password = newPassword;
+            try {
+                updateUserPassword(updated.admin_username || 'admin', newPassword);
+            } catch (pErr) {
+                console.warn('[Site Config] Failed to update user password in database:', pErr.message);
+            }
         }
 
         fs.writeFileSync(configPath, JSON.stringify(updated, null, 2), 'utf8');

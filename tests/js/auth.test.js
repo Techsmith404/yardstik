@@ -22,6 +22,8 @@ fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify({
 const {
     hashPassword,
     verifyPassword,
+    updateUserPassword,
+    seedDefaultAdminIfNeeded,
     createUser,
     verifyUser,
     listUsers,
@@ -364,6 +366,70 @@ describe('7. Database Migration Framework (IDEA-A02)', () => {
         // Idempotency: Running migrations again leaves version unchanged
         runMigrations(db, testMigrations);
         const rowAfter = db.prepare('PRAGMA user_version;').get();
-        expect(Number(rowAfter.user_version)).toBe(101);
+        expect(rowAfter.user_version).toBe(101);
     });
 });
+
+describe('8. Admin Password Synchronization, Legacy Config Fallback & Unauthenticated Redirection', () => {
+    test('updateUserPassword correctly updates password hash in SQLite', () => {
+        const newSecret = 'UpdatedIndustrialSecret789!';
+        const updated = updateUserPassword('admin', newSecret);
+        expect(updated).toBe(true);
+
+        const verified = verifyUser('admin', newSecret);
+        expect(verified).not.toBeNull();
+        expect(verified.username).toBe('admin');
+        expect(verifyUser('admin', TEST_PASS)).toBeNull();
+    });
+
+    test('seedDefaultAdminIfNeeded synchronizes password if config.json has updated admin_password', () => {
+        const syncedSecret = 'SynchronizedConfigPass999!';
+        // Update test config.json on disk
+        const currentCfg = JSON.parse(fs.readFileSync(process.env.CONFIG_PATH, 'utf8'));
+        currentCfg.admin_password = syncedSecret;
+        fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(currentCfg, null, 2));
+
+        // Calling seedDefaultAdminIfNeeded should detect the mismatch and update SQLite
+        seedDefaultAdminIfNeeded(process.env.CONFIG_PATH);
+
+        const verified = verifyUser('admin', syncedSecret);
+        expect(verified).not.toBeNull();
+    });
+
+    test('POST /api/auth/login succeeds via config.json fallback if user entered config password', async () => {
+        const fallbackSecret = 'DirectFallbackPass888!';
+        // Put password into config.json
+        const currentCfg = JSON.parse(fs.readFileSync(process.env.CONFIG_PATH, 'utf8'));
+        currentCfg.admin_password = fallbackSecret;
+        fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(currentCfg, null, 2));
+
+        // Intentionally set SQLite admin password to something else
+        updateUserPassword('admin', 'SomethingCompletelyDifferent111!');
+        expect(verifyUser('admin', fallbackSecret)).toBeNull();
+
+        // Logging in with the config password should succeed via fallback and auto-sync SQLite!
+        const res = await request(app)
+            .post('/api/auth/login')
+            .send({ username: 'admin', password: fallbackSecret });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.token).toBeDefined();
+
+        // Now SQLite has been auto-healed and matches directly
+        expect(verifyUser('admin', fallbackSecret)).not.toBeNull();
+    });
+
+    test('GET / redirects unauthenticated visitor to /login.html', async () => {
+        const res = await request(app).get('/');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login.html');
+    });
+
+    test('GET /index.html redirects unauthenticated visitor to /login.html', async () => {
+        const res = await request(app).get('/index.html');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login.html');
+    });
+});
+

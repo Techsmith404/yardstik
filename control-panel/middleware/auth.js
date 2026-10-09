@@ -1,17 +1,14 @@
 const crypto = require('crypto');
 const fs = require('fs');
-const { verifyUser, getSessionUser } = require('../lib/auth');
+const { verifyUser, getSessionUser, getConfigFileInfo } = require('../lib/auth');
 
 function getAuthConfig() {
-    const configPath = process.env.CONFIG_PATH || '/opt/config.json';
     let username = process.env.AUTH_USERNAME || 'admin';
     let password = process.env.AUTH_PASSWORD || '';
     try {
-        if (fs.existsSync(configPath)) {
-            const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            if (cfg.admin_username) username = cfg.admin_username;
-            if (cfg.admin_password) password = cfg.admin_password;
-        }
+        const { config } = getConfigFileInfo();
+        if (config.admin_username) username = config.admin_username;
+        if (config.admin_password) password = config.admin_password;
     } catch (e) {
         console.error('Error reading auth from config:', e);
     }

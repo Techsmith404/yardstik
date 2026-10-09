@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const fs = require('fs');
+const path = require('path');
 const { getDb } = require('./db');
 
 const SESSION_DURATION_HOURS = 24 * 7; // 7 days session
@@ -22,33 +23,92 @@ function verifyPassword(password, hash, salt) {
     return crypto.timingSafeEqual(hashedAttempt, storedHash);
 }
 
-// Seed default admin from config.json (or environment) if no users exist
+// Helper to locate and safely read site config JSON across potential candidate paths
+function getConfigFileInfo(customConfigPath) {
+    const candidatePaths = [
+        customConfigPath,
+        process.env.CONFIG_PATH,
+        path.join(process.env.DATA_DIR || '/data', 'config.json'),
+        '/opt/config.json',
+        '/data/config.json',
+        '/opt/kiosk-data/config.json',
+        '/opt/kiosk-data/data/config.json'
+    ].filter(Boolean);
+
+    for (const p of candidatePaths) {
+        try {
+            if (fs.existsSync(p)) {
+                const stat = fs.statSync(p);
+                if (stat.isFile()) {
+                    const content = fs.readFileSync(p, 'utf8');
+                    const parsed = JSON.parse(content);
+                    if (parsed && typeof parsed === 'object') {
+                        return { config: parsed, path: p };
+                    }
+                }
+            }
+        } catch {
+            // Silently try next candidate
+        }
+    }
+    return { config: {}, path: customConfigPath || process.env.CONFIG_PATH || '/opt/config.json' };
+}
+
+// Update password for an existing user (by username or ID)
+function updateUserPassword(usernameOrId, newPassword) {
+    if (!newPassword || newPassword.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+    }
+    const db = getDb();
+    const clean = (usernameOrId || '').trim().toLowerCase();
+    const user = db.prepare('SELECT id, username FROM users WHERE lower(username) = ? OR id = ?').get(clean, usernameOrId);
+    if (!user) {
+        throw new Error(`User not found: ${usernameOrId}`);
+    }
+    const { hash, salt } = hashPassword(newPassword);
+    const now = new Date().toISOString();
+    const stmt = db.prepare('UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?');
+    stmt.run(hash, salt, now, user.id);
+    return true;
+}
+
+// Seed default admin from config.json (or environment) if no users exist,
+// or synchronize configured admin password if explicitly set in config/env.
 function seedDefaultAdminIfNeeded(configPath) {
     const db = getDb();
+    const { config } = getConfigFileInfo(configPath);
+
+    let username = process.env.AUTH_USERNAME || config.admin_username || 'admin';
+    let configuredPassword = process.env.AUTH_PASSWORD || config.admin_password || '';
+
     const countStmt = db.prepare('SELECT COUNT(*) as count FROM users');
     const result = countStmt.get();
-    if (result && result.count > 0) return;
 
-    let username = process.env.AUTH_USERNAME || 'admin';
-    let password = process.env.AUTH_PASSWORD || '';
-
-    try {
-        if (configPath && fs.existsSync(configPath)) {
-            const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            if (cfg.admin_username) username = cfg.admin_username;
-            if (cfg.admin_password) password = cfg.admin_password;
+    // If users already exist in SQLite:
+    if (result && result.count > 0) {
+        if (configuredPassword) {
+            const adminUser = db.prepare('SELECT * FROM users WHERE lower(username) = ? AND active = 1').get(username.trim().toLowerCase());
+            if (adminUser) {
+                const matches = verifyPassword(configuredPassword, adminUser.password_hash, adminUser.salt);
+                if (!matches) {
+                    const { hash, salt } = hashPassword(configuredPassword);
+                    const now = new Date().toISOString();
+                    db.prepare('UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?')
+                        .run(hash, salt, now, adminUser.id);
+                    console.log(`[Auth] Synchronized admin password from config/env for user: ${username}`);
+                }
+            }
         }
-    } catch (e) {
-        console.error('[Auth] Error reading config during admin seeding:', e.message);
+        return;
     }
 
-    // Default password if completely unset — generate a random one-time password
-    // rather than falling back to the well-known string 'admin'.
+    // No users in DB — initial seed
+    let password = configuredPassword;
     if (!password) {
         password = crypto.randomBytes(8).toString('hex');
         console.warn(`\n⚠️  [Auth] No admin password configured! Generated a one-time password:`);
         console.warn(`⚠️  [Auth]   Username: ${username}  Password: ${password}`);
-        console.warn(`⚠️  [Auth] Change this immediately via the Control Panel settings.\n`);
+        console.warn(`⚠️  [Auth] Change this immediately via the Control Panel settings or config.json.\n`);
     }
 
     const { hash, salt } = hashPassword(password);
@@ -60,9 +120,10 @@ function seedDefaultAdminIfNeeded(configPath) {
         VALUES (?, ?, ?, ?, ?, 'admin', ?, ?, 1)
     `);
 
-    insertStmt.run(userId, username, hash, salt, 'System Administrator', now, now);
+    insertStmt.run(userId, username.trim().toLowerCase(), hash, salt, 'System Administrator', now, now);
     console.log(`[Auth] Seeded initial admin account: ${username}`);
 }
+
 
 // User CRUD
 function createUser({ username, password, displayName, role = 'viewer' }) {
@@ -308,6 +369,8 @@ function deleteInvite(token) {
 module.exports = {
     hashPassword,
     verifyPassword,
+    getConfigFileInfo,
+    updateUserPassword,
     seedDefaultAdminIfNeeded,
     createUser,
     verifyUser,
