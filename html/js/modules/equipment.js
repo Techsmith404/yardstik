@@ -1,26 +1,16 @@
 // Equipment Status, Scales, Weekly Audit & Autoscroll Module
 import { getHolidayEquipmentIcon } from './theme.js';
 import { cachedFeatures } from './features.js';
+import { fetchJson, cacheBustUrl } from './http.js';
+import { isAuditResetCurrent } from './audit-utils.js';
 
+export { isAuditResetCurrent };
 export let cachedEquipment = { categories: [] };
 let equipScrollInterval = null;
 
-export function isAuditResetCurrent(lastAuditResetEpoch) {
-    const d = new Date();
-    const day = d.getDay();
-    const hours = d.getHours();
-    let daysToSubtract = day;
-    if (day === 0 && hours < 23) daysToSubtract = 7;
-    const sunday11pm = new Date(d);
-    sunday11pm.setDate(d.getDate() - daysToSubtract);
-    sunday11pm.setHours(23, 0, 0, 0);
-    return !!(lastAuditResetEpoch && lastAuditResetEpoch >= sunday11pm.getTime());
-}
-
 export async function fetchEquipmentStatus() {
     try {
-        const res = await fetch('assets/data/equipment.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/equipment.json'));
         
         // Prevent unnecessary DOM rebuilds if data hasn't changed (deep comparison)
         if (JSON.stringify(data) !== JSON.stringify(cachedEquipment)) {
@@ -46,53 +36,36 @@ export function renderEquipmentDashboard() {
         // Create Category Block
         const block = document.createElement('div');
         block.className = 'equipment-category';
-        block.style.background = 'rgba(0,0,0,0.2)';
-        block.style.borderRadius = '12px';
-        block.style.padding = '15px';
-        block.style.border = '1px solid rgba(255,255,255,0.05)';
-        block.style.breakInside = 'avoid';
-        block.style.marginBottom = '20px';
         
         // Category Title
         const title = document.createElement('h4');
+        title.className = 'equipment-category-title';
         title.innerHTML = `${holidayIcon}${cat.name.toUpperCase()}`;
-        title.style.margin = '0 0 12px 0';
-        title.style.fontSize = '1.1rem';
-        title.style.letterSpacing = '0.05em';
-        title.style.color = 'var(--text-secondary)';
-        title.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
-        title.style.paddingBottom = '5px';
         block.appendChild(title);
         
         // Equipment Pills Grid
         const grid = document.createElement('div');
-        grid.style.display = 'grid';
-        grid.style.gridTemplateColumns = '1fr';
-        grid.style.gap = '8px';
+        grid.className = 'equipment-grid';
         
         const isMobileCranes = (cat.name || '').trim().toLowerCase() === 'mobile cranes';
 
         cat.items.forEach(item => {
+            const rawStatus = (item.status || '').toUpperCase();
+            let statusKey = 'unknown';
+            if (rawStatus === 'OK') statusKey = 'ok';
+            else if (rawStatus === 'OS') statusKey = 'os';
+            else if (rawStatus === 'PM') statusKey = 'pm';
+
             const pill = document.createElement('div');
-            pill.style.display = 'flex';
-            pill.style.justifyContent = 'space-between';
-            pill.style.alignItems = 'center';
-            pill.style.padding = '8px 12px';
-            pill.style.borderRadius = '6px';
-            pill.style.fontSize = '1rem';
-            pill.style.fontWeight = '500';
-            pill.style.background = 'rgba(255,255,255,0.03)';
-            pill.style.borderLeft = '4px solid transparent';
+            pill.className = `equipment-pill status-${statusKey}`;
             
             const nameSpan = document.createElement('span');
+            nameSpan.className = 'equipment-name';
             nameSpan.innerText = item.name;
-            nameSpan.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
             
             // Container for badges on the right side
             const badgesContainer = document.createElement('div');
-            badgesContainer.style.display = 'flex';
-            badgesContainer.style.alignItems = 'center';
-            badgesContainer.style.gap = '8px';
+            badgesContainer.className = 'equipment-badges';
 
             // Mobile Cranes Specific Badges (Scale & Blend Audit)
             if (isMobileCranes && item.scale && item.scale !== 'NO' && item.scale !== 'NONE') {
@@ -118,31 +91,16 @@ export function renderEquipmentDashboard() {
             }
 
             const statusBadge = document.createElement('span');
-            statusBadge.style.padding = '2px 8px';
-            statusBadge.style.borderRadius = '4px';
-            statusBadge.style.fontSize = '0.85rem';
-            statusBadge.style.fontWeight = 'bold';
-            statusBadge.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)';
-            statusBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+            statusBadge.className = 'equipment-status-badge';
             
-            if (item.status === 'OK') {
+            if (statusKey === 'ok') {
                 statusBadge.innerText = 'OK';
-                statusBadge.style.background = 'var(--success, #10b981)';
-                pill.style.borderLeftColor = 'var(--success, #10b981)';
-            } else if (item.status === 'OS') {
+            } else if (statusKey === 'os') {
                 statusBadge.innerText = item.reason ? `OS: ${item.reason.toUpperCase()}` : 'OUT OF SERVICE';
-                statusBadge.style.background = 'var(--danger, #ef4444)';
-                pill.style.borderLeftColor = 'var(--danger, #ef4444)';
-                pill.style.background = 'rgba(239, 68, 68, 0.1)'; // Slight red tint for broken stuff
-            } else if (item.status === 'PM') {
+            } else if (statusKey === 'pm') {
                 statusBadge.innerText = item.reason ? `ISSUE: ${item.reason.toUpperCase()}` : 'ISSUE';
-                statusBadge.style.background = 'var(--warning, #f59e0b)';
-                pill.style.borderLeftColor = 'var(--warning, #f59e0b)';
-                statusBadge.style.color = '#fff';
             } else {
-                statusBadge.innerText = item.status;
-                statusBadge.style.background = '#6b7280';
-                pill.style.borderLeftColor = '#6b7280';
+                statusBadge.innerText = item.status || 'UNKNOWN';
             }
             
             badgesContainer.appendChild(statusBadge);

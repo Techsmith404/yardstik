@@ -11,6 +11,12 @@ npm-debug.log*
 __pycache__/
 *.pyc
 
+# SQLite & Local DBs
+*.db
+*.db-wal
+*.db-shm
+*.sqlite*
+
 # Legacy & Temp
 script-server/
 code-review/

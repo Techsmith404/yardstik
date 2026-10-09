@@ -2,6 +2,38 @@
 
 This file tracks major deployments, features added/removed, and critical setup context to ensure project continuity across development sessions.
 
+## [v5.0.0] - Architecture Modernization, User Accounts, RBAC, Tiered Lightning & Automated Testing Suite (September 2026)
+
+### 🚀 Major Architectural & Security Highlights
+- **User Accounts & Role-Based Access Control (RBAC):**
+  - Native embedded SQLite database (`yardstik.db`) with WAL mode, foreign keys, and incremental `PRAGMA user_version` migrations.
+  - Three-tier permissions: `admin` (management), `maintenance` (shop floor tech), and `viewer` (read-only public dashboard).
+  - Single-use invite link generator (`/register.html?invite=<token>`) and secure session management.
+  - Operations Audit Trail (`audit_logs`) with live search, action category filtering, ring-buffer auto-pruning, and RFC-4180 CSV export.
+- **Tiered Real-Time Lightning Detection:**
+  - **Free Blitzortung TOA Network (Default):** Real-time crowdsourced WebSocket strikes within 15 miles with zero API quota.
+  - **Commercial Priority (`PAID_XWEATHER_API`):** Commercial SLA radar priority, burning free keys first if both exist.
+  - **Backup Rotation (`FREE_XWEATHER_API`):** Multi-key trial rotation fallback when Blitzortung has no strikes or the kiosk is offline.
+  - **Zero-Config All-Clear:** Clean HTTP 200 response when no keys are configured.
+- **Modular Backend Architecture (IDEA-A01):**
+  - Decomposed 1,490-line monolithic `control-panel/server.js` into isolated domain route modules (`routes/auth.js`, `routes/equipment.js`, `routes/tracks.js`, etc.) and middleware (`middleware/auth.js`).
+  - Container health checks (`GET /api/health`) and Docker compose volume mounts.
+- **Frontend & Presentation Modernization:**
+  - **Offline-First Service Worker (`html/sw.js`, IDEA-F03):** Caches operational data with Network-First fallback for shop floor cellular dead zones.
+  - **Decoupled Layout Engine (`html/js/modules/layout.js`, IDEA-Q01):** Observer-pattern handoff transitions breaking circular dependencies between `config.js` and `features.js`.
+  - **CSS Class-Based Equipment Rendering (IDEA-Q03):** Eliminated 40+ inline styles in favor of semantic CSS utility classes in `styles-v2.css`.
+  - **Diff-Before-Rebuild Hash Guard (IDEA-Q04):** Eliminates unnecessary SVG track map redraws and DOM churn.
+  - **Unified HTTP Module (`html/js/modules/http.js`, IDEA-A03):** Standardized `fetchJson`, `fetchText`, and `cacheBustUrl` across all client modules.
+  - **XSS & SVG Upload Hardening (IDEA-S03, IDEA-Q05):** Server-side SVG sanitization via `DOMPurify` + `JSDOM` and markdown reminder purification.
+- **Enterprise Automated QA Suite:**
+  - Expanded test coverage from 49 to **197 automated tests (100% pass rate)** spanning Python (Pytest), JavaScript (Jest + Supertest + AST), and Bash (Bats).
+  - Static AST compliance tests enforcing zero regex lookbehinds and zero top-level `await`.
+  - Self-healing container rebuilds via `.last_built_commit` in `kiosk-sync.sh`.
+- **Cleaned Deprecated Deployment Scripts:**
+  - Purged legacy `package.sh` and `deploy.sh` in favor of canonical `site-install.sh` and `kiosk-sync.sh`.
+
+---
+
 ## [v4.2.0] - Interactive Yard Track Map, Shift Handoff Mode & Multi-Column Spreadsheet Ingestion
 
 ### 🚀 Features Added

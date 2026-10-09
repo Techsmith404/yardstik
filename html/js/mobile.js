@@ -26,6 +26,23 @@
     let lightningCooldownInterval = null;
     let countdownIntervals = [];
 
+    // Mobile Floor Auth & Quick Edit State (Issue #14)
+    let currentMobileUser = null;
+    let activeQuickEditCatIndex = -1;
+    let activeQuickEditItemIndex = -1;
+    let activeQuickEditStatus = 'OK';
+
+    function getAuthHeaders() {
+        var headers = { 'Content-Type': 'application/json' };
+        try {
+            var tok = localStorage.getItem('yardstik_session_token');
+            if (tok) {
+                headers['Authorization'] = 'Bearer ' + tok;
+            }
+        } catch(e) {}
+        return headers;
+    }
+
     // Helper: Determine URL for local data or Vercel cloud sync
     function getDataUrl(filename) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -36,6 +53,25 @@
             return '/api/sync?' + siteQuery + 'file=' + filename + '&t=' + Date.now();
         }
         return 'assets/data/' + filename + '?t=' + Date.now();
+    }
+
+    // Helper: Sanitize Markdown HTML using DOMPurify with fallback
+    function sanitizeMarkdownHtml(dirtyHtml) {
+        if (!dirtyHtml || typeof dirtyHtml !== 'string') return '';
+        if (typeof window !== 'undefined' && window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+            return window.DOMPurify.sanitize(dirtyHtml, {
+                ALLOWED_TAGS: [
+                    'b', 'i', 'em', 'strong', 'u', 's', 'ul', 'ol', 'li', 'p', 'br',
+                    'a', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span',
+                    'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr'
+                ],
+                ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style']
+            });
+        }
+        return dirtyHtml
+            .replace(/<\/?(?:script|object|embed|iframe|form|input|button|link|meta)\b[^>]*>/gi, '')
+            .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+            .replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
     }
 
     // Helper: Format Dates and Times
@@ -106,6 +142,9 @@
                 } else if (currentVersion !== trimmed) {
                     console.log("New version detected, refreshing data feeds:", trimmed);
                     currentVersion = trimmed;
+                    if (typeof navigator !== 'undefined' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+                    }
                     refreshAllData(true);
                 }
             })
@@ -351,12 +390,14 @@
         const filterLower = equipmentFilter.toLowerCase();
         const searchLower = equipmentSearch.toLowerCase().trim();
 
-        rawEquipmentData.categories.forEach(function(cat) {
+        const isMaintRole = currentMobileUser && (currentMobileUser.role === 'maintenance' || currentMobileUser.role === 'admin');
+
+        rawEquipmentData.categories.forEach(function(cat, catIdx) {
             const isMobileCranes = (cat.name || '').trim().toLowerCase() === 'mobile cranes';
             let catHtml = '';
             let catMatches = 0;
 
-            cat.items.forEach(function(item) {
+            cat.items.forEach(function(item, itemIdx) {
                 totalItems++;
                 const status = (item.status || 'OK').toUpperCase();
                 const isAttention = status === 'OS' || status === 'PM';
@@ -407,14 +448,18 @@
                     }
                 }
 
+                const editBtn = isMaintRole ? 
+                    '<button class="btn-quick-edit-trigger" data-cat-idx="' + catIdx + '" data-item-idx="' + itemIdx + '" title="Quick Edit" style="background: none; border: none; color: var(--brand-blue); cursor: pointer; padding: 4px 6px; font-size: 0.95rem;"><i class="fa-solid fa-pen-to-square"></i></button>' : '';
+
                 catHtml += 
-                    '<div class="' + itemClass + '">' +
+                    '<div class="' + itemClass + '" ' + (isMaintRole ? 'style="cursor: pointer;"' : '') + '>' +
                         '<div class="equipment-item-info">' +
                             '<span class="equipment-item-name">' + item.name + '</span>' +
                         '</div>' +
                         '<div class="equipment-item-badges">' +
                             extraBadges +
                             statusBadge +
+                            editBtn +
                         '</div>' +
                     '</div>';
             });
@@ -438,6 +483,27 @@
         }
 
         container.innerHTML = html;
+
+        if (isMaintRole) {
+            container.querySelectorAll('.btn-quick-edit-trigger').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var cIdx = parseInt(btn.getAttribute('data-cat-idx'), 10);
+                    var iIdx = parseInt(btn.getAttribute('data-item-idx'), 10);
+                    openQuickEditModal(cIdx, iIdx);
+                });
+            });
+            container.querySelectorAll('.equipment-item-card').forEach(function(card) {
+                card.addEventListener('click', function(e) {
+                    var btn = card.querySelector('.btn-quick-edit-trigger');
+                    if (btn) {
+                        var cIdx = parseInt(btn.getAttribute('data-cat-idx'), 10);
+                        var iIdx = parseInt(btn.getAttribute('data-item-idx'), 10);
+                        openQuickEditModal(cIdx, iIdx);
+                    }
+                });
+            });
+        }
 
         // Update Bottom Nav Badge
         if (badgeEl) {
@@ -638,13 +704,9 @@
         function fetchFallbackAnniversaries() {
             if (anniversariesLoaded) return;
             
-            const fallbackUrl = vercelBase ? (vercelBase + '/api/novara?type=anniversaries') : getDataUrl('anniversaries.json');
-            fetch(fallbackUrl)
+            fetch(getDataUrl('anniversaries.json'))
                 .then(function(res) {
                     if (res.ok) return res.json();
-                    if (vercelBase) {
-                        return fetch(getDataUrl('anniversaries.json')).then(function(r) { return r.ok ? r.json() : null; });
-                    }
                     return null;
                 })
                 .then(function(data) {
@@ -654,23 +716,13 @@
                     if (emps && emps.length > 0) anniversariesLoaded = true;
                 })
                 .catch(function(err) {
-                    console.warn("Anniversaries fallback fetch error:", err);
-                    if (!anniversariesLoaded) {
-                        fetch(getDataUrl('anniversaries.json'))
-                            .then(function(r) { return r.ok ? r.json() : null; })
-                            .then(function(data) {
-                                const emps = (data && data.employees) || (data && Array.isArray(data.anniversaries) ? data.anniversaries : null);
-                                renderAnniversariesList(emps || []);
-                            })
-                            .catch(function() {
-                                renderAnniversariesList([]);
-                            });
-                    }
+                    console.warn("Anniversaries fetch error:", err);
+                    renderAnniversariesList([]);
                 });
         }
 
         // Novara Safety Training
-        fetch(vercelBase + '/api/novara')
+        fetch(getDataUrl('safety_videos.json'))
             .then(function(res) {
                 if (res.ok) return res.json();
                 return null;
@@ -827,7 +879,8 @@
                     // Clean other magic words
                     body = body.replace(/!(HIGH|CRITICAL|SPLIT|LARGE|CENTER|LONG|ONLY|QR https?:\/\/[^\s]+)/ig, '');
 
-                    let parsedBody = typeof window.marked !== 'undefined' ? window.marked.parse(body) : body;
+                    let rawParsed = typeof window.marked !== 'undefined' ? window.marked.parse(body) : body;
+                    let parsedBody = sanitizeMarkdownHtml(rawParsed);
 
                     parsedHtml += 
                         '<div class="reminder-card ' + priority + '">' +
@@ -1309,6 +1362,299 @@
                 if (e.target === trackModal) window.closeTrackDetail();
             });
         }
+
+        // Mobile Auth & Maintenance Event Bindings (Issue #14)
+        const btnMobileAuth = document.getElementById('btn-mobile-auth');
+        const btnCloseMobileAuth = document.getElementById('btn-close-mobile-auth');
+        const mobileLoginForm = document.getElementById('mobile-login-form');
+        const btnMobileLogout = document.getElementById('btn-mobile-logout');
+        const modalMobileAuth = document.getElementById('modal-mobile-auth');
+
+        if (btnMobileAuth) btnMobileAuth.addEventListener('click', openMobileAuthModal);
+        if (btnCloseMobileAuth) btnCloseMobileAuth.addEventListener('click', closeMobileAuthModal);
+        if (mobileLoginForm) mobileLoginForm.addEventListener('submit', handleMobileLogin);
+        if (btnMobileLogout) btnMobileLogout.addEventListener('click', handleMobileLogout);
+        if (modalMobileAuth) {
+            modalMobileAuth.addEventListener('click', function(e) {
+                if (e.target === modalMobileAuth) closeMobileAuthModal();
+            });
+        }
+
+        // Equipment Quick Edit Modal Bindings
+        const btnCloseQuickEdit = document.getElementById('btn-close-quick-edit');
+        const quickEditForm = document.getElementById('quick-edit-form');
+        const modalQuickEdit = document.getElementById('modal-equip-quick-edit');
+
+        if (btnCloseQuickEdit) btnCloseQuickEdit.addEventListener('click', closeQuickEditModal);
+        if (quickEditForm) quickEditForm.addEventListener('submit', saveQuickEdit);
+        if (modalQuickEdit) {
+            modalQuickEdit.addEventListener('click', function(e) {
+                if (e.target === modalQuickEdit) closeQuickEditModal();
+            });
+        }
+
+        document.querySelectorAll('.btn-status-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                activeQuickEditStatus = btn.getAttribute('data-status');
+                updateStatusButtonsUI(activeQuickEditStatus);
+            });
+        });
+    }
+
+    // ==========================================================================
+    // 10. Mobile Floor Maintenance & Auth Interactions (Issue #14)
+    // ==========================================================================
+
+    function checkMobileAuth() {
+        return fetch('/api/auth/me', { headers: getAuthHeaders() })
+            .then(function(res) {
+                if (res.ok) return res.json();
+                throw new Error('HTTP ' + res.status);
+            })
+            .then(function(data) {
+                if (data && data.authenticated && data.user) {
+                    currentMobileUser = data.user;
+                } else {
+                    currentMobileUser = null;
+                }
+                updateMobileAuthButtonUI();
+                renderEquipmentList();
+            })
+            .catch(function() {
+                currentMobileUser = null;
+                updateMobileAuthButtonUI();
+            });
+    }
+
+    function updateMobileAuthButtonUI() {
+        const btn = document.getElementById('btn-mobile-auth');
+        if (!btn) return;
+        if (currentMobileUser) {
+            btn.innerHTML = '<i class="fa-solid fa-user-check" style="color: var(--success);"></i>';
+            btn.title = (currentMobileUser.displayName || currentMobileUser.username) + ' (' + (currentMobileUser.role || '') + ')';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-user"></i>';
+            btn.title = 'Maintenance Login';
+        }
+    }
+
+    function openMobileAuthModal() {
+        const modal = document.getElementById('modal-mobile-auth');
+        const loginForm = document.getElementById('mobile-login-form');
+        const loggedInBox = document.getElementById('mobile-auth-logged-in');
+        const errBox = document.getElementById('mobile-auth-error');
+        if (!modal) return;
+
+        if (errBox) errBox.style.display = 'none';
+
+        if (currentMobileUser) {
+            if (loginForm) loginForm.style.display = 'none';
+            if (loggedInBox) loggedInBox.style.display = 'block';
+            const userDisplay = document.getElementById('mobile-auth-user-display');
+            const roleBadge = document.getElementById('mobile-auth-role-badge');
+            const avatar = document.getElementById('mobile-auth-avatar');
+            if (userDisplay) userDisplay.textContent = currentMobileUser.displayName || currentMobileUser.username;
+            if (roleBadge) roleBadge.textContent = (currentMobileUser.role || 'MAINTENANCE').toUpperCase();
+            if (avatar) avatar.textContent = (currentMobileUser.displayName || currentMobileUser.username || 'A').charAt(0).toUpperCase();
+        } else {
+            if (loginForm) loginForm.style.display = 'block';
+            if (loggedInBox) loggedInBox.style.display = 'none';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeMobileAuthModal() {
+        const modal = document.getElementById('modal-mobile-auth');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function handleMobileLogin(e) {
+        e.preventDefault();
+        const unameInput = document.getElementById('mobile-auth-username');
+        const passInput = document.getElementById('mobile-auth-password');
+        const errBox = document.getElementById('mobile-auth-error');
+        const submitBtn = document.getElementById('btn-mobile-login-submit');
+
+        if (!unameInput || !passInput) return;
+        const username = unameInput.value.trim();
+        const password = passInput.value;
+
+        if (errBox) errBox.style.display = 'none';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+        }
+
+        fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
+        .then(function(data) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Unlock Maintenance Mode';
+            }
+            if (data && data.success) {
+                if (data.token) {
+                    try { localStorage.setItem('yardstik_session_token', data.token); } catch(e) {}
+                }
+                currentMobileUser = data.user;
+                updateMobileAuthButtonUI();
+                renderEquipmentList();
+                closeMobileAuthModal();
+            } else {
+                throw new Error((data && data.error) || 'Invalid username or password');
+            }
+        })
+        .catch(function(err) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Unlock Maintenance Mode';
+            }
+            if (errBox) {
+                errBox.textContent = err.message || 'Login failed';
+                errBox.style.display = 'block';
+            }
+        });
+    }
+
+    function handleMobileLogout() {
+        fetch('/api/auth/logout', { method: 'POST', headers: getAuthHeaders() })
+            .then(function() {
+                try { localStorage.removeItem('yardstik_session_token'); } catch(e) {}
+                currentMobileUser = null;
+                updateMobileAuthButtonUI();
+                renderEquipmentList();
+                closeMobileAuthModal();
+            })
+            .catch(function() {
+                try { localStorage.removeItem('yardstik_session_token'); } catch(e) {}
+                currentMobileUser = null;
+                updateMobileAuthButtonUI();
+                renderEquipmentList();
+                closeMobileAuthModal();
+            });
+    }
+
+    function openQuickEditModal(catIdx, itemIdx) {
+        if (!rawEquipmentData || !rawEquipmentData.categories || !rawEquipmentData.categories[catIdx]) return;
+        const cat = rawEquipmentData.categories[catIdx];
+        const item = cat.items ? cat.items[itemIdx] : null;
+        if (!item) return;
+
+        activeQuickEditCatIndex = catIdx;
+        activeQuickEditItemIndex = itemIdx;
+        activeQuickEditStatus = (item.status || 'OK').toUpperCase();
+
+        const modal = document.getElementById('modal-equip-quick-edit');
+        const titleEl = document.getElementById('quick-edit-title');
+        const catNameEl = document.getElementById('quick-edit-cat-name');
+        const reasonInput = document.getElementById('quick-edit-reason');
+        const craneSection = document.getElementById('quick-edit-crane-section');
+        const scaleSelect = document.getElementById('quick-edit-scale-status');
+        const auditCheckbox = document.getElementById('quick-edit-blend-audit');
+
+        if (titleEl) titleEl.textContent = 'Edit ' + item.name;
+        if (catNameEl) catNameEl.textContent = cat.name.toUpperCase();
+        if (reasonInput) reasonInput.value = item.reason || '';
+
+        updateStatusButtonsUI(activeQuickEditStatus);
+
+        const isMobileCranes = (cat.name || '').trim().toLowerCase() === 'mobile cranes';
+        if (craneSection) {
+            craneSection.style.display = isMobileCranes ? 'block' : 'none';
+            if (isMobileCranes) {
+                if (scaleSelect) scaleSelect.value = item.scale || 'OK';
+                if (auditCheckbox) auditCheckbox.checked = !!item.blend_audit;
+            }
+        }
+
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function updateStatusButtonsUI(status) {
+        document.querySelectorAll('.btn-status-toggle').forEach(function(btn) {
+            const btnStatus = btn.getAttribute('data-status');
+            if (btnStatus === status) {
+                btn.style.outline = '2px solid #fff';
+                btn.style.opacity = '1';
+            } else {
+                btn.style.outline = 'none';
+                btn.style.opacity = '0.6';
+            }
+        });
+    }
+
+    function closeQuickEditModal() {
+        const modal = document.getElementById('modal-equip-quick-edit');
+        if (modal) modal.style.display = 'none';
+        activeQuickEditCatIndex = -1;
+        activeQuickEditItemIndex = -1;
+    }
+
+    function saveQuickEdit(e) {
+        e.preventDefault();
+        if (activeQuickEditCatIndex < 0 || activeQuickEditItemIndex < 0 || !rawEquipmentData) return;
+
+        const cat = rawEquipmentData.categories[activeQuickEditCatIndex];
+        const item = cat.items[activeQuickEditItemIndex];
+        const reasonInput = document.getElementById('quick-edit-reason');
+        const scaleSelect = document.getElementById('quick-edit-scale-status');
+        const auditCheckbox = document.getElementById('quick-edit-blend-audit');
+        const saveBtn = document.getElementById('btn-save-quick-edit');
+
+        item.status = activeQuickEditStatus;
+        item.reason = reasonInput ? reasonInput.value.trim() : '';
+
+        const isMobileCranes = (cat.name || '').trim().toLowerCase() === 'mobile cranes';
+        if (isMobileCranes) {
+            if (scaleSelect) item.scale = scaleSelect.value;
+            if (auditCheckbox) item.blend_audit = auditCheckbox.checked;
+        }
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        }
+
+        fetch('/api/equipment', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(rawEquipmentData)
+        })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(errData) {
+                throw new Error((errData && errData.error) || 'HTTP ' + res.status);
+            });
+        })
+        .then(function(data) {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes to Floor Display';
+            }
+            if (data && data.success) {
+                renderEquipmentList();
+                closeQuickEditModal();
+            } else {
+                alert((data && data.error) || 'Failed to save equipment update');
+            }
+        })
+        .catch(function(err) {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes to Floor Display';
+            }
+            alert('Network error saving equipment update');
+        });
     }
 
     function switchTab(tabName) {
@@ -1349,9 +1695,18 @@
     function initMobileApp() {
         setupEventListeners();
         startClock();
+        checkMobileAuth();
         fetchSiteConfig().then(function() {
             refreshAllData();
         });
+
+        // Register Offline-First Service Worker (IDEA-F03)
+        var hostname = window.location.hostname || '';
+        var isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+        var isSecure = window.location.protocol === 'https:' || isLocalhost;
+        if ('serviceWorker' in navigator && isSecure) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        }
 
         // Polling Intervals
         setInterval(checkVersion, 5000); // 5s Version check

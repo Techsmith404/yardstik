@@ -125,4 +125,20 @@ describe('YardStik Mobile Companion Web App (§9.1, §9.3, §9.4, §9.8 Complian
         expect(empsB.length).toBe(1);
         expect(empsB[0].name).toBe("Casey Miller");
     });
+
+    test('Mobile companion implements opt-in floor maintenance mode and quick status modals (Issue #14)', () => {
+        const htmlContent = fs.readFileSync(mobileHtmlPath, 'utf8');
+        const jsContent = fs.readFileSync(mobileJsPath, 'utf8');
+
+        expect(htmlContent).toContain('btn-mobile-auth');
+        expect(htmlContent).toContain('modal-mobile-auth');
+        expect(htmlContent).toContain('modal-equip-quick-edit');
+        expect(htmlContent).toContain('btn-status-toggle');
+
+        expect(jsContent).toContain('checkMobileAuth');
+        expect(jsContent).toContain('openMobileAuthModal');
+        expect(jsContent).toContain('openQuickEditModal');
+        expect(jsContent).toContain('saveQuickEdit');
+        expect(jsContent).toContain('btn-quick-edit-trigger');
+    });
 });

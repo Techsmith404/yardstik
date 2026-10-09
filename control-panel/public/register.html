@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Registration - YardStik</title>
+    <link rel="stylesheet" href="css/style.css?v=4.7">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            color: #f8fafc;
+        }
+        .auth-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+        .auth-brand i {
+            font-size: 2rem;
+            color: #38bdf8;
+        }
+        .auth-brand h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .auth-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: -16px;
+            margin-bottom: 20px;
+        }
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .auth-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px 14px 12px 40px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .auth-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            background: rgba(15, 23, 42, 0.85);
+        }
+        .auth-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .auth-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .invalid-invite-box {
+            text-align: center;
+            padding: 20px 0;
+            display: none;
+        }
+        .invalid-invite-box i {
+            font-size: 3rem;
+            color: #ef4444;
+            margin-bottom: 14px;
+        }
+        .auth-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+        .auth-link {
+            color: #38bdf8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="auth-brand">
+            <i class="fa-solid fa-layer-group"></i>
+            <h1>YardStik Registration</h1>
+        </div>
+        <div class="auth-subtitle">Create Your Employee Account</div>
+
+        <!-- Role Badge Display -->
+        <div style="text-align: center;">
+            <div id="role-badge" class="role-pill" style="display: none;">
+                <i class="fa-solid fa-shield"></i> <span id="role-text">Maintenance Role</span>
+            </div>
+        </div>
+
+        <div id="error-alert" class="alert-error"></div>
+
+        <!-- Invalid Invite State -->
+        <div id="invalid-invite" class="invalid-invite-box">
+            <i class="fa-solid fa-circle-xmark"></i>
+            <h3 style="margin: 0 0 8px 0; color: #f8fafc;">Invalid or Expired Invite</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 16px;">This registration link has expired or has already been used. Please ask your supervisor or system administrator for a new invitation link.</p>
+            <a href="login.html" class="auth-link">Return to Sign In</a>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="register-form" style="display: none;">
+            <div class="form-group">
+                <label for="display-name">Full Name / Nickname</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-id-card"></i>
+                    <input type="text" id="display-name" class="auth-input" placeholder="e.g. Jane Doe" required autofocus>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="username" class="auth-input" placeholder="Choose a username" required minlength="3" autocomplete="username">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" class="auth-input" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password">
+                </div>
+            </div>
+
+            <button type="submit" id="btn-submit" class="auth-btn">
+                <i class="fa-solid fa-user-check"></i> Complete Registration
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="login.html" class="auth-link">Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('invite') || params.get('token');
+            const form = document.getElementById('register-form');
+            const invalidBox = document.getElementById('invalid-invite');
+            const errorAlert = document.getElementById('error-alert');
+            const roleBadge = document.getElementById('role-badge');
+            const roleText = document.getElementById('role-text');
+            const submitBtn = document.getElementById('btn-submit');
+
+            if (!token) {
+                invalidBox.style.display = 'block';
+                return;
+            }
+
+            // Verify invite token
+            fetch('/api/auth/verify-invite?token=' + encodeURIComponent(token))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.valid && data.invite) {
+                        form.style.display = 'block';
+                        roleBadge.style.display = 'inline-flex';
+                        const role = data.invite.role || 'viewer';
+                        roleText.textContent = role.toUpperCase() + ' ROLE';
+                        if (role === 'admin') {
+                            roleBadge.style.borderColor = '#f59e0b';
+                            roleBadge.style.color = '#fbbf24';
+                            roleBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                        }
+                    } else {
+                        invalidBox.style.display = 'block';
+                    }
+                })
+                .catch(function() {
+                    invalidBox.style.display = 'block';
+                });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                errorAlert.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
+
+                const displayName = document.getElementById('display-name').value.trim();
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+
+                fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        displayName: displayName,
+                        username: username,
+                        password: password
+                    })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.success) {
+                        if (data.token) {
+                            try { localStorage.setItem('yardstik_session_token', data.token); } catch(e) {}
+                        }
+                        window.location.href = '/';
+                    } else {
+                        throw new Error((data && data.error) || 'Registration failed');
+                    }
+                })
+                .catch(function(err) {
+                    errorAlert.textContent = err.message || 'Registration failed.';
+                    errorAlert.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Complete Registration';
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

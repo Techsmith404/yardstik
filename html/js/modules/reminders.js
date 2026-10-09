@@ -1,5 +1,7 @@
 // Markdown Reminders & Magic Words Parser Module
-import { isDesktopMode, isHandoffActive } from './config.js';
+import { isDesktopMode, isHandoffActive, onLayoutTransition } from './layout.js';
+import { sanitizeMarkdownHtml } from './sanitize.js';
+import { fetchText, cacheBustUrl } from './http.js';
 
 export let remindersList = [];
 export let currentReminderIndex = 0;
@@ -145,7 +147,7 @@ export function renderMultipleRemindersWidgets() {
         else safetyContent.classList.remove('large-text');
         if (firstReminder.isCenter) safetyContent.classList.add('center-text');
         else safetyContent.classList.remove('center-text');
-        safetyContent.innerHTML = marked.parse(firstReminder.body.trim());
+        safetyContent.innerHTML = sanitizeMarkdownHtml(marked.parse(firstReminder.body.trim()));
     }
 
     if (!parentContainer) return null;
@@ -166,7 +168,7 @@ export function renderMultipleRemindersWidgets() {
     const panelSaf = document.getElementById('panel-safety');
 
     activeList.forEach((r) => {
-        const parsedBody = marked.parse(r.body.trim());
+        const parsedBody = sanitizeMarkdownHtml(marked.parse(r.body.trim()));
         let priorityBadge = '';
         let widgetBorder = '1px solid rgba(255, 255, 255, 0.12)';
         let widgetShadow = '0 10px 30px rgba(0,0,0,0.5)';
@@ -298,7 +300,7 @@ export function advanceSingleReminderSlide() {
         if (reminder.isCenter) contentContainer.classList.add('center-text');
         else contentContainer.classList.remove('center-text');
 
-        const htmlContent = marked.parse(reminder.body.trim());
+        const htmlContent = sanitizeMarkdownHtml(marked.parse(reminder.body.trim()));
         contentContainer.innerHTML = htmlContent;
     });
 
@@ -323,9 +325,7 @@ export function renderDesktopReminders() {
 
 export async function fetchReminders() {
     try {
-        const res = await fetch('assets/data/reminders.md?t=' + new Date().getTime());
-        if (!res.ok) throw new Error('Not found');
-        const rawText = await res.text();
+        const rawText = await fetchText(cacheBustUrl('assets/data/reminders.md'));
         
         // Split by H1 tags (starts with exactly one # and a space)
         const sections = rawText.split(/^# /m).filter(s => s.trim().length > 0);
@@ -430,6 +430,12 @@ export async function fetchReminders() {
     }
 }
 
+// Register layout transition listener to update reminders on handoff state change
+onLayoutTransition(() => {
+    advanceReminderSlide();
+});
+
 if (typeof window !== 'undefined') {
     window.advanceReminderSlide = advanceReminderSlide;
 }
+

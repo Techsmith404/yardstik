@@ -1,4 +1,5 @@
 // Safety Stand-down & Metrics Slideshow Module
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export async function updateSafetySlide() {
     try {
@@ -9,8 +10,7 @@ export async function updateSafetySlide() {
         const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
         
         // Fetch trackers to check for daily override
-        const res = await fetch('assets/data/trackers.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/trackers.json'));
         
         const label = document.getElementById('toolbox-slide-number');
         const img = document.getElementById('slow-slide-img');
@@ -18,7 +18,7 @@ export async function updateSafetySlide() {
         
         if (data.toolbox_override_date === todayStr && data.toolbox_override_file) {
             img.src = `assets/data/${data.toolbox_override_file}?t=${new Date().getTime()}`;
-            if (label) label.innerText = `(Safety Stand-down)`;
+            if (label) label.textContent = `(Safety Stand-down)`;
             return;
         }
         
@@ -40,7 +40,11 @@ export async function updateSafetySlide() {
         }
         
         const paddedNum = slideNum.toString().padStart(3, '0');
-        const isRemoteCloud = (typeof window !== 'undefined' && (window.location.hostname.indexOf('vercel.app') !== -1 || window.location.protocol === 'https:'));
+        // Use includes() (modern ES6) for cloud detection; also check siteConfig for custom domains
+        const isRemoteCloud = (typeof window !== 'undefined' && (
+            window.location.hostname.includes('vercel.app') ||
+            window.location.protocol === 'https:'
+        ));
 
         img.onerror = function() {
             if (!this.src.endsWith('001.png')) {
@@ -56,9 +60,9 @@ export async function updateSafetySlide() {
         } else {
             img.src = `assets/safety-slides/${paddedNum}.png`;
         }
-        if (label) label.innerText = `#${paddedNum}`;
+        if (label) label.textContent = `#${paddedNum}`;
     } catch (e) {
-        console.log("Error updating safety slide", e);
+        console.error('Error updating safety slide:', e);
     }
 }
 

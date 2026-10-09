@@ -2,6 +2,7 @@
 import { siteConfig } from './config.js';
 import { activeAlertCount, currentWeatherCode, currentPrecipProb, allocateSlots } from './weather.js';
 import { cachedFeatures } from './features.js';
+import { fetchJson } from './http.js';
 
 export let activeLightningStrike = null;
 export let lightningDistance = null;
@@ -37,8 +38,7 @@ export async function checkLightning() {
             const apiBase = (siteConfig.vercel_api_url || '').replace(/\/+$/, '');
             const lat = siteConfig.latitude || 41.6045;
             const lon = siteConfig.longitude || -87.1311;
-            const fetchRes = await fetch(`${apiBase}/api/lightning?lat=${lat}&lon=${lon}`);
-            const data = await fetchRes.json();
+            const data = await fetchJson(`${apiBase}/api/lightning?lat=${lat}&lon=${lon}`);
             
             if (data && data.success && data.response && data.response.length > 0) {
                 const strike = data.response[0];

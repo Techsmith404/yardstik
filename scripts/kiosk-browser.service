@@ -1,0 +1,36 @@
+[Unit]
+Description=YardStik Fullscreen Kiosk Browser (Chromium Wayland)
+Documentation=https://github.com/TechSmith404/yardstik
+After=snap.ubuntu-frame.daemon.service docker.service
+Requires=snap.ubuntu-frame.daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+
+# Wayland display socket exported by Ubuntu Frame
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/0
+
+# Wait for local Nginx webserver container before launching browser
+ExecStartPre=/bin/bash -c "while ! wget -q --spider http://127.0.0.1:8080; do sleep 1; done"
+
+# Run Chromium snap on Wayland with industrial zero-prompt crash defenses
+ExecStart=/usr/bin/snap run chromium \
+    --kiosk \
+    --ozone-platform=wayland \
+    --no-sandbox \
+    --incognito \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=TranslateUI \
+    http://localhost:8080
+
+# Automatic recovery if browser process terminates or crashes
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

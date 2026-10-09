@@ -1,10 +1,10 @@
 // Operational Trackers Module (OSHA Days Safe & Configurable Production Tracker)
+import { fetchJson, cacheBustUrl } from './http.js';
 
 export async function updateTrackers() {
     try {
         // Fetch the JSON config file
-        const res = await fetch('assets/data/trackers.json?t=' + new Date().getTime());
-        const data = await res.json();
+        const data = await fetchJson(cacheBustUrl('assets/data/trackers.json'));
         
         // Update OSHA Counter
         if (data.last_incident_date) {
