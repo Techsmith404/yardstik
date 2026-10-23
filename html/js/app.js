@@ -10,6 +10,7 @@ import { getAnniversaries } from './modules/anniversaries.js';
 import { fetchReminders, advanceReminderSlide } from './modules/reminders.js';
 import { updateSafetySlide } from './modules/slideshow.js';
 import { fetchSpecialEvent } from './modules/special.js';
+import { initEmergencyEngine, getIsEmergencyActive } from './modules/emergency.js';
 import { initSeasonalTheme } from './modules/theme.js';
 import { fetchFeatures, isTrackMapActive } from './modules/features.js';
 import { fetchTracks } from './modules/trackmap.js';
@@ -82,6 +83,12 @@ let panelRotationTimeout = null;
 const urlParams = new URLSearchParams(window.location.search);
 const isShort = urlParams.get('short') === 'true';
 const slideParam = (urlParams.get('slide') || '').toLowerCase();
+const transitionParam = (urlParams.get('transition') || '').toLowerCase();
+if (transitionParam === 'deck') {
+    document.body.classList.add('transition-deck');
+} else if (transitionParam === 'rail') {
+    document.body.classList.add('transition-rail');
+}
 
 if (slideParam) {
     if (slideParam === '1' || slideParam === 'production' || slideParam === 'equipment') {
@@ -103,6 +110,9 @@ if (slideParam) {
 }
 
 if (isDesktopMode) {
+    const dwellEl = document.getElementById('slide-dwell-container');
+    if (dwellEl) dwellEl.style.display = 'none';
+
     // In Desktop Mode: all views are visible simultaneously in one unified scrollable page!
     views.forEach(v => {
         if (v.id !== 'view-special') {
@@ -122,7 +132,81 @@ if (isDesktopMode) {
         pSaf.style.transform = 'none';
         pSaf.style.opacity = '1';
     }
+    initEmergencyEngine();
 } else {
+    let dwellTimerInterval = null;
+    let cycleTimer = null;
+    const DWELL_CIRCUMFERENCE = 2 * Math.PI * 16; // ~100.53px
+
+    function scheduleCycle(ms) {
+        if (cycleTimer) clearTimeout(cycleTimer);
+        cycleTimer = setTimeout(cycleViews, ms);
+    }
+
+    initEmergencyEngine((isActive) => {
+        if (isActive) {
+            if (cycleTimer) {
+                clearTimeout(cycleTimer);
+                cycleTimer = null;
+            }
+            if (dwellTimerInterval) {
+                clearInterval(dwellTimerInterval);
+                dwellTimerInterval = null;
+            }
+        } else {
+            scheduleCycle(1000);
+        }
+    });
+
+    function startSlideDwellTimer(durationMs) {
+        const container = document.getElementById('slide-dwell-container');
+        const progressCircle = container ? container.querySelector('.dwell-ring-progress') : null;
+        const textLabel = document.getElementById('dwell-seconds-text');
+
+        if (!container || !progressCircle || !textLabel) return;
+
+        if (dwellTimerInterval) {
+            clearInterval(dwellTimerInterval);
+            dwellTimerInterval = null;
+        }
+
+        container.classList.remove('dwell-warning');
+        progressCircle.style.strokeDasharray = `${DWELL_CIRCUMFERENCE}`;
+        progressCircle.style.strokeDashoffset = '0';
+
+        const startTime = Date.now();
+        const totalMs = durationMs;
+
+        function updateDwell() {
+            const elapsed = Date.now() - startTime;
+            const remainingMs = Math.max(0, totalMs - elapsed);
+            const remainingSec = Math.ceil(remainingMs / 1000);
+            const progress = remainingMs / totalMs;
+
+            const offset = DWELL_CIRCUMFERENCE * (1 - progress);
+            progressCircle.style.strokeDashoffset = `${offset}`;
+            textLabel.textContent = `${remainingSec}s`;
+
+            if (remainingSec <= 5) {
+                if (!container.classList.contains('dwell-warning')) {
+                    container.classList.add('dwell-warning');
+                }
+            } else {
+                if (container.classList.contains('dwell-warning')) {
+                    container.classList.remove('dwell-warning');
+                }
+            }
+
+            if (remainingMs <= 0) {
+                clearInterval(dwellTimerInterval);
+                dwellTimerInterval = null;
+            }
+        }
+
+        updateDwell();
+        dwellTimerInterval = setInterval(updateDwell, 100);
+    }
+
     function triggerRotatingPanelsAnimation(checkView, durationMs) {
         syncKioskPanels(checkView);
         const rotWrapper = document.getElementById('rotating-panels-wrapper');
@@ -179,20 +263,26 @@ if (isDesktopMode) {
         if (views[currentView].id === 'view-special') views[currentView].style.display = 'flex';
         let initialMs = parseInt(views[currentView].getAttribute('data-duration')) || 40000;
         if (isHandoffActive) initialMs = 60000;
+        if (views[currentView].id === 'view-announcements' || views[currentView].id === 'view-safety') {
+            const overrideMs = advanceReminderSlide();
+            if (overrideMs && !isHandoffActive) initialMs = overrideMs;
+        } else {
+            advanceReminderSlide();
+        }
         if (isShort) initialMs = 10000;
-        advanceReminderSlide();
         syncKioskPanels(views[currentView]);
         triggerRotatingPanelsAnimation(views[currentView], initialMs);
+        startSlideDwellTimer(initialMs);
 
         // Advance to the next view ONCE and schedule cycleViews (APP-07 fix: removed
         // the duplicate initialDelay block below that caused currentView double-advance)
         currentView = (currentView + 1) % views.length;
-        setTimeout(cycleViews, initialMs);
+        scheduleCycle(initialMs);
     }
 
     // In Kiosk TV Mode: cycle views on timed slide loop
     function cycleViews() {
-        if (views.length === 0) return;
+        if (views.length === 0 || getIsEmergencyActive()) return;
 
         // Skip disabled slides — cap at views.length iterations to prevent infinite loop (APP-05 fix)
         let disabledSkipCount = 0;
@@ -208,10 +298,24 @@ if (isDesktopMode) {
         const checkView = views[currentView];
         if (!checkView) return;
 
+        const activeView = document.querySelector('.kiosk-view.active');
+        if (activeView && activeView !== checkView) {
+            activeView.classList.remove('active');
+            activeView.classList.add('slide-exit');
+            setTimeout(() => {
+                activeView.classList.remove('slide-exit');
+                if (activeView.id === 'view-special') activeView.style.display = 'none';
+            }, 850);
+        }
+
         views.forEach(v => {
-            v.classList.remove('active');
-            if (v.id === 'view-special') v.style.display = 'none';
+            if (v !== activeView && v !== checkView) {
+                v.classList.remove('active', 'slide-exit');
+                if (v.id === 'view-special') v.style.display = 'none';
+            }
         });
+
+        checkView.classList.remove('slide-exit');
         checkView.classList.add('active');
         if (checkView.id === 'view-special') checkView.style.display = 'flex';
         
@@ -229,9 +333,10 @@ if (isDesktopMode) {
 
         syncKioskPanels(checkView);
         triggerRotatingPanelsAnimation(checkView, ms);
+        startSlideDwellTimer(ms);
         
         currentView = (currentView + 1) % views.length;
-        setTimeout(cycleViews, ms);
+        scheduleCycle(ms);
     }
 }
 

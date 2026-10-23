@@ -9,6 +9,17 @@ import { fetchJson, cacheBustUrl } from './http.js';
 export let activeAlertCount = 0;
 export let currentWeatherCode = 0;
 export let currentPrecipProb = [];
+export let lastSunrise = null;
+export let lastSunset = null;
+
+export function isDaylightNow(date = new Date()) {
+    if (lastSunrise && lastSunset) {
+        return date >= lastSunrise && date < lastSunset;
+    }
+    // Fallback before weather loads or if offline: 6:30 AM to 7:30 PM (19:30)
+    const h = date.getHours() + date.getMinutes() / 60;
+    return h >= 6.5 && h < 19.5;
+}
 
 export function allocateSlots(alertCount) {
     let slots = 4 - alertCount;
@@ -93,6 +104,8 @@ export function renderDaylightWidget(sunriseArray, sunsetArray) {
     const now = new Date();
     const todayRise = new Date(sunriseArray[0]);
     const todaySet = new Date(sunsetArray[0]);
+    lastSunrise = todayRise;
+    lastSunset = todaySet;
     
     let isDaytime = false;
     let startPeriod, endPeriod;
@@ -128,11 +141,12 @@ export function renderDaylightWidget(sunriseArray, sunsetArray) {
     const cy = canvas.height - 10;
     const r = canvas.width / 2 - 20;
     
-    // Draw background arc (dark)
+    // Draw background arc (dark or high-glare light)
     ctx.beginPath();
     ctx.arc(cx, cy, r, Math.PI, 0);
     ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    const isSolar = typeof document !== 'undefined' && document.body && (document.body.classList.contains('solar-mode') || document.body.classList.contains('high-glare-mode'));
+    ctx.strokeStyle = isSolar ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.1)';
     ctx.stroke();
     
     // Draw progress arc (yellow if daytime, blue-ish if night)
@@ -443,6 +457,9 @@ export async function getWeather() {
 
         // Call the daylight rendering engine with the fetched sunrise/sunset times
         renderDaylightWidget(data.daily.sunrise, data.daily.sunset);
+        if (typeof window !== 'undefined' && typeof window.checkThemeUpdate === 'function') {
+            window.checkThemeUpdate();
+        }
 
         // Fallback WMO alerts if NWS doesn't trigger
         if (!hasNwsAlert) {

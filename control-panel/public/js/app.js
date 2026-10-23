@@ -592,6 +592,121 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // ── Emergency Screen Takeover UI Logic ─────────────────────────────────────
+    const navEmergencyBtn = document.getElementById('nav-emergency');
+    const emergencyView = document.getElementById('emergency-view');
+    const broadcastEmergencyBtn = document.getElementById('broadcast-emergency-btn');
+    const clearEmergencyBtn = document.getElementById('clear-emergency-btn');
+    const emergencyStatusBanner = document.getElementById('emergency-status-banner');
+    const emergencyStatusText = document.getElementById('emergency-status-text');
+    const emergencyDisplaysCount = document.getElementById('emergency-displays-count');
+
+    function updateEmergencyUI(data) {
+        if (!emergencyStatusText) return;
+        if (data && data.active) {
+            emergencyStatusBanner.style.background = 'rgba(220, 38, 38, 0.25)';
+            emergencyStatusBanner.style.border = '1px solid #ef4444';
+            emergencyStatusText.innerHTML = `<i class="fa-solid fa-circle" style="color: #ef4444; font-size: 0.8rem;"></i> <strong style="color: #fca5a5;">ACTIVE TAKEOVER:</strong> "${data.title}" [${(data.severity || 'critical').toUpperCase()}]`;
+            if (data.endTime > 0) {
+                const rem = Math.max(0, Math.ceil((data.endTime - Date.now()) / 1000));
+                emergencyStatusText.innerHTML += ` (Auto-clears in ${rem}s)`;
+            }
+        } else {
+            emergencyStatusBanner.style.background = 'rgba(30, 41, 59, 0.6)';
+            emergencyStatusBanner.style.border = '1px solid var(--border-color)';
+            emergencyStatusText.innerHTML = `<i class="fa-solid fa-circle" style="color: #22c55e; font-size: 0.8rem;"></i> Status: Inactive (Normal Rotation)`;
+        }
+        if (emergencyDisplaysCount) {
+            emergencyDisplaysCount.textContent = `Connected Displays: ${data.connectedDisplays || 0}`;
+        }
+    }
+
+    if (navEmergencyBtn) {
+        navEmergencyBtn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navEmergencyBtn.classList.add('active');
+            
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            emergencyView.classList.add('active');
+            currentScriptTitle.innerText = "Emergency Screen Takeover";
+
+            fetch('/api/emergency')
+                .then(res => res.json())
+                .then(data => {
+                    updateEmergencyUI(data);
+                    if (data && data.active) {
+                        document.getElementById('emergency-input-title').value = data.title || '';
+                        document.getElementById('emergency-input-msg').value = data.message || '';
+                        document.getElementById('emergency-input-severity').value = data.severity || 'critical';
+                    }
+                })
+                .catch(() => {});
+        });
+    }
+
+    // Connect to dashboard cards with data-script="emergency"
+    document.querySelectorAll('.info-card[data-script="emergency"]').forEach(card => {
+        card.addEventListener('click', () => {
+            if (navEmergencyBtn) navEmergencyBtn.click();
+        });
+    });
+
+    if (broadcastEmergencyBtn) {
+        broadcastEmergencyBtn.addEventListener('click', () => {
+            const title = document.getElementById('emergency-input-title').value.trim();
+            const message = document.getElementById('emergency-input-msg').value.trim();
+            const severity = document.getElementById('emergency-input-severity').value;
+            const duration = parseInt(document.getElementById('emergency-input-duration').value, 10);
+            const sound = document.getElementById('emergency-input-sound').checked;
+
+            if (!title) {
+                alert('Please enter an Alert Title before broadcasting.');
+                return;
+            }
+
+            if (!confirm(`CONFIRM EMERGENCY BROADCAST:\n\nTitle: "${title}"\nSeverity: ${severity.toUpperCase()}\n\nThis will IMMEDIATELY take over all kiosk screens across the facility. Proceed?`)) {
+                return;
+            }
+
+            broadcastEmergencyBtn.disabled = true;
+            broadcastEmergencyBtn.textContent = 'Broadcasting...';
+
+            fetch('/api/emergency/broadcast', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, message, severity, duration, sound })
+            })
+            .then(res => res.json())
+            .then(data => {
+                broadcastEmergencyBtn.disabled = false;
+                broadcastEmergencyBtn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Broadcast Takeover';
+                if (data.success) {
+                    updateEmergencyUI({ ...data.emergency, connectedDisplays: data.connectedDisplays });
+                    alert('🚨 Emergency Screen Takeover is now BROADCASTING across all plant displays.');
+                } else {
+                    alert('Broadcast error: ' + (data.error || 'Failed'));
+                }
+            })
+            .catch(err => {
+                broadcastEmergencyBtn.disabled = false;
+                broadcastEmergencyBtn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Broadcast Takeover';
+                alert('Network error broadcasting emergency: ' + err.message);
+            });
+        });
+    }
+
+    if (clearEmergencyBtn) {
+        clearEmergencyBtn.addEventListener('click', () => {
+            fetch('/api/emergency/clear', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    updateEmergencyUI({ active: false });
+                    alert('Emergency broadcast has been cleared. Plant displays resumed normal rotation.');
+                })
+                .catch(err => alert('Error clearing emergency: ' + err.message));
+        });
+    }
+
     // ── Shift Schedules Editor Logic ─────────────────────────────────────────
     const navShiftsBtn = document.getElementById('nav-shifts');
     navShiftsBtn.setAttribute('data-script', 'shifts');
@@ -995,6 +1110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const extrasStatus = document.getElementById('extras-status');
     const themeModeSelect = document.getElementById('theme-mode-select');
     const dedicatedThemeSelect = document.getElementById('dedicated-theme-select');
+    const highGlareModeSelect = document.getElementById('high-glare-mode-select');
     const bgStyleSelect = document.getElementById('bg-style-select');
     const chkShiftThemeDedication = document.getElementById('chk-shift-theme-dedication');
     const shiftThemesContainer = document.getElementById('shift-themes-container');
@@ -1007,6 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const themeOptionsList = [
         { val: 'default', label: '🌿 Classic Corporate Sage (Default)' },
+        { val: 'solar', label: '☀️ Industrial Solar Light Mode (High Glare)' },
         { val: 'obsidian', label: '🌌 Obsidian Midnight (Deep Dark & Ice Blue)' },
         { val: 'cyberpunk', label: '⚡ Cyberpunk Neon (Cyan & Magenta)' },
         { val: 'emerald', label: '🌲 Emerald Forest (Lush Green & Gold)' },
@@ -1033,6 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(([featuresData, shiftsData]) => {
                 if (themeModeSelect) themeModeSelect.value = featuresData.theme_mode || 'auto';
                 if (dedicatedThemeSelect) dedicatedThemeSelect.value = featuresData.dedicated_theme || 'default';
+                if (highGlareModeSelect) highGlareModeSelect.value = featuresData.high_glare_mode || 'off';
                 if (bgStyleSelect) bgStyleSelect.value = featuresData.bg_style || 'dots';
                 if (chkShiftThemeDedication) chkShiftThemeDedication.checked = !!featuresData.shift_theme_dedication;
                 
@@ -1126,6 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 theme_mode: themeModeSelect ? themeModeSelect.value : 'auto',
                 dedicated_theme: dedicatedThemeSelect ? dedicatedThemeSelect.value : 'default',
+                high_glare_mode: highGlareModeSelect ? highGlareModeSelect.value : 'off',
                 bg_style: bgStyleSelect ? bgStyleSelect.value : 'dots',
                 shift_theme_dedication: chkShiftThemeDedication ? chkShiftThemeDedication.checked : false,
                 shift_themes: shiftThemesPayload,

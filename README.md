@@ -1,7 +1,11 @@
+<p align="center">
+  <img src="html/assets/images/logo-wordmark.svg" alt="YardStik Logo" width="600" />
+</p>
+
 # 🚀 YardStik — Industrial Operations Dashboard & Break Room Kiosk System
 
 [![Version](https://img.shields.io/badge/version-v5.0.0-blue.svg)](https://github.com/TechSmith404/yardstik/releases)
-[![Automated Tests](https://img.shields.io/badge/tests-197%20passed%20(100%25)-brightgreen.svg)](https://github.com/TechSmith404/yardstik/actions)
+[![Automated Tests](https://img.shields.io/badge/tests-209%20passed%20(100%25)-brightgreen.svg)](https://github.com/TechSmith404/yardstik/actions)
 [![Docker](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Ubuntu Frame](https://img.shields.io/badge/wayland-Ubuntu%20Frame-E95420.svg?logo=ubuntu&logoColor=white)](https://mir-server.io/ubuntu-frame)
 [![Node.js](https://img.shields.io/badge/node.js-v22-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -85,6 +89,16 @@ Experience YardStik's live viewports and administrative suite directly in your b
 
 <p align="center">
   <img src="docs/images/control-panel.png" alt="Control Panel Suite" width="95%" />
+</p>
+
+---
+
+### 🎨 Brand Identity, Precision Ruler Motif & Multi-Platform Icon Suite
+
+> *Custom industrial brand identity combining a precision 45°-angled yardstick measurement blade, safety amber end-caps (`#f59e0b`), graduated inch/yard tick marks (`12`, `24`, `36`), and a stylized geometric `'Y'` rail-track switch telemetry vector on dark anodized slate. Includes full multi-resolution PWA and desktop application icon assets.*
+
+<p align="center">
+  <img src="docs/images/logo-hero.png" alt="YardStik Brand Identity Hero" width="480" />
 </p>
 
 ---
@@ -384,9 +398,14 @@ yardstik/
 │   ├── 📁 scripts/                # Automation runners & parse_track_check.py
 │   └── 📄 server.js               # Express application entrypoint
 │
+├── 📁 docs/                       # Architecture documentation & visual showcase
+│   └── 📁 images/                 # UI screenshots & 1024x1024 brand hero render
+│
 ├── 📁 html/                       # Kiosk presentation tier
-│   ├── 📁 assets/data/            # Default state schemas & offline fixtures
-│   ├── 📁 css/                    # Modular layout stylesheets (styles-v2.css)
+│   ├── 📁 assets/                 # Brand identity assets, logos & offline fixtures
+│   │   ├── 📁 data/               # Default state schemas & offline fixtures
+│   │   └── 📁 images/             # Vector SVGs, icons, logos & PWA raster suite
+│   ├── 📁 css/                    # Modular layout stylesheets (styles-v2.css, theme-solar.css)
 │   ├── 📁 js/
 │   │   ├── 📁 modules/            # Layout, Weather, Trackers, Milestones, Alerts, HTTP
 │   │   ├── 📄 app.js              # State lifecycle & viewport controller

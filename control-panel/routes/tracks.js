@@ -216,15 +216,15 @@ const DEFAULT_COMMODITY_RULES = {
             id: "dl",
             name: "DL (Download / Scrap)",
             color: "#c084fc",
-            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP"],
             description: "Download scrap, slitter, sheets, baler scrap, P&S, and shred."
         },
         {
             id: "ob_empty",
-            name: "OB / Empty",
+            name: "Empty Cars / MTY",
             color: "#22c55e",
-            keywords: ["EMPTY", "CLEAR", "MTY", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
-            description: "Outbound loads, empty flats, and cleared tracks."
+            keywords: ["MTY", "MTY'S", "MTYS", "MTIES", "EMPTY", "EMPTIES", "TO SWEEP", "SWEEP", "CLEAN OUT", "FOR LOADING", "CLEAR", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
+            description: "Empty cars, MTY flats/gons, cars to sweep, and cleared tracks."
         },
         {
             id: "raw_materials",
@@ -232,6 +232,13 @@ const DEFAULT_COMMODITY_RULES = {
             color: "#38bdf8",
             keywords: ["HBI", "ORE", "PELLETS", "COAL", "COKE", "LIMESTONE"],
             description: "Raw charge materials, HBI, pellets, and flux."
+        },
+        {
+            id: "inbound",
+            name: "Inbound",
+            color: "#38bdf8",
+            keywords: ["INBOUND", "IB", "INB", "IN-BOUND", "INCOMING", "ARRIVED"],
+            description: "Inbound loads and incoming train cars."
         }
     ],
     default_color: "#38bdf8"

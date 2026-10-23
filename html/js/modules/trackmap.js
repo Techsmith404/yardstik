@@ -39,15 +39,15 @@ export let commodityRules = {
             id: "dl",
             name: "DL (Download / Scrap)",
             color: "#c084fc",
-            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP", "SWEEP", "TO SWEEP"],
+            keywords: ["DL", "DL'S", "DLS", "DOWNLOAD", "DOWNLOADS", "DOG BONE", "DOGBONE", "SLITTER", "SHEET", "SHEETS", "BALE", "BALES", "P&S", "SHRED", "SCRAP"],
             description: "Download scrap, slitter, sheets, baler scrap, P&S, and shred."
         },
         {
             id: "ob_empty",
-            name: "OB / Empty",
+            name: "Empty Cars / MTY",
             color: "#22c55e",
-            keywords: ["EMPTY", "CLEAR", "MTY", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
-            description: "Outbound loads, empty flats, and cleared tracks."
+            keywords: ["MTY", "MTY'S", "MTYS", "MTIES", "EMPTY", "EMPTIES", "TO SWEEP", "SWEEP", "CLEAN OUT", "FOR LOADING", "CLEAR", "OB", "OB'S", "OBS", "OUTBOUND", "FLAT", "FLATS"],
+            description: "Empty cars, MTY flats/gons, cars to sweep, and cleared tracks."
         },
         {
             id: "raw_materials",
@@ -55,6 +55,13 @@ export let commodityRules = {
             color: "#38bdf8",
             keywords: ["HBI", "ORE", "PELLETS", "COAL", "COKE", "LIMESTONE"],
             description: "Raw charge materials, HBI, pellets, and flux."
+        },
+        {
+            id: "inbound",
+            name: "Inbound",
+            color: "#38bdf8",
+            keywords: ["INBOUND", "IB", "INB", "IN-BOUND", "INCOMING", "ARRIVED"],
+            description: "Inbound loads and incoming train cars."
         }
     ],
     default_color: "#38bdf8"
@@ -96,7 +103,7 @@ export function findBestCommodityMatch(text, options = {}) {
         cat.keywords.forEach(kw => {
             if (!kw || !kw.trim()) return;
             const kwUpper = kw.toUpperCase().trim();
-            if (!allowEmptyKeywords && (kwUpper === "CLEAR" || kwUpper === "EMPTY")) {
+            if (!allowEmptyKeywords && kwUpper === "CLEAR") {
                 return;
             }
 
@@ -153,7 +160,7 @@ export function findBestCommodityMatch(text, options = {}) {
 }
 
 export function getCommodityCategory(track) {
-    if (!track) return { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+    if (!track) return { id: "ob_empty", name: "Empty Cars / MTY", color: "#22c55e" };
     if (!commodityRules || !commodityRules.categories || !commodityRules.categories.length) {
         return { id: "default", name: "General Freight", color: "#38bdf8" };
     }
@@ -164,20 +171,56 @@ export function getCommodityCategory(track) {
     }
     if (track.is_clear || !track.cars || track.cars === 0) {
         const obCat = commodityRules.categories.find(c => c.id === "ob_empty");
-        return obCat || { id: "ob_empty", name: "OB / Empty", color: "#22c55e" };
+        return obCat || { id: "ob_empty", name: "Empty Cars / MTY", color: "#22c55e" };
     }
 
-    // When track is occupied with cars (>0), ignore pure "CLEAR" or "EMPTY" keywords so actual occupied commodities match!
+    // Strip clearance switch phrases (e.g. "CLEAR TO NORTH SWITCH") so they don't corrupt commodity matching
     let rawText = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+    rawText = rawText.replace(/\bCLEAR\s+(?:TO|UNTIL|FOR|SWITCH|OF|N\/END|S\/END|E\/END|W\/END)\b[A-Z0-9\s]*/gi, " ").trim();
     if (track.cars > 0) {
-        rawText = rawText.replace(/\b(CLEAR|EMPTY)\b/gi, " ").trim();
+        rawText = rawText.replace(/\bCLEAR\b/gi, " ").trim();
     }
 
-    const match = findBestCommodityMatch(rawText, { allowEmptyKeywords: !(track.cars > 0) });
+    const match = findBestCommodityMatch(rawText, { allowEmptyKeywords: false });
     return match.category;
 }
 
-export function getCapacityBedColor(cars, capacity, isBadOrder = false) {
+export function getSolarHighContrastColor(hexColor) {
+    if (!hexColor) return "#334155";
+    const lower = hexColor.toLowerCase().trim();
+    if (lower === "#38bdf8" || lower === "#00f0ff" || lower === "#0ea5e9" || lower === "#3a60f8") return "#0284c7";
+    if (lower === "#22c55e" || lower === "#4ade80" || lower === "#10b981") return "#16a34a";
+    if (lower === "#ef4444" || lower === "#f87171") return "#dc2626";
+    if (lower === "#f97316" || lower === "#fb923c") return "#ea580c";
+    if (lower === "#f83aa9" || lower === "#ec4899") return "#c026d3";
+    if (lower === "#c084fc" || lower === "#a855f7") return "#9333ea";
+    if (lower === "#f59e0b" || lower === "#fde68a" || lower === "#fcd34d") return "#b45309";
+    if (lower === "#e2e8f0" || lower === "#cbd5e1" || lower === "#f1f5f9" || lower === "#ffffff" || lower === "#94a3b8") {
+        return "#334155";
+    }
+    if (lower.startsWith("#")) {
+        const rgb = hexToRgb(lower);
+        if (rgb) {
+            const parts = rgb.split(",").map(Number);
+            const lum = (0.299 * parts[0] + 0.587 * parts[1] + 0.114 * parts[2]);
+            if (lum > 175) return "#334155";
+        }
+    }
+    return hexColor;
+}
+
+export function getCapacityBedColor(cars, capacity, isBadOrder = false, isSolar = false) {
+    if (isSolar) {
+        if (isBadOrder) return "#dc2626";
+        if (!cars || cars <= 0) return "#94a3b8"; // crisp slate for clear track in daylight
+        if (!capacity || capacity <= 0) capacity = 20;
+        const pct = (cars / capacity) * 100;
+        if (pct <= 25) return "#0284c7";
+        if (pct <= 50) return "#16a34a";
+        if (pct <= 75) return "#d97706";
+        if (pct <= 90) return "#ea580c";
+        return "#dc2626";
+    }
     if (isBadOrder) return "rgba(239, 68, 68, 0.55)";
     if (!cars || cars <= 0) return "rgba(148, 163, 184, 0.22)"; // subtle slate for clear
     if (!capacity || capacity <= 0) capacity = 20;
@@ -749,6 +792,266 @@ export async function fetchTracks() {
     }
 }
 
+export function trackHasInbound(track) {
+    if (!track || !track.cars || track.cars <= 0 || track.is_clear) return false;
+    const breakdown = getTrackCommodityBreakdown(track);
+    if (breakdown.some(b => b.category?.id === "inbound" && b.count > 0)) {
+        return true;
+    }
+    const cat = getCommodityCategory(track);
+    if (cat && cat.id === "inbound") return true;
+    const text = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+    return /\b(INBOUND|IB|INB|IN-BOUND|INCOMING|ARRIVED)\b/i.test(text);
+}
+
+export function trackHasEmptyCars(track) {
+    if (!track || !track.cars || track.cars <= 0 || track.is_clear) return false;
+    const breakdown = getTrackCommodityBreakdown(track);
+    if (breakdown.some(b => b.category?.id === "ob_empty" && b.count > 0)) {
+        return true;
+    }
+    const cat = getCommodityCategory(track);
+    if (cat && cat.id === "ob_empty") return true;
+    const text = ((track.commodity || "") + " " + (track.notes || "")).toUpperCase();
+    const cleaned = text.replace(/\bCLEAR\s+(?:TO|UNTIL|FOR|SWITCH|OF|N\/END|S\/END|E\/END|W\/END)\b[A-Z0-9\s]*/gi, " ");
+    return /\b(MTY|MTY'S|MTYS|MTIES|EMPTY|EMPTIES|TO\s+SWEEP|SWEEP|CLEAN\s+OUT)\b/i.test(cleaned);
+}
+
+export function calculateCommodityTotals(tracks = cachedTracks) {
+    const totals = {};
+    if (!commodityRules || !commodityRules.categories) return totals;
+
+    commodityRules.categories.forEach(cat => {
+        totals[cat.id] = {
+            id: cat.id,
+            name: cat.name,
+            color: cat.color,
+            count: 0
+        };
+    });
+
+    totals["other"] = {
+        id: "other",
+        name: "Other",
+        color: commodityRules.default_color || "#38bdf8",
+        count: 0
+    };
+
+    const targetTracks = Array.isArray(tracks) ? tracks : [];
+    targetTracks.forEach(t => {
+        if (!t || !t.cars || t.cars <= 0 || t.is_clear) return;
+
+        const breakdown = getTrackCommodityBreakdown(t);
+        if (breakdown && breakdown.length > 0) {
+            breakdown.forEach(seg => {
+                const catId = seg.category?.id;
+                if (catId && totals[catId]) {
+                    totals[catId].count += seg.count;
+                } else {
+                    totals["other"].count += seg.count;
+                }
+            });
+        } else {
+            const cat = getCommodityCategory(t);
+            const catId = cat?.id;
+            if (catId && totals[catId]) {
+                totals[catId].count += t.cars;
+            } else {
+                totals["other"].count += t.cars;
+            }
+        }
+    });
+
+    return totals;
+}
+
+export function getShortCategoryLabel(cat) {
+    if (!cat) return "Other";
+    if (cat.id === "up_consolidated" || cat.id === "up" || cat.id.startsWith("up_")) return "UP";
+    if (cat.id === "dl" || cat.id.startsWith("dl_")) return "DL";
+    if (cat.id === "inbound") return "Inbound";
+    if (cat.id === "ob_empty") return "Empty";
+    if (cat.id === "blend_bof") return "Blend";
+    if (cat.id === "bad_order") return "B.O.";
+    if (cat.id === "raw_materials") return "Raw";
+    if (cat.id === "hold") return "Hold";
+    if (cat.id === "other" || cat.id === "default") return "Other";
+    const firstPart = cat.name.split(/[\/\(]/)[0].trim();
+    return firstPart || cat.name;
+}
+
+export let activeCommodityFilter = null;
+
+export function setCommodityFilter(catId) {
+    if (activeCommodityFilter === catId) {
+        activeCommodityFilter = null;
+    } else {
+        activeCommodityFilter = catId;
+    }
+    renderCommodityBar();
+    applySvgSpotlightFilter();
+}
+
+export function renderCommodityBar() {
+    const bars = [
+        document.getElementById("trackmap-commodity-bar"),
+        document.getElementById("theater-commodity-bar")
+    ].filter(Boolean);
+
+    if (bars.length === 0) return;
+
+    const totals = calculateCommodityTotals(cachedTracks);
+    if (!totals) return;
+
+    const isSolar = typeof document !== 'undefined' && document.body && 
+        (document.body.classList.contains('solar-mode') || document.body.classList.contains('high-glare-mode'));
+
+    const catList = [];
+    if (commodityRules && Array.isArray(commodityRules.categories)) {
+        commodityRules.categories.forEach(c => {
+            if (totals[c.id]) {
+                catList.push(totals[c.id]);
+            }
+        });
+    }
+    if (totals["other"] && totals["other"].count > 0) {
+        catList.push(totals["other"]);
+    }
+
+    // Consolidate all UP categories (e.g. up_burning, up_other, up) into a single unified UP tally
+    const upCats = catList.filter(c => c.id === "up" || c.id.startsWith("up_"));
+    if (upCats.length > 1) {
+        const primaryUp = upCats[0];
+        const combinedCount = upCats.reduce((sum, c) => sum + c.count, 0);
+        const unifiedUp = {
+            id: "up_consolidated",
+            name: "UP (Hot Rail / Plate)",
+            color: primaryUp.color || "#f97316",
+            count: combinedCount,
+            childIds: upCats.map(c => c.id)
+        };
+        const firstIdx = catList.indexOf(primaryUp);
+        const filteredList = catList.filter(c => !upCats.includes(c));
+        filteredList.splice(firstIdx, 0, unifiedUp);
+        catList.length = 0;
+        catList.push(...filteredList);
+    }
+
+    let pillsHtml = `
+        <span class="commodity-tally-title" style="font-size: 0.75rem; font-weight: 700; color: ${isSolar ? '#334155' : '#94a3b8'}; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px;">
+            <i class="fa-solid fa-boxes-stacked" style="color: ${isSolar ? '#0284c7' : '#38bdf8'};"></i> Inventory:
+        </span>
+    `;
+
+    catList.forEach(cat => {
+        const isCore = ["up", "up_consolidated", "dl", "inbound", "ob_empty"].includes(cat.id);
+        if (cat.count === 0 && !isCore) return;
+
+        const shortLabel = getShortCategoryLabel(cat);
+        const isActive = activeCommodityFilter === cat.id;
+        const displayColor = isSolar ? getSolarHighContrastColor(cat.color) : cat.color;
+
+        pillsHtml += `
+            <div class="commodity-tally-pill ${isActive ? "active" : ""}" 
+                 data-commodity-id="${cat.id}" 
+                 title="Click to spotlight ${cat.name} (${cat.count} cars)"
+                 style="--pill-color: ${displayColor};">
+                <span class="commodity-dot" style="background: ${displayColor};"></span>
+                <span class="commodity-label">${shortLabel}:</span>
+                <strong>${cat.count}</strong>
+            </div>
+        `;
+    });
+
+    bars.forEach(bar => {
+        bar.innerHTML = pillsHtml;
+        bar.querySelectorAll(".commodity-tally-pill").forEach(pill => {
+            pill.onclick = (e) => {
+                e.stopPropagation();
+                const catId = pill.getAttribute("data-commodity-id");
+                setCommodityFilter(catId);
+            };
+        });
+    });
+}
+
+export function applySvgSpotlightFilter() {
+    const containers = [
+        document.getElementById("trackmap-viewport"),
+        document.getElementById("theater-svg-wrapper")
+    ].filter(Boolean);
+
+    containers.forEach(container => {
+        const svg = container.querySelector("svg");
+        if (!svg) return;
+
+        const trackLineElements = svg.querySelectorAll("[id^='track-'], [id^='track_'], [id*='curve-'], [id*='curve_'], [id^='cars-'], [id^='car-zone-'], path.track, polyline.track, line.track, .track, .cars, .car-zone");
+        const overlays = svg.querySelectorAll(".train-car-overlay");
+        const labels = svg.querySelectorAll("[id^='label-'], [id^='label_'], g[data-track]");
+
+        if (!activeCommodityFilter) {
+            trackLineElements.forEach(el => {
+                el.style.opacity = "1";
+            });
+            overlays.forEach(el => {
+                el.style.opacity = "1";
+            });
+            labels.forEach(el => {
+                el.style.opacity = "1";
+            });
+            return;
+        }
+
+        const matchingTrackIds = new Set();
+        cachedTracks.forEach(t => {
+            if (!t || !t.cars || t.cars <= 0 || t.is_clear) return;
+            const breakdown = getTrackCommodityBreakdown(t);
+            const matchesBreakdown = breakdown.some(b => {
+                if (activeCommodityFilter === "up_consolidated") {
+                    return (b.category?.id === "up" || b.category?.id?.startsWith("up_")) && b.count > 0;
+                }
+                return b.category?.id === activeCommodityFilter && b.count > 0;
+            });
+            const primaryCat = getCommodityCategory(t);
+            const matchesPrimary = (activeCommodityFilter === "up_consolidated")
+                ? (primaryCat?.id === "up" || primaryCat?.id?.startsWith("up_"))
+                : (primaryCat?.id === activeCommodityFilter);
+            if (matchesBreakdown || matchesPrimary) {
+                matchingTrackIds.add(String(t.id).toUpperCase());
+            }
+        });
+
+        trackLineElements.forEach(el => {
+            const rawId = extractTrackIdFromElement(el);
+            if (!rawId) return;
+            if (matchingTrackIds.has(rawId)) {
+                el.style.opacity = "1";
+            } else {
+                el.style.opacity = "0.2";
+            }
+        });
+
+        overlays.forEach(el => {
+            const rawId = el.getAttribute("data-track") || extractTrackIdFromElement(el.previousElementSibling || el);
+            if (rawId && matchingTrackIds.has(rawId)) {
+                el.style.opacity = "1";
+            } else {
+                el.style.opacity = "0.15";
+            }
+        });
+
+        labels.forEach(el => {
+            const rawId = extractTrackIdFromElement(el);
+            if (!rawId) return;
+            if (matchingTrackIds.has(rawId)) {
+                el.style.opacity = "1";
+            } else {
+                el.style.opacity = "0.25";
+            }
+        });
+    });
+}
+
 function calculateTrackStats(activeTrackIds = null) {
     let total = 0, bo = 0, blend = 0, clear = 0, dwell = 0, cap = 0;
     const tracksToCount = (activeTrackIds && activeTrackIds.size > 0)
@@ -805,6 +1108,8 @@ function updateHeaderStats() {
             };
         }
     }
+
+    renderCommodityBar();
 }
 
 let svgTemplateCache = null;
@@ -936,6 +1241,8 @@ function bindSvgInteractivity(container, isTheater = false) {
 
     // Calculate uniform yard car scale (derived from minimum track capacity ratio or scale rule)
     const globalYardScale = calculateGlobalYardCarScale(svg, trackMap, carHostElementMap);
+    const isSolar = typeof document !== 'undefined' && document.body && 
+        (document.body.classList.contains('solar-mode') || document.body.classList.contains('high-glare-mode'));
 
     // 1. Hook Track Lines & Curves (style track bed lines and attach click handlers)
     trackLineElements.forEach(el => {
@@ -953,9 +1260,21 @@ function bindSvgInteractivity(container, isTheater = false) {
             el.style.cursor = "pointer";
 
             const cap = data.capacity || 20;
-            const bedColor = getCapacityBedColor(data.cars, cap, data.is_bad_order);
+            const bedColor = getCapacityBedColor(data.cars, cap, data.is_bad_order, isSolar);
             el.style.setProperty("stroke", bedColor, "important");
-            el.style.setProperty("stroke-width", "2.8px", "important");
+            el.style.setProperty("stroke-width", isSolar ? "3px" : "2.8px", "important");
+
+            if (trackHasInbound(data)) {
+                el.classList.add("track-highlight-inbound");
+                el.style.setProperty("stroke", isSolar ? "#0284c7" : "#38bdf8", "important");
+                el.style.setProperty("stroke-width", "3.5px", "important");
+                el.style.setProperty("filter", isSolar ? "drop-shadow(0 0 6px rgba(2, 132, 199, 0.6))" : "drop-shadow(0 0 6px rgba(56, 189, 248, 0.85))", "important");
+            } else if (trackHasEmptyCars(data)) {
+                el.classList.add("track-highlight-empty-cars");
+                el.style.setProperty("stroke", isSolar ? "#16a34a" : "#22c55e", "important");
+                el.style.setProperty("stroke-width", "3.5px", "important");
+                el.style.setProperty("filter", isSolar ? "drop-shadow(0 0 6px rgba(22, 163, 74, 0.6))" : "drop-shadow(0 0 6px rgba(34, 197, 94, 0.85))", "important");
+            }
 
             el.onclick = (e) => {
                 if (hasDraggedMap) return;
@@ -1032,13 +1351,23 @@ function bindSvgInteractivity(container, isTheater = false) {
             colorOffset += countForSeg;
 
             const uniqueColors = [...new Set(segColors)];
-            uniqueColors.forEach(col => {
+            uniqueColors.forEach(rawCol => {
+                const col = isSolar ? getSolarHighContrastColor(rawCol) : rawCol;
                 const overlay = el.cloneNode(true);
                 overlay.removeAttribute("id");
+                overlay.setAttribute("data-track", rawId);
                 overlay.classList.remove("yard-track-line", "cars", "car-zone", "car-zone-guide");
                 overlay.classList.add("train-car-overlay");
 
-                const dashPattern = getMultiCarDasharray(el, segColors, col, globalYardScale);
+                if (trackHasInbound(data)) {
+                    overlay.classList.add("overlay-inbound");
+                    overlay.style.setProperty("filter", isSolar ? "drop-shadow(0 0 6px rgba(2, 132, 199, 0.6))" : "drop-shadow(0 0 8px rgba(56, 189, 248, 0.95))", "important");
+                } else if (trackHasEmptyCars(data)) {
+                    overlay.classList.add("overlay-empty-cars");
+                    overlay.style.setProperty("filter", isSolar ? "drop-shadow(0 0 6px rgba(22, 163, 74, 0.6))" : "drop-shadow(0 0 8px rgba(34, 197, 94, 0.95))", "important");
+                }
+
+                const dashPattern = getMultiCarDasharray(el, segColors, rawCol, globalYardScale);
 
                 overlay.style.setProperty("stroke", col, "important");
                 overlay.style.setProperty("stroke-width", `${globalYardScale.strokeWidth.toFixed(1)}px`, "important");
@@ -1047,7 +1376,9 @@ function bindSvgInteractivity(container, isTheater = false) {
                 overlay.style.setProperty("fill", "none", "important");
                 overlay.style.pointerEvents = "auto";
                 overlay.style.cursor = "pointer";
-                overlay.style.filter = `drop-shadow(0 0 5px ${col})`;
+                if (!trackHasInbound(data) && !trackHasEmptyCars(data)) {
+                    overlay.style.filter = isSolar ? "drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35))" : `drop-shadow(0 0 5px ${col})`;
+                }
 
                 overlay.onclick = (e) => {
                     if (hasDraggedMap) return;
@@ -1072,16 +1403,36 @@ function bindSvgInteractivity(container, isTheater = false) {
         if (data) {
             const cap = data.capacity || 20;
             const commCat = getCommodityCategory(data);
-            const badgeColor = data.is_clear ? "#22c55e" : (data.is_bad_order ? "#ef4444" : (data.is_blend ? "#00f0ff" : (data.dwell_warning ? "#f59e0b" : commCat.color)));
+            let badgeColor = data.is_clear ? "#22c55e" : (data.is_bad_order ? "#ef4444" : (data.is_blend ? "#00f0ff" : (data.dwell_warning ? "#f59e0b" : commCat.color)));
+            if (isSolar) {
+                badgeColor = getSolarHighContrastColor(badgeColor);
+            }
 
-            if (data.is_clear) el.classList.add("badge-clear");
+            const hasInb = trackHasInbound(data);
+            const hasEmptyCars = trackHasEmptyCars(data);
+
+            if (hasInb) el.classList.add("badge-inbound");
+            else if (hasEmptyCars) el.classList.add("badge-empty-cars");
+            else if (data.is_clear) el.classList.add("badge-clear");
             else if (data.is_bad_order) el.classList.add("badge-bad-order");
             else if (data.is_blend) el.classList.add("badge-blend");
             else if (data.dwell_warning) el.classList.add("badge-dwell");
             else el.classList.add("badge-occ");
 
+            let labelSuffix = "";
+            if (hasInb) labelSuffix = " [INB]";
+            else if (hasEmptyCars) labelSuffix = " [MTY]";
+
             const textEl = el.querySelector("text") || (el.tagName && el.tagName.toLowerCase() === "text" ? el : null);
             const rect = el.querySelector("rect");
+
+            if (textEl) {
+                if (data.cars > 0) {
+                    textEl.textContent = `${rawId} (${data.cars})${labelSuffix}`;
+                } else {
+                    textEl.textContent = `${rawId}`;
+                }
+            }
 
             if (textEl && rect) {
                 const origX = parseFloat(rect.getAttribute("data-orig-x") || rect.getAttribute("x") || 0);
@@ -1102,23 +1453,30 @@ function bindSvgInteractivity(container, isTheater = false) {
                 textEl.setAttribute("x", centerX);
                 textEl.setAttribute("y", centerY);
                 textEl.removeAttribute("transform");
-
-                if (data.cars > 0) {
-                    textEl.textContent = `${rawId} (${data.cars})`;
-                } else {
-                    textEl.textContent = `${rawId}`;
-                }
-
                 textEl.setAttribute("text-anchor", "middle");
                 textEl.setAttribute("dominant-baseline", "central");
 
-                const newWidth = data.cars > 0 ? Math.max(origW, 36) : origW;
+                let minWidth = 36;
+                if (data.cars > 0) {
+                    minWidth = labelSuffix ? 62 : 44;
+                }
+                const newWidth = Math.max(origW, minWidth);
                 rect.setAttribute("width", newWidth);
                 rect.setAttribute("x", centerX - (newWidth / 2));
 
-                rect.style.stroke = badgeColor;
-                rect.style.fill = `rgba(${hexToRgb(badgeColor)}, 0.25)`;
-                textEl.style.fill = badgeColor;
+                const highlightColor = hasInb ? (isSolar ? "#0284c7" : "#38bdf8") : (hasEmptyCars ? (isSolar ? "#16a34a" : "#22c55e") : badgeColor);
+                rect.style.stroke = highlightColor;
+                rect.style.fill = isSolar ? "#f8fafc" : `rgba(${hexToRgb(highlightColor)}, 0.25)`;
+                textEl.style.fill = isSolar ? "#0f172a" : highlightColor;
+                if (isSolar) {
+                    textEl.style.fontWeight = "800";
+                }
+            } else if (textEl) {
+                const highlightColor = hasInb ? (isSolar ? "#0284c7" : "#38bdf8") : (hasEmptyCars ? (isSolar ? "#16a34a" : "#22c55e") : badgeColor);
+                textEl.style.fill = isSolar ? "#0f172a" : highlightColor;
+                if (isSolar) {
+                    textEl.style.fontWeight = "800";
+                }
             }
 
             el.style.cursor = "pointer";
@@ -1233,6 +1591,8 @@ function bindSvgInteractivity(container, isTheater = false) {
         }
         sw.onmouseleave = hideTrackHoverTooltip;
     });
+
+    applySvgSpotlightFilter();
 }
 
 function hexToRgb(hex) {
@@ -1528,6 +1888,7 @@ export async function openExpandedTrackMap() {
                     ${trackStats.badOrderCars > 0 ? `<span class="track-stat-pill pill-bo">🔴 <strong>${trackStats.badOrderCars}</strong> B.O.</span>` : ""}
                     ${trackStats.dwellWarningCount > 0 ? `<span class="track-stat-pill pill-dwell">⚠️ <strong>${trackStats.dwellWarningCount}</strong> Dwell</span>` : ""}
                 </div>
+                <div id="theater-commodity-bar" class="trackmap-commodity-bar theater-commodity-bar" style="margin: 0 16px; flex: 1; padding: 0;"></div>
                 <div class="theater-controls-group">
                     <button id="btn-toggle-legend" class="theater-btn" title="Toggle Commodity & Capacity Legend">
                         <i class="fa-solid fa-palette"></i> Legend
@@ -1583,6 +1944,7 @@ export async function openExpandedTrackMap() {
     `;
 
     theater.style.display = "flex";
+    renderCommodityBar();
     isTheaterOpen = true;
     theaterZoom = 1;
     theaterPanX = 0;
@@ -1725,3 +2087,8 @@ export function closeExpandedTrackMap() {
     }
     isTheaterOpen = false;
 }
+
+if (typeof window !== 'undefined') {
+    window.renderTrackMap = renderTrackMap;
+}
+

@@ -9,12 +9,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YardStik">
-    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo-mark.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
 
-    <!-- FontAwesome & Marked.js & DOMPurify -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <script src="vendor/marked/marked.min.js"></script>
+    <script src="vendor/dompurify/purify.min.js"></script>
+    <script src="vendor/qrcode/qrcode.min.js"></script>
 
     <!-- Mobile Companion Stylesheet -->
     <link rel="stylesheet" href="css/mobile.css?v=4.6">
@@ -23,7 +27,7 @@
     <!-- Top Glassmorphic App Bar -->
     <header class="mobile-app-bar">
         <div class="app-brand">
-            <i class="fa-solid fa-layer-group brand-icon"></i>
+            <img src="assets/images/logo-mark.svg" alt="YardStik" class="brand-logo-img" style="width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;">
             <div class="app-title-wrap">
                 <h1 class="app-title" id="mobile-header-title">YardStik Mobile</h1>
                 <span class="app-subtitle">Floor Operations Companion</span>
@@ -41,6 +45,18 @@
             </div>
         </div>
     </header>
+
+    <!-- Emergency Broadcast Banner -->
+    <div id="emergency-mobile-banner" style="display: none;" class="emergency-mobile-banner">
+        <div class="emergency-mobile-content">
+            <div class="emergency-mobile-header">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="emergency-mobile-title">EMERGENCY ALERT</span>
+                <button id="emergency-mobile-silence" class="emergency-mobile-btn">Silence</button>
+            </div>
+            <p id="emergency-mobile-message" class="emergency-mobile-text"></p>
+        </div>
+    </div>
 
     <!-- Main Application Viewport -->
     <main class="mobile-app-content">

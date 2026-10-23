@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Yardstik-Sync-Secret, X-Sync-Secret');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -53,7 +53,20 @@ module.exports = async function handler(req, res) {
             if (!expectedSecret) {
                 return res.status(503).json({ error: 'Sync endpoint is not configured (SYNC_SECRET missing).' });
             }
-            const providedSecret = (secret || req.headers['x-sync-secret'] || (req.query && req.query.secret) || '').toString().trim();
+
+            // Reject query parameter secret to prevent token exposure in access logs (SYNC-01)
+            let authBearer = '';
+            if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+                authBearer = req.headers.authorization.substring(7).trim();
+            }
+            const providedSecret = (
+                req.headers['x-yardstik-sync-secret'] ||
+                req.headers['x-sync-secret'] ||
+                authBearer ||
+                secret ||
+                ''
+            ).toString().trim();
+
             if (providedSecret !== expectedSecret.trim()) {
                 return res.status(401).json({ error: 'Unauthorized sync secret.' });
             }

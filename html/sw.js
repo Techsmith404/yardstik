@@ -20,7 +20,18 @@ const STATIC_ASSETS = [
     '/assets/data/reminders.md',
     '/assets/data/shifts.json',
     '/assets/data/anniversaries.json',
-    '/assets/data/safety_videos.json'
+    '/assets/data/safety_videos.json',
+    '/vendor/fonts/fonts.css',
+    '/vendor/fontawesome/css/all.min.css',
+    '/vendor/marked/marked.min.js',
+    '/vendor/dompurify/purify.min.js',
+    '/vendor/qrcode/qrcode.min.js',
+    '/assets/images/logo-mark.svg',
+    '/assets/images/logo.png',
+    '/assets/images/icon-192.png',
+    '/assets/images/icon-512.png',
+    '/favicon.ico',
+    '/site.webmanifest'
 ];
 
 self.addEventListener('install', (event) => {
@@ -77,8 +88,8 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 3. Network-Only: Dynamic SSE runner streams and auth endpoints
-    if (url.pathname.startsWith('/api/runners/') || url.pathname.startsWith('/api/auth/')) {
+    // 3. Network-Only: Dynamic SSE runner/events streams, emergency takeovers, and auth endpoints
+    if (url.pathname.startsWith('/api/runners/') || url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/events/') || url.pathname.startsWith('/api/emergency/')) {
         return;
     }
 

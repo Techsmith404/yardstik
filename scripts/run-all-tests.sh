@@ -5,6 +5,9 @@
 # ==============================================================================
 set -euo pipefail
 
+# Defensively unset BASH_ENV to prevent subshell PATH clobbering in CI/agent runners
+unset BASH_ENV 2>/dev/null || true
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT_DIR"

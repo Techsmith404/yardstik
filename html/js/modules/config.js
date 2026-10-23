@@ -124,7 +124,18 @@ export async function fetchSiteConfig(onLoaded) {
             const siteId = siteConfig.site_id || '';
             const siteParam = siteId ? `?site=${encodeURIComponent(siteId)}` : '';
             const targetUrl = `${baseUrl}/mobile.html${siteParam}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&ecc=L&margin=1&data=${encodeURIComponent(targetUrl)}`;
+            if (typeof window !== 'undefined' && typeof window.qrcode === 'function') {
+                try {
+                    const qr = window.qrcode(0, 'M');
+                    qr.addData(targetUrl);
+                    qr.make();
+                    qrImg.src = qr.createDataURL(6, 4);
+                } catch (qrErr) {
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&ecc=L&margin=1&data=${encodeURIComponent(targetUrl)}`;
+                }
+            } else {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&ecc=L&margin=1&data=${encodeURIComponent(targetUrl)}`;
+            }
             if (qrContainer && typeof document !== 'undefined' && document.body && !document.body.classList.contains('feature-no-mobile-qr') && !document.body.classList.contains('desktop-mode')) {
                 qrContainer.style.display = 'flex';
             }

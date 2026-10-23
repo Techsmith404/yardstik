@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="YardStik Icon">
+  <defs>
+    <!-- Background Shield Gradient -->
+    <linearGradient id="shield-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c343f"/>
+      <stop offset="45%" stop-color="#1f262f"/>
+      <stop offset="100%" stop-color="#151a20"/>
+    </linearGradient>
+
+    <!-- Outer Silver Rim Gradient -->
+    <linearGradient id="silver-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="25%" stop-color="#94a3b8"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="75%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+
+    <!-- Inner Amber Rim Gradient -->
+    <linearGradient id="amber-piping" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="60%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Yellow Ruler Body Gradient -->
+    <linearGradient id="yellow-ruler" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="30%" stop-color="#fbbf24"/>
+      <stop offset="70%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Yellow Arm Outer Bevel Highlight -->
+    <linearGradient id="yellow-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <!-- Steel Ruler Body Gradient -->
+    <linearGradient id="steel-ruler" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#f1f5f9"/>
+      <stop offset="65%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+
+    <!-- Steel Arm Outer Bevel Highlight -->
+    <linearGradient id="steel-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+
+    <!-- Rivet Metallic Radial Gradient -->
+    <radialGradient id="rivet-head" cx="36%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#e2e8f0"/>
+      <stop offset="70%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </radialGradient>
+
+    <!-- Soft Drop Shadow Filter for Badge -->
+    <filter id="badge-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
+      <feOffset in="blur" dx="0" dy="10" result="offsetBlur"/>
+      <feFlood flood-color="#020406" flood-opacity="0.75" result="offsetColor"/>
+      <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetShadow"/>
+      <feMerge>
+        <feMergeNode in="offsetShadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Drop Shadow for Ruler on Shield -->
+    <filter id="ruler-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur"/>
+      <feOffset in="blur" dx="0" dy="8" result="offsetBlur"/>
+      <feFlood flood-color="#05080c" flood-opacity="0.8" result="offsetColor"/>
+      <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetShadow"/>
+      <feMerge>
+        <feMergeNode in="offsetShadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. Canvas Background Squircle (Dark Gunmetal) -->
+  <rect width="512" height="512" rx="104" fill="#181e25"/>
+
+  <!-- 2. Industrial Chamfered Hexagonal Shield -->
+  <!-- Outer Silver Rim (Thick, Beveled, Rounded Corners) -->
+  <path d="M 212 56 Q 220 50 234 50 H 278 Q 292 50 300 56 L 434 154 Q 442 160 442 174 V 338 Q 442 352 434 358 L 300 456 Q 292 462 278 462 H 234 Q 220 462 212 456 L 78 358 Q 70 352 70 338 V 174 Q 70 160 78 154 Z"
+        fill="url(#shield-bg)" stroke="url(#silver-rim)" stroke-width="8" filter="url(#badge-shadow)"/>
+
+  <!-- Inner Amber Piping -->
+  <path d="M 215 70 Q 222 64 235 64 H 277 Q 290 64 297 70 L 422 161 Q 428 166 428 178 V 334 Q 428 346 422 351 L 297 442 Q 290 448 277 448 H 235 Q 222 448 215 442 L 90 351 Q 84 346 84 334 V 178 Q 84 166 90 161 Z"
+        fill="none" stroke="url(#amber-piping)" stroke-width="4.5"/>
+
+  <!-- Shield Face Inset Surface -->
+  <path d="M 218 80 Q 224 75 236 75 H 276 Q 288 75 294 80 L 413 167 Q 418 171 418 181 V 331 Q 418 341 413 345 L 294 432 Q 288 437 276 437 H 236 Q 224 437 218 432 L 99 345 Q 94 341 94 331 V 181 Q 94 171 99 167 Z"
+        fill="#1a2027" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1.5"/>
+
+  <!-- 3. The Folding Ruler "Y" -->
+  <g filter="url(#ruler-shadow)">
+
+    <!-- (A) Right Steel Arm (Behind Hinge) - rotated 24 deg -->
+    <g transform="translate(256, 250) rotate(24) translate(-256, -250)">
+      <!-- Arm Body with beveled top cut -->
+      <path d="M 256 94 L 302 88 Q 314 86 316 96 L 316 266 H 256 Z" fill="url(#steel-ruler)"/>
+      <!-- Bevel Edge Highlight (Right Outer Edge) -->
+      <path d="M 314 94 L 314 266" stroke="url(#steel-bevel)" stroke-width="4"/>
+      <!-- Measurement Ticks along outer edge x=316 (pointing left) -->
+      <g stroke="#181f27" stroke-linecap="round">
+        <line x1="316" y1="108" x2="296" y2="108" stroke-width="3.5"/>
+        <line x1="316" y1="122" x2="303" y2="122" stroke-width="2.5"/>
+        <line x1="316" y1="136" x2="300" y2="136" stroke-width="3.0"/>
+        <line x1="316" y1="150" x2="303" y2="150" stroke-width="2.5"/>
+        <line x1="316" y1="164" x2="294" y2="164" stroke-width="3.5"/>
+        <line x1="316" y1="178" x2="303" y2="178" stroke-width="2.5"/>
+        <line x1="316" y1="192" x2="300" y2="192" stroke-width="3.0"/>
+        <line x1="316" y1="206" x2="303" y2="206" stroke-width="2.5"/>
+        <line x1="316" y1="220" x2="294" y2="220" stroke-width="3.5"/>
+        <line x1="316" y1="234" x2="303" y2="234" stroke-width="2.5"/>
+        <line x1="316" y1="248" x2="300" y2="248" stroke-width="3.0"/>
+      </g>
+    </g>
+
+    <!-- (B) Right Steel Half of Vertical Stem -->
+    <path d="M 256 250 H 286 V 386 Q 286 392 280 392 H 256 Z" fill="url(#steel-ruler)"/>
+    <!-- Steel Stem Bevel Edge -->
+    <line x1="284" y1="250" x2="284" y2="390" stroke="url(#steel-bevel)" stroke-width="3"/>
+    <!-- Steel Stem Ticks along outer edge x=286 (pointing left) -->
+    <g stroke="#181f27" stroke-linecap="round">
+      <line x1="286" y1="264" x2="268" y2="264" stroke-width="3.5"/>
+      <line x1="286" y1="279" x2="274" y2="279" stroke-width="2.4"/>
+      <line x1="286" y1="294" x2="271" y2="294" stroke-width="3.0"/>
+      <line x1="286" y1="309" x2="274" y2="309" stroke-width="2.4"/>
+      <line x1="286" y1="324" x2="266" y2="324" stroke-width="3.5"/>
+      <line x1="286" y1="339" x2="274" y2="339" stroke-width="2.4"/>
+      <line x1="286" y1="354" x2="271" y2="354" stroke-width="3.0"/>
+      <line x1="286" y1="369" x2="274" y2="369" stroke-width="2.4"/>
+      <line x1="286" y1="384" x2="266" y2="384" stroke-width="3.5"/>
+    </g>
+
+    <!-- (C) Left Yellow Arm & Integrated Pivot Knuckle - rotated -24 deg -->
+    <!-- Pivot Knuckle under Left Arm -->
+    <circle cx="256" cy="250" r="26" fill="url(#yellow-ruler)"/>
+
+    <g transform="translate(256, 250) rotate(-24) translate(-256, -250)">
+      <!-- Left Arm Body with beveled top cut -->
+      <path d="M 196 96 Q 198 86 210 88 L 256 94 V 266 H 196 Z" fill="url(#yellow-ruler)"/>
+      <!-- Bevel Edge Highlight (Left Outer Edge) -->
+      <path d="M 198 94 L 198 266" stroke="url(#yellow-bevel)" stroke-width="4"/>
+      <!-- Measurement Ticks along outer edge x=196 (pointing right) -->
+      <g stroke="#181f27" stroke-linecap="round">
+        <line x1="196" y1="108" x2="216" y2="108" stroke-width="3.5"/>
+        <line x1="196" y1="122" x2="209" y2="122" stroke-width="2.5"/>
+        <line x1="196" y1="136" x2="212" y2="136" stroke-width="3.0"/>
+        <line x1="196" y1="150" x2="209" y2="150" stroke-width="2.5"/>
+        <line x1="196" y1="164" x2="218" y2="164" stroke-width="3.5"/>
+        <line x1="196" y1="178" x2="209" y2="178" stroke-width="2.5"/>
+        <line x1="196" y1="192" x2="212" y2="192" stroke-width="3.0"/>
+        <line x1="196" y1="206" x2="209" y2="206" stroke-width="2.5"/>
+        <line x1="196" y1="220" x2="218" y2="220" stroke-width="3.5"/>
+        <line x1="196" y1="234" x2="209" y2="234" stroke-width="2.5"/>
+        <line x1="196" y1="248" x2="212" y2="248" stroke-width="3.0"/>
+      </g>
+    </g>
+
+    <!-- (D) Left Yellow Half of Vertical Stem -->
+    <path d="M 226 250 H 256 V 392 H 232 Q 226 392 226 386 Z" fill="url(#yellow-ruler)"/>
+    <!-- Yellow Stem Bevel Edge -->
+    <line x1="228" y1="250" x2="228" y2="390" stroke="url(#yellow-bevel)" stroke-width="3"/>
+    <!-- Yellow Stem Ticks along outer edge x=226 (pointing right) -->
+    <g stroke="#181f27" stroke-linecap="round">
+      <line x1="226" y1="264" x2="244" y2="264" stroke-width="3.5"/>
+      <line x1="226" y1="279" x2="238" y2="279" stroke-width="2.4"/>
+      <line x1="226" y1="294" x2="241" y2="294" stroke-width="3.0"/>
+      <line x1="226" y1="309" x2="238" y2="309" stroke-width="2.4"/>
+      <line x1="226" y1="324" x2="246" y2="324" stroke-width="3.5"/>
+      <line x1="226" y1="339" x2="238" y2="339" stroke-width="2.4"/>
+      <line x1="226" y1="354" x2="241" y2="354" stroke-width="3.0"/>
+      <line x1="226" y1="369" x2="238" y2="369" stroke-width="2.4"/>
+      <line x1="226" y1="384" x2="246" y2="384" stroke-width="3.5"/>
+    </g>
+
+    <!-- Joint Seam between Stem Halves -->
+    <line x1="256" y1="270" x2="256" y2="392" stroke="#141a20" stroke-width="1.8"/>
+
+    <!-- (E) Precision Metallic Center Rivet & Pivot Bolt -->
+    <!-- Rivet Recessed Dark Housing -->
+    <circle cx="256" cy="250" r="16.5" fill="#14191f" stroke="#0a0e13" stroke-width="1.5"/>
+    <!-- Rivet Raised Metallic Head -->
+    <circle cx="256" cy="250" r="13.5" fill="url(#rivet-head)" stroke="#475569" stroke-width="0.8"/>
+    <!-- Rivet Center Indentation & Specular Dot -->
+    <circle cx="256" cy="250" r="3.5" fill="#334155" stroke="#1e293b" stroke-width="0.5"/>
+    <circle cx="254.5" cy="248.5" r="1.2" fill="#ffffff" fill-opacity="0.95"/>
+  </g>
+</svg>

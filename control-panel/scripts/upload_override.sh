@@ -1,30 +1,38 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -euo pipefail
 DATA_DIR="${DATA_DIR:-/data}"
 file=""
 action=""
-while getopts f:a: flag
-do
+
+while getopts "f:a:" flag; do
     case "${flag}" in
-        f) file=${OPTARG};;
-        a) action=${OPTARG};;
+        f) file="${OPTARG}" ;;
+        a) action="${OPTARG}" ;;
+        *) ;;
     esac
 done
 
 if [ "$action" = "Clear Current Override" ]; then
-    DATA_DIR="$DATA_DIR" python3 -c '
-import json, os
+    DATA_DIR="$DATA_DIR" python3 - <<'PYEOF'
+import json, os, sys, tempfile
+
 data_dir = os.environ.get("DATA_DIR", "/data")
 path = os.path.join(data_dir, "trackers.json")
 try:
-    with open(path, "r") as f:
-        data = json.load(f)
-    data["toolbox_override_date"] = ""
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data["toolbox_override_date"] = ""
+        data["toolbox_override_file"] = ""
+        dir_name = os.path.dirname(path)
+        with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as tf:
+            json.dump(data, tf, indent=4)
+            temp_name = tf.name
+        os.replace(temp_name, path)
 except Exception as e:
-    pass
-'
+    print(f"Error clearing override in trackers.json: {e}", file=sys.stderr)
+    sys.exit(1)
+PYEOF
     rm -f "$DATA_DIR/override.jpg"
     rm -f "$DATA_DIR/override.png"
     date +%s > "$DATA_DIR/version.txt"
@@ -37,37 +45,54 @@ if [ "$action" = "Upload New Override" ]; then
         echo "Error: You must select a file to upload!"
         exit 1
     fi
-    mime=$(file -b --mime-type "$file" 2>/dev/null)
+
+    # Path traversal protection: resolve canonical path and verify it exists and is a regular file
+    if [ ! -f "$file" ]; then
+        echo "Error: File does not exist or is not a regular file."
+        exit 1
+    fi
+
+    resolved_file="$(realpath "$file" 2>/dev/null || true)"
+    if [ -z "$resolved_file" ] || [ ! -f "$resolved_file" ]; then
+        echo "Error: Could not resolve file path safely."
+        exit 1
+    fi
+
+    mime="$(file -b --mime-type "$resolved_file" 2>/dev/null || true)"
     if [ "$mime" = "image/png" ] || [ "$mime" = "image/jpeg" ]; then
         rm -f "$DATA_DIR/override.jpg"
         rm -f "$DATA_DIR/override.png"
-        
+
         target_name=""
         if [ "$mime" = "image/png" ]; then
-            cp "$file" "$DATA_DIR/override.png"
+            cp "$resolved_file" "$DATA_DIR/override.png"
             target_name="override.png"
         else
-            cp "$file" "$DATA_DIR/override.jpg"
+            cp "$resolved_file" "$DATA_DIR/override.jpg"
             target_name="override.jpg"
         fi
-        
+
         TARGET_NAME="$target_name" DATA_DIR="$DATA_DIR" python3 - <<'PYEOF'
-import json
-import datetime
-import sys
-import os
+import json, datetime, sys, os, tempfile
+
 data_dir = os.environ.get("DATA_DIR", "/data")
 path = os.path.join(data_dir, "trackers.json")
 try:
-    with open(path, "r") as f:
-        data = json.load(f)
+    data = {}
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
     effective_now = datetime.datetime.now() + datetime.timedelta(hours=1)
     data["toolbox_override_date"] = effective_now.strftime("%Y-%m-%d")
     data["toolbox_override_file"] = os.environ.get("TARGET_NAME", "")
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+    
+    dir_name = os.path.dirname(path)
+    with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as tf:
+        json.dump(data, tf, indent=4)
+        temp_name = tf.name
+    os.replace(temp_name, path)
 except Exception as e:
-    print("Error updating trackers.json:", e)
+    print(f"Error updating trackers.json: {e}", file=sys.stderr)
     sys.exit(1)
 PYEOF
         date +%s > "$DATA_DIR/version.txt"

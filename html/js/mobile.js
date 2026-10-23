@@ -903,6 +903,27 @@
 
     // Special Event Broadcast (`special.json`)
     function loadSpecial() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var emParam = urlParams.get('emergency') || urlParams.get('mockEmergency');
+        var mockParam = urlParams.get('mock');
+        if ((emParam && emParam !== 'false' && emParam !== '0' && emParam !== 'off') || mockParam === 'emergency') {
+            var mockType = (emParam || 'emergency').toUpperCase();
+            var mockTitle = mockType.includes('CHEM') ? 'AMMONIA LEAK DETECTED' :
+                (mockType.includes('WEATH') || mockType.includes('TORNADO')) ? 'TORNADO WARNING — TAKE SHELTER' :
+                (mockType.includes('FIRE')) ? 'FACILITY FIRE ALARM' :
+                (mockType.includes('SHOOT') || mockType.includes('LOCK')) ? 'SECURITY LOCKDOWN — ACTIVE THREAT' :
+                'EMERGENCY PLANT ALERT';
+            var emBanner = document.getElementById('emergency-mobile-banner');
+            var emTitle = document.getElementById('emergency-mobile-title');
+            var emMsg = document.getElementById('emergency-mobile-message');
+            if (emBanner) {
+                emBanner.style.display = 'block';
+                if (emTitle) emTitle.textContent = mockTitle;
+                if (emMsg) emMsg.textContent = 'Simulated life-safety emergency. Cease operations and proceed to designated muster station.';
+            }
+            return Promise.resolve();
+        }
+
         return fetch(getDataUrl('special.json'))
             .then(function(res) {
                 if (res.ok) return res.json();
@@ -919,7 +940,23 @@
 
                 if (data.endTime && (Date.now() > new Date(data.endTime).getTime())) {
                     container.style.display = 'none';
+                    const emBanner = document.getElementById('emergency-mobile-banner');
+                    if (emBanner) emBanner.style.display = 'none';
                     return;
+                }
+
+                // Check for live emergency broadcast banner
+                const emBanner = document.getElementById('emergency-mobile-banner');
+                const emTitle = document.getElementById('emergency-mobile-title');
+                const emMsg = document.getElementById('emergency-mobile-message');
+                if (data && data.is_emergency) {
+                    if (emBanner) {
+                        emBanner.style.display = 'block';
+                        if (emTitle) emTitle.textContent = (data.title || 'EMERGENCY ALERT').toUpperCase();
+                        if (emMsg) emMsg.textContent = data.description || '';
+                    }
+                } else if (emBanner) {
+                    emBanner.style.display = 'none';
                 }
 
                 let imgHtml = '';
@@ -1708,8 +1745,40 @@
             navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
         }
 
+        // Emergency Broadcast Listeners
+        var silenceMobileBtn = document.getElementById('emergency-mobile-silence');
+        if (silenceMobileBtn) {
+            silenceMobileBtn.addEventListener('click', function() {
+                var emBanner = document.getElementById('emergency-mobile-banner');
+                if (emBanner) emBanner.style.display = 'none';
+            });
+        }
+
+        if (typeof EventSource !== 'undefined') {
+            try {
+                var es = new EventSource('/api/events/stream');
+                es.addEventListener('emergency', function(e) {
+                    try {
+                        var emData = JSON.parse(e.data);
+                        var banner = document.getElementById('emergency-mobile-banner');
+                        var titleEl = document.getElementById('emergency-mobile-title');
+                        var msgEl = document.getElementById('emergency-mobile-message');
+                        if (!banner) return;
+                        if (emData && emData.active) {
+                            banner.style.display = 'block';
+                            if (titleEl) titleEl.textContent = (emData.title || 'EMERGENCY ALERT').toUpperCase();
+                            if (msgEl) msgEl.textContent = emData.message || '';
+                        } else {
+                            banner.style.display = 'none';
+                        }
+                    } catch (err) {}
+                });
+            } catch (e) {}
+        }
+
         // Polling Intervals
         setInterval(checkVersion, 5000); // 5s Version check
+        setInterval(loadSpecial, 5000); // 5s Emergency / special check
         setInterval(loadEquipment, 60000); // 1 min Equipment
         setInterval(loadTracks, 60000); // 1 min Tracks
         setInterval(loadTrackers, 600000); // 10 min Trackers

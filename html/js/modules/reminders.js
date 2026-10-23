@@ -378,7 +378,16 @@ export async function fetchReminders() {
             // Parse QR Magic Word: !QR https://...
             const qrMatch = body.match(/!QR\s+(https?:\/\/[^\s]+)/i);
             if (qrMatch) {
-                body = body.replace(qrMatch[0], `<div style="text-align:center; margin: 10px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrMatch[1])}" style="border: 4px solid white; border-radius: 8px;"></div>`);
+                let qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrMatch[1])}`;
+                if (typeof window !== 'undefined' && typeof window.qrcode === 'function') {
+                    try {
+                        const qr = window.qrcode(0, 'M');
+                        qr.addData(qrMatch[1]);
+                        qr.make();
+                        qrSrc = qr.createDataURL(4, 2);
+                    } catch (e) {}
+                }
+                body = body.replace(qrMatch[0], `<div style="text-align:center; margin: 10px 0;"><img src="${qrSrc}" style="border: 4px solid white; border-radius: 8px;"></div>`);
             }
             
             // Strip the rest of the flags from the body

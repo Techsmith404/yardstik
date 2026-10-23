@@ -75,20 +75,26 @@
         "BALES",
         "P&S",
         "SHRED",
-        "SCRAP",
-        "SWEEP",
-        "TO SWEEP"
+        "SCRAP"
       ],
       "description": "Download scrap, slitter, sheets, baler scrap, P&S, and shred."
     },
     {
       "id": "ob_empty",
-      "name": "OB / Empty",
+      "name": "Empty Cars / MTY",
       "color": "#22c55e",
       "keywords": [
-        "EMPTY",
-        "CLEAR",
         "MTY",
+        "MTY'S",
+        "MTYS",
+        "MTIES",
+        "EMPTY",
+        "EMPTIES",
+        "TO SWEEP",
+        "SWEEP",
+        "CLEAN OUT",
+        "FOR LOADING",
+        "CLEAR",
         "OB",
         "OB'S",
         "OBS",
@@ -96,7 +102,7 @@
         "FLAT",
         "FLATS"
       ],
-      "description": "Outbound loads, empty flats, and cleared tracks."
+      "description": "Empty cars, MTY flats/gons, cars to sweep, and cleared tracks."
     },
     {
       "id": "raw_materials",
@@ -115,10 +121,14 @@
     {
       "id": "inbound",
       "name": "Inbound",
-      "color": "#3a60f8",
+      "color": "#38bdf8",
       "keywords": [
         "INBOUND",
-        "IB"
+        "IB",
+        "INB",
+        "IN-BOUND",
+        "INCOMING",
+        "ARRIVED"
       ],
       "description": "Inbound loads and incoming train cars."
     }

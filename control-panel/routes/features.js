@@ -33,6 +33,7 @@ router.get('/features', (req, res) => {
                 theme_mode: 'auto',
                 dedicated_theme: 'default',
                 shift_theme_dedication: false,
+                high_glare_mode: 'off',
                 shift_themes: { "1": "default", "2": "obsidian", "3": "cyberpunk" },
                 features: {
                     weather_fx: true,

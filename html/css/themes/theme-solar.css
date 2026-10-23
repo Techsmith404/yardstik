@@ -1,0 +1,776 @@
+/* YardStik Theme: Industrial Light Mode / Anti-Glare Daylight HUD
+ * Engineered for High-Ambient Light & Glare Environments
+ * Matte Titanium Slate Panels, Vivid High-Contrast Phosphors & Crisp Tactical Borders.
+ */
+:root {
+    --bg-gradient: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%);
+    --card-bg: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%);
+    --card-border: #94a3b8;
+    
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    
+    --brand-green: #15803d;
+    --brand-blue: #0284c7;
+    
+    --neon-cyan: #0284c7;
+    --neon-purple: #7c3aed;
+    --neon-green: #15803d;
+    --neon-amber: #d97706;
+    --neon-red: #dc2626;
+}
+
+body {
+    background: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%) !important;
+    color: #0f172a !important;
+}
+
+/* Subtle Technical Metallic Grid Texture */
+body::before {
+    opacity: 0.16 !important;
+    background-image: radial-gradient(rgba(15, 23, 42, 0.14) 1.5px, transparent 1.5px) !important;
+    background-size: 24px 24px !important;
+    filter: none !important;
+}
+
+/* Soft Ambient Cool Daylight Auras */
+body::after {
+    display: block !important;
+    background: 
+        radial-gradient(circle at 10% 10%, rgba(2, 132, 199, 0.10) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(21, 128, 61, 0.08) 0%, transparent 45%) !important;
+    opacity: 0.75 !important;
+}
+
+#dark-overlay,
+#vignette-overlay {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+/* Machined Matte-Titanium Panel Widgets with Beveled Metallic Edges */
+.widget {
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 2px solid #64748b !important;
+    border-radius: 24px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 
+        0 12px 28px -6px rgba(15, 23, 42, 0.12),
+        0 4px 8px -2px rgba(15, 23, 42, 0.06) !important;
+}
+
+.widget:hover {
+    box-shadow: 
+        0 16px 32px -6px rgba(15, 23, 42, 0.16),
+        0 6px 12px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Typography & Headers - Maximum Contrast Slate-900 */
+h2, h3, h4 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+    letter-spacing: 0.04em !important;
+}
+
+.header-widget {
+    border-left: 6px solid #0284c7 !important;
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.14) 0%, #eef2f6 30%, #e2e8f0 100%) !important;
+}
+
+.header-widget h2 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+}
+
+#clock {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    text-shadow: none !important;
+}
+
+#weather-display {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+
+/* Header OSHA and Blend Recipe Badges */
+#header-osha > div,
+#header-blend > div {
+    background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+#header-osha > div > div:first-child > div:last-child,
+#header-blend > div > div:first-child > div:last-child,
+#header-blend-label {
+    color: #334155 !important;
+}
+
+#header-osha-counter {
+    color: #15803d !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 4px rgba(21, 128, 61, 0.2) !important;
+}
+
+#header-blend-display {
+    color: #0284c7 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 4px rgba(2, 132, 199, 0.2) !important;
+}
+
+/* High-Impact Hero Numbers */
+.osha-number {
+    color: #15803d !important;
+    -webkit-text-fill-color: #15803d !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 8px rgba(21, 128, 61, 0.2) !important;
+}
+
+#blend-recipe-display {
+    color: #0284c7 !important;
+    -webkit-text-fill-color: #0284c7 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 8px rgba(2, 132, 199, 0.2) !important;
+}
+
+/* Equipment Status Dashboard in Industrial Daylight */
+#equipment-dashboard-container > div:first-of-type {
+    border-bottom: 2px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+.equipment-category {
+    background: rgba(203, 213, 225, 0.45) !important;
+    border: 1px solid #94a3b8 !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+.equipment-category-title {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.equipment-pill {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+    border-left: 5px solid transparent !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    color: #0f172a !important;
+}
+
+.equipment-name {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+.equipment-pill.status-ok {
+    border-left-color: #16a34a !important;
+}
+.equipment-pill.status-ok .equipment-status-badge {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3) !important;
+}
+
+.equipment-pill.status-os {
+    background: linear-gradient(145deg, #fee2e2 0%, #fecdd3 100%) !important;
+    border-color: #fca5a5 !important;
+    border-left-color: #dc2626 !important;
+}
+.equipment-pill.status-os .equipment-status-badge {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3) !important;
+}
+
+.equipment-pill.status-pm {
+    background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%) !important;
+    border-color: #fcd34d !important;
+    border-left-color: #d97706 !important;
+}
+.equipment-pill.status-pm .equipment-status-badge {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3) !important;
+}
+
+.equipment-pill.status-unknown {
+    background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    border-color: #cbd5e1 !important;
+    border-left-color: #64748b !important;
+}
+.equipment-pill.status-unknown .equipment-status-badge {
+    background: #64748b !important;
+    color: #ffffff !important;
+}
+
+/* Crane Scale & Audit Badges */
+.badge-scale-ok {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #7dd3fc !important;
+    font-weight: 700 !important;
+}
+.badge-scale-os {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fca5a5 !important;
+    font-weight: 700 !important;
+}
+.badge-audit {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+}
+.badge-audit-yes {
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    color: #15803d !important;
+    font-weight: 700 !important;
+}
+.badge-audit-no {
+    background: #fef3c7 !important;
+    border-color: #fcd34d !important;
+    color: #b45309 !important;
+    font-weight: 700 !important;
+}
+
+/* Slide Dwell Countdown Ring */
+#slide-dwell-container {
+    background: linear-gradient(145deg, #eef2f6 0%, #dee5ee 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+#slide-dwell-container svg circle:first-child,
+.dwell-ring-bg {
+    stroke: rgba(148, 163, 184, 0.4) !important;
+}
+#slide-dwell-container svg #slide-dwell-circle,
+.dwell-ring-progress {
+    stroke: #0284c7 !important;
+}
+#dwell-seconds-text,
+.dwell-seconds-text {
+    color: #0f172a !important;
+    fill: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Slide Dwell Warning Pulse (Under 5s in Solar Mode) */
+#slide-dwell-container.dwell-warning,
+.slide-dwell-container.dwell-warning {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.45) !important;
+}
+#slide-dwell-container.dwell-warning svg #slide-dwell-circle,
+#slide-dwell-container.dwell-warning .dwell-ring-progress,
+.slide-dwell-container.dwell-warning .dwell-ring-progress {
+    stroke: #dc2626 !important;
+}
+#slide-dwell-container.dwell-warning #dwell-seconds-text,
+#slide-dwell-container.dwell-warning .dwell-seconds-text,
+.slide-dwell-container.dwell-warning .dwell-seconds-text {
+    color: #dc2626 !important;
+    fill: #dc2626 !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+}
+
+/* Daylight Widget & Shift Tracker */
+#daylight-container svg path {
+    stroke: #94a3b8 !important;
+}
+#daylight-text {
+    color: #334155 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+}
+#shift-widget #shift-text {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+#shift-widget > div:nth-child(2) {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Permanent Mobile QR Code Dock */
+#mobile-qr-container {
+    background: linear-gradient(145deg, #eef2f6 0%, #dee5ee 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15) !important;
+}
+#mobile-qr-container > div:first-child,
+#mobile-qr-wrapper {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+#mobile-qr-container > div:last-child,
+#mobile-qr-label {
+    color: #1e293b !important;
+    font-weight: 700 !important;
+}
+
+/* Toolbox Slide 2 */
+#toolbox-widget-container > div:last-child {
+    background: rgba(15, 23, 42, 0.05) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Safety Curriculum & Action Required Video Roster (Fix White-on-White) */
+#safety-list li,
+#novara-training-list li,
+.safety-panel li {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+#safety-list strong,
+#novara-training-list strong,
+.safety-panel strong,
+.safety-emp-name {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+#safety-list span,
+#novara-training-list span,
+.safety-panel span {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+#safety-title {
+    color: #b91c1c !important;
+    border-bottom-color: rgba(185, 28, 28, 0.3) !important;
+}
+#safety-title span {
+    color: #dc2626 !important;
+}
+
+/* Anniversaries List (Fix White-on-White) */
+.anniversary-panel {
+    border-left: 6px solid #16a34a !important;
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+}
+#anniversary-title {
+    color: #0f172a !important;
+}
+#anniversaries-list li {
+    background: rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    color: #334155 !important;
+}
+#anniversaries-list li strong {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+#anniversaries-list li span.years-badge {
+    background: rgba(22, 163, 74, 0.15) !important;
+    color: #15803d !important;
+    border: 1px solid #86efac !important;
+    font-weight: 700 !important;
+}
+#anniversaries-list li span.years-badge.is-today {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #f59e0b !important;
+    font-weight: 800 !important;
+}
+.anniversary-date-badge {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+.anniversary-date-badge.is-today {
+    background: #fef3c7 !important;
+    border: 1px solid #f59e0b !important;
+    color: #92400e !important;
+    font-weight: 800 !important;
+}
+.anniversary-days-badge {
+    color: #64748b !important;
+    font-weight: 500 !important;
+}
+.anniversary-days-badge.is-today {
+    color: #b45309 !important;
+    font-weight: 800 !important;
+}
+
+/* Reminders & Markdown Content (Fix White-on-White) */
+#reminders-widget-container,
+#safety-reminders-container {
+    border-left: 6px solid #8b5cf6 !important;
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+}
+#reminders-title,
+#safety-reminders-title {
+    color: #0f172a !important;
+}
+#reminders-content,
+#safety-reminders-content,
+.reminder-body,
+.desktop-reminder-body {
+    color: #0f172a !important;
+}
+#reminders-content p,
+#safety-reminders-content p,
+.reminder-body p,
+.desktop-reminder-body p,
+#reminders-content li,
+#safety-reminders-content li,
+.reminder-body li,
+.desktop-reminder-body li,
+#reminders-content span,
+#safety-reminders-content span,
+.reminder-body span,
+.desktop-reminder-body span {
+    color: #1e293b !important;
+}
+#reminders-content strong,
+#safety-reminders-content strong,
+.reminder-body strong,
+.desktop-reminder-body strong,
+#reminders-content b,
+#safety-reminders-content b,
+.reminder-body b,
+.desktop-reminder-body b {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+}
+#reminders-content h1, #reminders-content h2, #reminders-content h3, #reminders-content h4, #reminders-content h5, #reminders-content h6,
+#safety-reminders-content h1, #safety-reminders-content h2, #safety-reminders-content h3, #safety-reminders-content h4, #safety-reminders-content h5, #safety-reminders-content h6,
+.reminder-body h1, .reminder-body h2, .reminder-body h3, .reminder-body h4, .reminder-body h5, .reminder-body h6,
+.desktop-reminder-body h1, .desktop-reminder-body h2, .desktop-reminder-body h3, .desktop-reminder-body h4, .desktop-reminder-body h5, .desktop-reminder-body h6 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+}
+#reminders-content ul li::before,
+#safety-reminders-content ul li::before,
+.reminder-body ul li::before,
+.desktop-reminder-body ul li::before {
+    background-color: #8b5cf6 !important;
+    box-shadow: 0 0 6px rgba(139, 92, 246, 0.4) !important;
+}
+#reminders-content blockquote,
+#safety-reminders-content blockquote,
+.reminder-body blockquote,
+.desktop-reminder-body blockquote {
+    background: rgba(15, 23, 42, 0.04) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    border-left: 4px solid var(--quote-border-color, #0284c7) !important;
+    color: #334155 !important;
+}
+#reminders-content hr,
+#safety-reminders-content hr,
+.reminder-body hr,
+.desktop-reminder-body hr {
+    border-top: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+#reminders-content table,
+#safety-reminders-content table,
+.reminder-body table,
+.desktop-reminder-body table {
+    color: #0f172a !important;
+}
+#reminders-content th,
+#safety-reminders-content th,
+.reminder-body th,
+.desktop-reminder-body th {
+    background: rgba(15, 23, 42, 0.06) !important;
+    color: #0f172a !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+#reminders-content td,
+#safety-reminders-content td,
+.reminder-body td,
+.desktop-reminder-body td {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+    color: #1e293b !important;
+}
+
+/* Track Map & SVG Elements */
+#trackmap-viewport {
+    background: #e2e8f0 !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+#trackmap-viewport svg {
+    background: #e2e8f0 !important;
+}
+.track-label {
+    fill: #0f172a !important;
+}
+.yard-title {
+    fill: #0f172a !important;
+}
+.yard-subtitle {
+    fill: #475569 !important;
+}
+.building {
+    fill: #cbd5e1 !important;
+    stroke: #64748b !important;
+    mix-blend-mode: normal !important;
+}
+.building-label {
+    fill: #1e293b !important;
+}
+.grid-line {
+    stroke: rgba(15, 23, 42, 0.06) !important;
+}
+.track-line,
+.yard-track-line,
+.track {
+    stroke-width: 3px !important;
+}
+.track-bed {
+    stroke: #94a3b8 !important;
+    opacity: 0.5 !important;
+}
+.lead-line {
+    stroke: #64748b !important;
+    stroke-width: 2.5px !important;
+}
+.switch-point {
+    fill: #f1f5f9 !important;
+    stroke: #475569 !important;
+}
+#trackmap-asof {
+    color: #475569 !important;
+}
+
+/* Solar Highlights & Train Car Overlays */
+.track-highlight-inbound,
+.overlay-inbound {
+    stroke: #0284c7 !important;
+    filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.5)) !important;
+}
+.track-highlight-empty-cars,
+.overlay-empty-cars {
+    stroke: #16a34a !important;
+    filter: drop-shadow(0 0 6px rgba(22, 163, 74, 0.5)) !important;
+}
+
+/* Solar Track Badges (Solid High-Contrast Pearl Background + Sharp Border) */
+.badge-clear rect, .badge-clear .badge-rect,
+.badge-bad-order rect, .badge-bad-order .badge-rect,
+.badge-blend rect, .badge-blend .badge-rect,
+.badge-dwell rect, .badge-dwell .badge-rect,
+.badge-occ rect, .badge-occ .badge-rect,
+.badge-inbound rect, .badge-inbound .badge-rect,
+.badge-empty-cars rect, .badge-empty-cars .badge-rect,
+[id^='label-'] rect, [id^='label_'] rect, g[data-track] rect, .badge-rect {
+    fill: #f8fafc !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.18)) !important;
+}
+
+.badge-clear rect, .badge-clear .badge-rect {
+    stroke: #16a34a !important;
+}
+.badge-bad-order rect, .badge-bad-order .badge-rect {
+    stroke: #dc2626 !important;
+}
+.badge-blend rect, .badge-blend .badge-rect {
+    stroke: #0284c7 !important;
+}
+.badge-dwell rect, .badge-dwell .badge-rect {
+    stroke: #d97706 !important;
+}
+.badge-occ rect, .badge-occ .badge-rect {
+    stroke: #475569 !important;
+}
+.badge-inbound rect, .badge-inbound .badge-rect {
+    stroke: #0284c7 !important;
+}
+.badge-empty-cars rect, .badge-empty-cars .badge-rect {
+    stroke: #16a34a !important;
+}
+
+.badge-clear text, .badge-clear .badge-text,
+.badge-bad-order text, .badge-bad-order .badge-text,
+.badge-blend text, .badge-blend .badge-text,
+.badge-dwell text, .badge-dwell .badge-text,
+.badge-occ text, .badge-occ .badge-text,
+.badge-inbound text, .badge-inbound .badge-text,
+.badge-empty-cars text, .badge-empty-cars .badge-text,
+[id^='label-'] text, [id^='label_'] text, g[data-track] text, .badge-text, .track-label {
+    fill: #0f172a !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+}
+
+/* Solar Header Stat Pills */
+.track-stat-pill.pill-total {
+    background: #dbeafe !important;
+    color: #0369a1 !important;
+    border: 1px solid #93c5fd !important;
+    font-weight: 700 !important;
+}
+.track-stat-pill.pill-clear {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #86efac !important;
+    font-weight: 700 !important;
+}
+.track-stat-pill.pill-bo {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fca5a5 !important;
+    font-weight: 700 !important;
+}
+.track-stat-pill.pill-dwell {
+    background: #fef3c7 !important;
+    color: #b45309 !important;
+    border: 1px solid #fcd34d !important;
+    font-weight: 700 !important;
+}
+.trackmap-expand-btn {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+}
+
+/* Track Card Grid Fallback */
+.track-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+.track-card-id {
+    color: #0f172a !important;
+}
+.track-card-commodity {
+    color: #334155 !important;
+}
+
+/* Commodity Tally Pills */
+.commodity-tally-pill {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+.commodity-tally-pill strong {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+.commodity-tally-pill.active {
+    background: #dbeafe !important;
+    border-color: var(--pill-color, #0284c7) !important;
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* Track Modal Popup & Details */
+.track-modal-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2f6 100%) !important;
+    color: #0f172a !important;
+    border: 2px solid #94a3b8 !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25) !important;
+}
+.track-modal-header {
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+.track-modal-header h3 {
+    color: #0284c7 !important;
+}
+.track-modal-close {
+    color: #64748b !important;
+}
+.track-modal-close:hover {
+    color: #dc2626 !important;
+}
+.modal-detail-label {
+    color: #475569 !important;
+}
+.modal-detail-val {
+    color: #0f172a !important;
+}
+
+/* Special Announcement View */
+#view-special {
+    background: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%) !important;
+}
+#special-title {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+#special-desc {
+    color: #334155 !important;
+}
+
+/* Lightning & Weather Alert Widgets */
+#lightning-alert-widget {
+    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%) !important;
+    border: 1px solid #eab308 !important;
+    border-left: 6px solid #ca8a04 !important;
+    box-shadow: 0 4px 15px rgba(202, 138, 4, 0.25) !important;
+}
+#lightning-alert-widget h3 {
+    color: #854d0e !important;
+    text-shadow: none !important;
+}
+#lightning-alert-widget span {
+    color: #713f12 !important;
+    text-shadow: none !important;
+}
+.weather-alert-interactive {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2f6 100%) !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15) !important;
+}
+.weather-alert-interactive h3 {
+    color: #0f172a !important;
+}
+
+/* Desktop Portal */
+.desktop-nav-bar {
+    background: rgba(238, 242, 246, 0.95) !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+.desktop-title {
+    color: #0f172a !important;
+}
+.desktop-nav-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+.desktop-nav-btn:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+.modal-card {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+.modal-card h3,
+.modal-card h4 {
+    color: #0f172a !important;
+}
+.modal-card p,
+.modal-card ol,
+.modal-card li {
+    color: #334155 !important;
+}

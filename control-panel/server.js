@@ -77,6 +77,7 @@ app.use('/api', require('./routes/reminders'));
 app.use('/api', require('./routes/runners'));
 app.use('/api', require('./routes/lightning'));
 app.use('/api', require('./routes/novara'));
+app.use('/api', require('./routes/emergency'));
 
 if (require.main === module) {
     const PORT = process.env.PORT || 5000;

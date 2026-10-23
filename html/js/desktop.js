@@ -13,6 +13,7 @@ import { updateSafetySlide } from './modules/slideshow.js';
 import { sanitizeMarkdownHtml } from './modules/sanitize.js';
 import { fetchText, cacheBustUrl } from './modules/http.js';
 import { registerServiceWorker } from './modules/sw-register.js';
+import { initEmergencyEngine } from './modules/emergency.js';
 
 // Register Offline-First Service Worker (IDEA-F03)
 registerServiceWorker();
@@ -62,6 +63,7 @@ setTimeout(checkLightning, 2000);
 setInterval(fetchSafetyVideos, 900000); // 15 mins
 setInterval(getAnniversaries, 900000); // 15 mins
 setInterval(checkVersion, 5000); // 5s live reload check
+initEmergencyEngine();
 
 // 4. Desktop Reminders Renderer
 export async function renderDesktopReminders() {
@@ -112,7 +114,16 @@ export async function renderDesktopReminders() {
             // Parse QR Magic Word: !QR https://...
             const qrMatch = body.match(/!QR\s+(https?:\/\/[^\s]+)/i);
             if (qrMatch) {
-                body = body.replace(qrMatch[0], `<div style="text-align:center; margin: 10px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrMatch[1])}" style="border: 4px solid white; border-radius: 8px;"></div>`);
+                let qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrMatch[1])}`;
+                if (typeof window !== 'undefined' && typeof window.qrcode === 'function') {
+                    try {
+                        const qr = window.qrcode(0, 'M');
+                        qr.addData(qrMatch[1]);
+                        qr.make();
+                        qrSrc = qr.createDataURL(4, 2);
+                    } catch (e) {}
+                }
+                body = body.replace(qrMatch[0], `<div style="text-align:center; margin: 10px 0;"><img src="${qrSrc}" style="border: 4px solid white; border-radius: 8px;"></div>`);
             }
 
             // Clean magic words

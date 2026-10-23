@@ -9,17 +9,14 @@ export function renderEmployeeAnniversaryItem(e) {
     const yearStr = e.years === 1 ? 'Year' : 'Years';
     const isToday = e.days_until === 0;
     const daysUntilStr = isToday ? "Today!" : (e.days_until === 1 ? "Tomorrow" : `in ${e.days_until} days`);
-    const badgeStyle = isToday 
-        ? 'background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fcd34d; font-weight: 800;' 
-        : '';
 
     return `<li>
         <div style="display: flex; align-items: center; gap: 12px;">
-            <strong>${e.name}</strong> 
-            <span style="background: ${isToday ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isToday ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255,255,255,0.1)'}; padding: 4px 12px; border-radius: 20px; color: ${isToday ? '#fde68a' : 'var(--text-secondary)'}; font-size: 0.85em; font-weight: ${isToday ? '700' : '400'};">${e.date}</span>
-            <span style="color: ${isToday ? 'var(--neon-amber)' : 'var(--text-muted)'}; font-size: 0.85em; font-style: italic; opacity: ${isToday ? '1' : '0.7'}; font-weight: ${isToday ? '700' : '400'};">${daysUntilStr}</span>
+            <strong class="anniversary-emp-name">${e.name}</strong> 
+            <span class="anniversary-date-badge ${isToday ? 'is-today' : ''}">${e.date}</span>
+            <span class="anniversary-days-badge ${isToday ? 'is-today' : ''}">${daysUntilStr}</span>
         </div>
-        <span class="years-badge" style="${badgeStyle}">${e.years} ${yearStr}${isToday ? '!' : ''}</span>
+        <span class="years-badge ${isToday ? 'is-today' : ''}">${e.years} ${yearStr}${isToday ? '!' : ''}</span>
     </li>`;
 }
 

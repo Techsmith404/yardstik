@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kiosk Control Panel</title>
+    <link rel="icon" type="image/svg+xml" href="logo-mark.svg">
+    <link rel="shortcut icon" href="favicon.ico">
     <link rel="stylesheet" href="css/style.css?v=3.0.3">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="vendor/easymde/easymde.min.css">
+    <script src="vendor/easymde/easymde.min.js"></script>
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div id="brand-logo" class="brand" style="cursor: pointer;">
-                <i class="fa-solid fa-industry"></i>
+                <img src="logo-mark.svg" alt="YardStik" style="width: 32px; height: 32px; border-radius: 7px; flex-shrink: 0;">
                 <h1>Kiosk Control Panel</h1>
             </div>
             <nav id="script-nav" class="nav-menu">
@@ -23,7 +25,8 @@
                 <button id="nav-equipment" class="nav-item nav-special" data-script="equipment" style="margin-top: 8px;"><i class="fa-solid fa-clipboard-list"></i> Equipment Editor</button>
                 <button id="nav-tracks" class="nav-item nav-special" data-script="tracks" style="margin-top: 8px;"><i class="fa-solid fa-train"></i> Track Management</button>
                 <button id="nav-shifts" class="nav-item nav-special" data-script="shifts" style="margin-top: 8px;"><i class="fa-solid fa-clock-rotate-left"></i> Shift Schedules</button>
-                <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</button>
+                <button id="nav-special-event" class="nav-item nav-special" data-script="special" style="margin-top: 8px;"><i class="fa-solid fa-bullhorn"></i> Special Event Editor</button>
+                <button id="nav-emergency" class="nav-item nav-special" data-script="emergency" style="margin-top: 8px; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Takeover</button>
                 <button id="nav-site-settings" class="nav-item nav-special" data-script="site-settings" style="margin-top: 8px;"><i class="fa-solid fa-sliders"></i> Site Settings</button>
                 <button id="nav-users" class="nav-item nav-special" data-script="users" style="margin-top: 8px;"><i class="fa-solid fa-users-gear"></i> User Accounts</button>
                 <button id="nav-audit" class="nav-item nav-special" data-script="audit" style="margin-top: 8px;"><i class="fa-solid fa-clipboard-check"></i> Audit Logs</button>
@@ -84,8 +87,12 @@
                                 <p>Manage facility work shifts, working days, and hours. Powers the live TV shift countdown progress bar.</p>
                             </div>
                             <div class="info-card" data-script="special">
-                                <h5><i class="fa-solid fa-triangle-exclamation"></i> Special Event Editor</h5>
+                                <h5><i class="fa-solid fa-bullhorn"></i> Special Event Editor</h5>
                                 <p>Set up a high-priority third view that joins the rotation. Perfect for road closures, plant maintenance, or safety drills. Automatically expires.</p>
+                            </div>
+                            <div class="info-card" data-script="emergency" style="border-left: 4px solid #ef4444;">
+                                <h5 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Screen Takeover</h5>
+                                <p>Broadcast instantaneous full-screen safety alerts to all plant displays and mobile devices with dual-tone audio alarm.</p>
                             </div>
                             <div class="info-card" data-script="site-settings">
                                 <h5><i class="fa-solid fa-sliders"></i> Site Settings</h5>
@@ -292,6 +299,58 @@
                     </div>
                 </div>
 
+                <!-- Emergency Screen Takeover View -->
+                <div id="emergency-view" class="view">
+                    <div class="card" style="margin-bottom: 20px; border-left: 4px solid #ef4444;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Screen Takeover</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="clear-emergency-btn" class="btn secondary" style="background: var(--bg-card); color: #22c55e; border: 1px solid #22c55e;"><i class="fa-solid fa-circle-check"></i> Cancel / Clear Takeover</button>
+                                <button id="broadcast-emergency-btn" class="btn" style="background: #dc2626; color: white; border: none; font-weight: 700; cursor: pointer; padding: 8px 18px; border-radius: 6px;"><i class="fa-solid fa-tower-broadcast"></i> Broadcast Takeover</button>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary);">Instantly interrupts all rotating kiosk slideshows across the plant, locks TV viewports, and sounds a synthesized industrial alarm through TV speakers.</p>
+                        <div id="emergency-status-banner" style="margin-top: 15px; padding: 12px 16px; border-radius: 8px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color);">
+                            <span id="emergency-status-text"><i class="fa-solid fa-circle" style="color: #64748b; font-size: 0.8rem;"></i> Status: Inactive (Normal Rotation)</span>
+                            <span id="emergency-displays-count" style="color: #94a3b8; font-size: 0.88rem;">Connected Displays: 0</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <label>Alert Title (Required)
+                                <input type="text" id="emergency-input-title" placeholder="e.g. SEVERE WEATHER / TORNADO WARNING" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </label>
+                            <label>Alert Message / Instructions (Required)
+                                <textarea id="emergency-input-msg" rows="4" placeholder="e.g. Tornado Warning issued for facility. Cease crane operations immediately. Proceed to Storm Shelter Bay 3." style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
+                            </label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <label>Severity Level
+                                    <select id="emergency-input-severity" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                                        <option value="critical">Critical Plant Alert (Red)</option>
+                                        <option value="evacuation">Plant Evacuation (Flashing Red)</option>
+                                        <option value="weather">Severe Weather / Shelter In Place (Amber-Red)</option>
+                                        <option value="safety">Safety Stand-Down (Amber)</option>
+                                    </select>
+                                </label>
+                                <label>Broadcast Duration
+                                    <select id="emergency-input-duration" style="width: 100%; padding: 10px; margin-top: 5px; background: var(--bg-dark); color: white; border: 1px solid var(--border-color); border-radius: 4px;">
+                                        <option value="30">30 Seconds</option>
+                                        <option value="60" selected>1 Minute</option>
+                                        <option value="120">2 Minutes</option>
+                                        <option value="300">5 Minutes</option>
+                                        <option value="600">10 Minutes</option>
+                                        <option value="0">Until Manually Cleared</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 10px; margin-top: 5px; cursor: pointer;">
+                                <input type="checkbox" id="emergency-input-sound" checked style="width: 18px; height: 18px;">
+                                <span>Sound 2-tone industrial alarm siren through TV speakers</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Shift Schedules View -->
                 <div id="shift-editor-view" class="view">
                     <div class="card" style="margin-bottom: 20px;">
@@ -447,6 +506,7 @@
                                 <label for="dedicated-theme-select">Active / Dedicated Theme</label>
                                 <select id="dedicated-theme-select" class="form-control">
                                     <option value="default">🌿 Classic Corporate Sage (Default)</option>
+                                    <option value="solar">☀️ Industrial Solar Light Mode (High Glare)</option>
                                     <option value="obsidian">🌌 Obsidian Midnight (Deep Dark & Ice Blue)</option>
                                     <option value="cyberpunk">⚡ Cyberpunk Neon (Cyan & Magenta)</option>
                                     <option value="emerald">🌲 Emerald Forest (Lush Green & Gold)</option>
@@ -459,6 +519,16 @@
                                 </select>
                                 <span class="form-help">Primary visual aesthetic for the dashboard.</span>
                             </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="high-glare-mode-select">☀️ Industrial High-Glare / Solar Mode (Task 4.1)</label>
+                            <select id="high-glare-mode-select" class="form-control">
+                                <option value="off">🚫 Disabled (Standard Dark Themes)</option>
+                                <option value="auto">🌅 Auto (High-Glare Solar Mode from Sunrise to Sunset)</option>
+                                <option value="on">☀️ Always Active (Continuous High-Luminance Light Mode)</option>
+                            </select>
+                            <span class="form-help">Eliminates window and bay lighting glare on TV glass by switching to solid white cards and ultra-high contrast dark typography.</span>
                         </div>
 
                         <div class="form-group" style="margin-top: 15px;">

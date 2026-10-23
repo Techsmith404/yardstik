@@ -4,15 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operations Dashboard - Desktop Portal</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo-mark.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <script src="vendor/marked/marked.min.js"></script>
+    <script src="vendor/dompurify/purify.min.js"></script>
+    <script src="vendor/qrcode/qrcode.min.js"></script>
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="css/styles-v2.css?v=4.5" id="theme-stylesheet">
 </head>
 <body class="desktop-mode desktop-portal">
     <!-- Desktop Top Navigation Bar -->
     <div id="desktop-nav-bar" class="desktop-nav-bar">
         <div class="desktop-nav-brand">
+            <img src="assets/images/logo-mark.svg" alt="YardStik" style="width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;">
             <span class="desktop-badge">DESKTOP PORTAL</span>
             <h1 class="desktop-title" id="desktop-title">
                 <span id="theme-icon-desktop-left" class="theme-icon"></span>
@@ -55,6 +62,7 @@
                 <div id="lightning-container" style="display: flex; justify-content: flex-end; align-items: center; min-height: 60px;"></div>
             </div>
             <div id="equipment-scroll-wrapper" style="overflow-y: auto; flex: 1; scroll-behavior: smooth;">
+                <div id="equipment-handoff-exceptions" style="display: none;"></div>
                 <div id="equipment-masonry" style="column-count: 2; column-gap: 20px; padding-right: 10px;">
                     <div style="color: var(--text-secondary);">Loading Equipment...</div>
                 </div>
@@ -104,6 +112,7 @@
                     </span>
                     <span id="trackmap-stats-summary" style="display: inline-flex; align-items: center;"></span>
                 </h3>
+                <div id="trackmap-commodity-bar" class="trackmap-commodity-bar"></div>
                 <div id="trackmap-viewport" style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
                     <!-- Dynamically rendered SVG Track Map -->
                 </div>
@@ -176,6 +185,24 @@
             </div>
             <div style="padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 12px;">
                 <button id="btn-dismiss-changelog" class="desktop-nav-btn" style="cursor: pointer; padding: 8px 18px; border-radius: 6px; background: #38bdf8; color: #000; font-weight: 600; border: none;">Got it, let's go!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Broadcast Screen Takeover Overlay -->
+    <div id="emergency-takeover-overlay">
+        <div class="emergency-card">
+            <div class="emergency-badge" id="emergency-badge">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="emergency-badge-text">CRITICAL ALERT</span>
+            </div>
+            <h1 class="emergency-title" id="emergency-title">EMERGENCY BROADCAST</h1>
+            <p class="emergency-message" id="emergency-message"></p>
+            <div class="emergency-footer">
+                <button id="emergency-silence-btn" class="emergency-silence-btn">
+                    <i class="fa-solid fa-volume-xmark"></i> Silence Alarm
+                </button>
+                <span id="emergency-timer" class="emergency-timer"></span>
             </div>
         </div>
     </div>

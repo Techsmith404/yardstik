@@ -9,6 +9,7 @@ export let cachedFeatures = {
     theme_mode: "auto",
     dedicated_theme: "default",
     shift_theme_dedication: false,
+    high_glare_mode: "off",
     shift_themes: { "1": "default", "2": "obsidian", "3": "cyberpunk" },
     features: {
         weather_fx: true,
@@ -160,6 +161,11 @@ export function applyFeatureFlags() {
 
     // Ensure rotating milestone/safety panels are attached to appropriate slide (never slide 1)
     syncKioskPanels();
+
+    // Re-evaluate active theme and high-glare mode
+    if (typeof window !== 'undefined' && typeof window.checkThemeUpdate === 'function') {
+        window.checkThemeUpdate();
+    }
 }
 
 // Register layout transition listener to adapt layout when handoff state changes

@@ -2,9 +2,14 @@
 import { setHolidayAtmosphereTheme, startWeatherAnimation } from './fx.js';
 import { renderEquipmentDashboard } from './equipment.js';
 import { cachedFeatures } from './features.js';
-import { globalActiveShiftName } from './clock.js';
+import { globalActiveShiftName, getCurrentDate } from './clock.js';
+import { isDaylightNow } from './weather.js';
 
 const themeIcons = {
+    solar: {
+        left: '<i class="fa-solid fa-sun" style="color: #f59e0b; font-size: 1.25rem; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));"></i>',
+        right: '<i class="fa-solid fa-cloud-sun" style="color: #0284c7; font-size: 1.25rem; filter: drop-shadow(0 0 10px rgba(2, 132, 199, 0.5));"></i>'
+    },
     halloween: {
         left: '<i class="fa-solid fa-ghost" style="color: #c084fc; font-size: 1.25rem; filter: drop-shadow(0 0 10px #c084fc); animation: spooky-float 3s infinite alternate ease-in-out;"></i>',
         right: '<i class="fa-solid fa-skull" style="color: #f97316; font-size: 1.25rem; filter: drop-shadow(0 0 10px #f97316); animation: spooky-float 3s infinite alternate-reverse ease-in-out;"></i>'
@@ -32,6 +37,7 @@ const themeIcons = {
 };
 
 const holidayEquipmentIcons = {
+    solar: '<i class="fa-solid fa-sun" style="margin-right: 8px; color: #f59e0b; font-size: 0.9em;"></i>',
     halloween: '<i class="fa-solid fa-spider" style="margin-right: 8px; color: #f97316; font-size: 0.9em;"></i>',
     christmas: '<i class="fa-solid fa-gift" style="margin-right: 8px; color: #ef4444; font-size: 0.9em;"></i>',
     thanksgiving: '<i class="fa-solid fa-wheat-awn" style="margin-right: 8px; color: #eab308; font-size: 0.9em;"></i>',
@@ -45,16 +51,57 @@ export function getHolidayEquipmentIcon() {
     return holidayEquipmentIcons[currentTheme] || '';
 }
 
-export function getSeasonalTheme(date = new Date()) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mockTheme = (urlParams.get('holiday') || urlParams.get('theme') || '').toLowerCase().trim();
+export function isHighGlareActive(date = getCurrentDate()) {
+    if (typeof window !== 'undefined' && window.location) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const glareParam = (urlParams.get('glare') || '').toLowerCase().trim();
+        if (glareParam === 'high' || glareParam === 'on' || glareParam === 'true') return true;
+        if (glareParam === 'off' || glareParam === 'false') return false;
+        if (glareParam === 'auto') return isDaylightNow(date);
+
+        const themeParam = (urlParams.get('theme') || '').toLowerCase().trim();
+        if (themeParam === 'solar') return true;
+    }
+
+    if (cachedFeatures) {
+        const mode = (cachedFeatures.high_glare_mode || cachedFeatures.high_glare || 'off').toLowerCase().trim();
+        if (mode === 'on') return true;
+        if (mode === 'auto') return isDaylightNow(date);
+        if (cachedFeatures.dedicated_theme === 'solar' && cachedFeatures.theme_mode === 'dedicated') return true;
+    }
+    return false;
+}
+
+export function getSeasonalTheme(date = null) {
+    if (!date) {
+        date = getCurrentDate();
+    }
+    const urlParams = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
+    const glareParam = urlParams ? (urlParams.get('glare') || '').toLowerCase().trim() : '';
+    let mockTheme = urlParams ? (urlParams.get('holiday') || urlParams.get('theme') || '').toLowerCase().trim() : '';
+    const dateParam = urlParams ? (urlParams.get('date') || urlParams.get('mockDate') || '').toLowerCase().trim() : '';
     
-    if (mockTheme) {
+    // Support ?date=halloween or other holiday name alias in ?date=
+    const knownHolidayAliases = ['halloween', 'thanksgiving', 'christmas', 'newyear', 'stpatricks', 'july4', 'solar', 'default', 'cyberpunk', 'emerald', 'obsidian'];
+    if (!mockTheme && dateParam && knownHolidayAliases.includes(dateParam)) {
+        mockTheme = dateParam;
+    }
+
+    // 1. Explicit query parameter overrides
+    if (glareParam === 'high' || glareParam === 'on' || glareParam === 'true') return 'solar';
+    if (glareParam === 'off' || glareParam === 'false') {
+        // Skip high glare and continue
+    } else if (mockTheme) {
         if (mockTheme === 'none' || mockTheme === 'default' || mockTheme === 'false') return 'default';
         return mockTheme;
     }
 
-    // Per-Shift Theme Dedication
+    // 2. High-Glare / Solar Mode Check (Issue #10 / Task 4.1)
+    if (isHighGlareActive(date)) {
+        return 'solar';
+    }
+
+    // 3. Per-Shift Theme Dedication
     if (cachedFeatures && cachedFeatures.shift_theme_dedication) {
         const activeShiftName = globalActiveShiftName || (typeof window !== 'undefined' ? window.globalActiveShiftName : null);
         if (activeShiftName && cachedFeatures.shift_themes) {
@@ -67,7 +114,7 @@ export function getSeasonalTheme(date = new Date()) {
         }
     }
 
-    // Dedicated Theme Mode
+    // 4. Dedicated Theme Mode
     if (cachedFeatures && cachedFeatures.theme_mode === 'dedicated') {
         return cachedFeatures.dedicated_theme || 'default';
     }
@@ -121,6 +168,13 @@ export function applyTheme(themeName) {
 
     const iconSlots = [iconLeft, iconRight, dIconLeft, dIconRight, sIconLeft, sIconRight];
 
+    // Toggle solar-mode and high-glare-mode classes on document body
+    if (typeof document !== 'undefined' && document.body) {
+        const isSolar = (themeName === 'solar');
+        document.body.classList.toggle('solar-mode', isSolar);
+        document.body.classList.toggle('high-glare-mode', isSolar);
+    }
+
     if (!themeName || themeName === 'default' || themeName === 'none') {
         if (themeLink) themeLink.remove();
         iconSlots.forEach(el => { if (el) el.innerHTML = ''; });
@@ -156,15 +210,24 @@ export function applyTheme(themeName) {
 
     startWeatherAnimation('none');
     renderEquipmentDashboard();
+    if (typeof window !== 'undefined' && typeof window.renderTrackMap === 'function') {
+        window.renderTrackMap(true);
+    }
+}
+
+export function checkThemeUpdate() {
+    const theme = getSeasonalTheme();
+    applyTheme(theme);
 }
 
 export function initSeasonalTheme() {
-    const currentTheme = getSeasonalTheme();
-    applyTheme(currentTheme);
+    checkThemeUpdate();
 
-    // Re-check every hour for seamless midnight date rollover
-    setInterval(() => {
-        const theme = getSeasonalTheme();
-        applyTheme(theme);
-    }, 3600000);
+    // Re-check every 60 seconds for seamless sunrise/sunset and midnight date rollover
+    setInterval(checkThemeUpdate, 60000);
 }
+
+if (typeof window !== 'undefined') {
+    window.checkThemeUpdate = checkThemeUpdate;
+}
+

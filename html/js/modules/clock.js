@@ -19,8 +19,27 @@ export function initTimeSimulation() {
         if (timeParam || dateParam) {
             const target = new Date();
             if (dateParam) {
-                const parts = dateParam.split('-').map(Number);
-                if (parts.length === 3 && !isNaN(parts[0])) target.setFullYear(parts[0], parts[1] - 1, parts[2]);
+                const lower = dateParam.toLowerCase().trim();
+                const holidayDates = {
+                    halloween: [9, 31],     // Oct 31
+                    thanksgiving: [10, 26], // Nov 26
+                    christmas: [11, 25],    // Dec 25
+                    newyear: [0, 1],        // Jan 1
+                    stpatricks: [2, 17],    // Mar 17
+                    july4: [6, 4]           // Jul 4
+                };
+
+                if (holidayDates[lower]) {
+                    target.setMonth(holidayDates[lower][0], holidayDates[lower][1]);
+                } else {
+                    const sep = dateParam.includes('-') ? '-' : (dateParam.includes('/') ? '/' : '-');
+                    const parts = dateParam.split(sep).map(Number);
+                    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                        target.setFullYear(parts[0], parts[1] - 1, parts[2]);
+                    } else if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                        target.setMonth(parts[0] - 1, parts[1]);
+                    }
+                }
             }
             if (timeParam) {
                 const parts = timeParam.split(':').map(Number);

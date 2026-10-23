@@ -2,6 +2,7 @@
     "theme_mode": "auto",
     "dedicated_theme": "default",
     "shift_theme_dedication": false,
+    "high_glare_mode": "off",
     "shift_themes": {
         "A Shift": "default",
         "B Shift": "obsidian",

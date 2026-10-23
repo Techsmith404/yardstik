@@ -117,15 +117,20 @@ async function syncToCloud() {
 
         if (Object.keys(filesToSync).length === 0) return;
 
+        const syncSecret = siteConfig.sync_secret || process.env.SYNC_SECRET || '';
         const payload = {
             site_id: siteId,
-            secret: siteConfig.sync_secret || '',
+            secret: syncSecret,
             files: filesToSync
         };
 
         const res = await fetch(`${vercelBase}/api/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Yardstik-Sync-Secret': syncSecret,
+                'X-Sync-Secret': syncSecret
+            },
             body: JSON.stringify(payload)
         });
 

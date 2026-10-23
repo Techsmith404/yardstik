@@ -88,6 +88,42 @@ describe('Serverless Cloud Sync API (api/sync.js)', () => {
         expect(res.data.error).toContain('Unauthorized sync secret');
     });
 
+    test('Rejects POST with secret provided only via URL query parameter (401)', async () => {
+        process.env.SYNC_SECRET = 'correct_secret_key';
+        const { req, res } = createMockReqRes({
+            method: 'POST',
+            query: { secret: 'correct_secret_key' },
+            body: { site_id: 'site-1', files: { 'equipment.json': {} } }
+        });
+        await syncHandler(req, res);
+        expect(res.statusCode).toBe(401);
+        expect(res.data.error).toContain('Unauthorized sync secret');
+    });
+
+    test('Accepts POST with sync secret passed via X-Yardstik-Sync-Secret header', async () => {
+        process.env.SYNC_SECRET = 'header_secret_123';
+        const { req, res } = createMockReqRes({
+            method: 'POST',
+            headers: { 'x-yardstik-sync-secret': 'header_secret_123' },
+            body: { site_id: 'site-1', files: { 'equipment.json': {} } }
+        });
+        await syncHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+    });
+
+    test('Accepts POST with sync secret passed via Authorization Bearer header', async () => {
+        process.env.SYNC_SECRET = 'bearer_secret_456';
+        const { req, res } = createMockReqRes({
+            method: 'POST',
+            headers: { authorization: 'Bearer bearer_secret_456' },
+            body: { site_id: 'site-1', files: { 'equipment.json': {} } }
+        });
+        await syncHandler(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.data.success).toBe(true);
+    });
+
     test('Rejects POST if missing site_id or files payload (400)', async () => {
         process.env.SYNC_SECRET = 'secret';
         const { req, res } = createMockReqRes({

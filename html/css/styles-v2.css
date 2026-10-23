@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('../vendor/fonts/fonts.css');
 
 :root {
     /* Hyper-Premium Corporate Lobby Aesthetic - Brightened */
@@ -22,12 +22,25 @@
     --neon-red: #ef4444;
 }
 
+/* Continuous Organic Lissajous Orbital Pixel Shift (IDEA-U05) - 600s (10 min) */
 @keyframes pixel-shift {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(3px, 1px); }
-    50% { transform: translate(1px, 3px); }
-    75% { transform: translate(-2px, 2px); }
-    100% { transform: translate(0, 0); }
+    0%     { transform: translate(0px, 0px); }
+    6.25%  { transform: translate(1.15px, 1.56px); }
+    12.5%  { transform: translate(2.12px, 2.20px); }
+    18.75% { transform: translate(2.77px, 1.56px); }
+    25%    { transform: translate(3.00px, 0.00px); }
+    31.25% { transform: translate(2.77px, -1.56px); }
+    37.5%  { transform: translate(2.12px, -2.20px); }
+    43.75% { transform: translate(1.15px, -1.56px); }
+    50%    { transform: translate(0.00px, 0.00px); }
+    56.25% { transform: translate(-1.15px, 1.56px); }
+    62.5%  { transform: translate(-2.12px, 2.20px); }
+    68.75% { transform: translate(-2.77px, 1.56px); }
+    75%    { transform: translate(-3.00px, 0.00px); }
+    81.25% { transform: translate(-2.77px, -1.56px); }
+    87.5%  { transform: translate(-2.12px, -2.20px); }
+    93.75% { transform: translate(-1.15px, -1.56px); }
+    100%   { transform: translate(0px, 0px); }
 }
 
 body {
@@ -40,7 +53,8 @@ body {
     width: 100vw;
     overflow: hidden;
     position: relative;
-    animation: pixel-shift 300s infinite linear;
+    animation: pixel-shift 600s infinite linear;
+    will-change: transform;
 }
 
 #weather-canvas {
@@ -155,7 +169,7 @@ body::after {
     100% { transform: scale(1.1) translate(2%, 2%); }
 }
 
-/* Main Kiosk View Container */
+/* Main Kiosk View Container - Command Deck Elevation Choreography (IDEA-U02) */
 .kiosk-view {
     position: absolute;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -164,16 +178,48 @@ body::after {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-    transform: scale(0.98); /* Subtle scale-in animation */
+    transform: scale(0.96) translateY(28px);
+    transition: opacity 0.65s cubic-bezier(0.25, 0.1, 0.25, 1),
+                transform 0.65s cubic-bezier(0.25, 0.1, 0.25, 1),
+                visibility 0.65s;
     z-index: 10;
+    will-change: transform, opacity;
 }
 
+/* Arriving Slide: Command Deck Elevation Lift */
 .kiosk-view.active {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
+    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0s linear;
+    z-index: 20;
+}
+
+/* Departing Slide: Recedes smoothly into depth */
+.kiosk-view.slide-exit {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.96) translateY(28px);
+    transition: opacity 0.65s cubic-bezier(0.25, 0.1, 0.25, 1),
+                transform 0.65s cubic-bezier(0.25, 0.1, 0.25, 1),
+                visibility 0.65s;
+    z-index: 10;
+}
+
+/* Card Bevel Luminance Breathing (IDEA-U05) - 180s cycle */
+@keyframes phosphor-bevel-breathing {
+    0%, 100% {
+        border-top-color: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    50% {
+        border-top-color: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.07);
+    }
 }
 
 /* Industrial Machined Panel Widgets */
@@ -190,6 +236,7 @@ body::after {
                 inset 0 1px 0 rgba(255, 255, 255, 0.1),
                 inset 0 -10px 30px rgba(0, 0, 0, 0.2); /* Deep inner shadow */
     transition: transform 0.4s ease, box-shadow 0.4s ease;
+    animation: phosphor-bevel-breathing 180s infinite ease-in-out;
 }
 
 .widget:hover {
@@ -357,6 +404,18 @@ h2, h3 {
     letter-spacing: 0.05em;
 }
 
+/* High-Luminance Digit Phosphor Relief (IDEA-U05) - 120s subtle micro-rest */
+@keyframes phosphor-digit-breathing {
+    0%, 100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+    50% {
+        opacity: 0.93;
+        filter: brightness(0.94);
+    }
+}
+
 .osha-number {
     font-family: 'Outfit', sans-serif;
     font-size: 6.5rem;
@@ -365,6 +424,12 @@ h2, h3 {
     text-shadow: 0 0 25px rgba(105, 165, 121, 0.35);
     line-height: 1;
     margin-top: 5px;
+    animation: phosphor-digit-breathing 120s infinite ease-in-out;
+}
+
+#header-osha-counter,
+#header-blend-display {
+    animation: phosphor-digit-breathing 120s infinite ease-in-out;
 }
 
 /* VIEW 2: SAFETY STAND-DOWN & WORK MILESTONES GRID */
@@ -432,6 +497,106 @@ body.feature-no-mobile-qr #mobile-qr-img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+}
+
+/* Slide Dwell Countdown Ring Overlay (IDEA-U02) */
+body.feature-no-dwell #slide-dwell-container,
+body.is-desktop #slide-dwell-container,
+.is-desktop-mode #slide-dwell-container {
+    display: none !important;
+}
+
+#slide-dwell-container {
+    position: absolute;
+    top: 14px;
+    right: 35px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    user-select: none;
+    pointer-events: none;
+}
+
+.dwell-ring-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    transform: rotate(-90deg); /* Start at 12 o'clock */
+}
+
+.dwell-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 3;
+}
+
+.dwell-ring-progress {
+    fill: none;
+    stroke: var(--brand-blue, #4da6ff);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 100.53;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+}
+
+.dwell-seconds-text {
+    position: relative;
+    z-index: 2;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-primary, #ffffff);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+}
+
+/* Impending Slide Turnover Pulse (at <= 5 seconds) */
+#slide-dwell-container.dwell-warning,
+.slide-dwell-container.dwell-warning {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5), inset 0 0 10px rgba(220, 38, 38, 0.25) !important;
+    animation: dwell-warning-pulse 1s infinite alternate ease-in-out !important;
+}
+
+#slide-dwell-container.dwell-warning svg #slide-dwell-circle,
+#slide-dwell-container.dwell-warning .dwell-ring-progress,
+.slide-dwell-container.dwell-warning .dwell-ring-progress {
+    stroke: #dc2626 !important;
+}
+
+#slide-dwell-container.dwell-warning #dwell-seconds-text,
+#slide-dwell-container.dwell-warning .dwell-seconds-text,
+.slide-dwell-container.dwell-warning .dwell-seconds-text {
+    color: #dc2626 !important;
+    fill: #dc2626 !important;
+    text-shadow: 0 0 8px rgba(220, 38, 38, 0.6) !important;
+    font-weight: 800 !important;
+}
+
+@keyframes dwell-warning-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
+    }
+    100% {
+        transform: scale(1.08);
+        box-shadow: 0 0 24px rgba(220, 38, 38, 0.75);
+    }
 }
 
 .announcement-slide {
@@ -633,7 +798,9 @@ body.feature-no-mobile-qr #mobile-qr-img {
     box-sizing: border-box;
 }
 
-#anniversaries-list li strong {
+#anniversaries-list li strong,
+#safety-list li strong,
+.safety-emp-name {
     color: #ffffff;
     font-family: 'Outfit', sans-serif;
 }
@@ -647,6 +814,40 @@ body.feature-no-mobile-qr #mobile-qr-img {
     font-size: 1.05rem;
     box-shadow: 0 0 10px rgba(105, 165, 121, 0.05);
     border: 1px solid rgba(105, 165, 121, 0.2);
+}
+#anniversaries-list li span.years-badge.is-today {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #fcd34d;
+    font-weight: 800;
+}
+
+.anniversary-date-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.85em;
+    font-weight: 400;
+}
+.anniversary-date-badge.is-today {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: #fde68a;
+    font-weight: 700;
+}
+.anniversary-days-badge {
+    color: var(--text-muted, #64748b);
+    font-size: 0.85em;
+    font-style: italic;
+    opacity: 0.7;
+    font-weight: 400;
+}
+.anniversary-days-badge.is-today {
+    color: var(--neon-amber, #f59e0b);
+    opacity: 1;
+    font-weight: 700;
 }
 
 /* Extreme Weather Vignette Animations - Hardware Accelerated */
@@ -1253,6 +1454,100 @@ body.desktop-mode #equipment-scroll-wrapper::-webkit-scrollbar-thumb:hover {
 .pill-bo { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 .pill-dwell { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
 
+/* Commodity Inventory Tally Strip */
+.trackmap-commodity-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0 10px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-shrink: 0;
+}
+.trackmap-commodity-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.commodity-tally-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+}
+.commodity-tally-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+.commodity-tally-pill.active {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: var(--pill-color, #38bdf8);
+    box-shadow: 0 0 12px var(--pill-color, #38bdf8);
+}
+.commodity-tally-pill .pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--pill-color, #38bdf8);
+    box-shadow: 0 0 6px var(--pill-color, #38bdf8);
+    flex-shrink: 0;
+}
+.commodity-tally-pill strong {
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    margin-left: 2px;
+}
+
+/* Inbound & Empty Cars SVG Map Highlights */
+.track-highlight-inbound {
+    stroke: #38bdf8 !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.85)) !important;
+}
+.track-highlight-empty-cars {
+    stroke: #22c55e !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.85)) !important;
+}
+
+.overlay-inbound {
+    stroke: #38bdf8 !important;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9)) !important;
+}
+.overlay-empty-cars {
+    stroke: #22c55e !important;
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.9)) !important;
+}
+
+.badge-inbound rect {
+    stroke: #38bdf8 !important;
+    fill: rgba(56, 189, 248, 0.3) !important;
+}
+.badge-inbound text {
+    fill: #38bdf8 !important;
+}
+
+.badge-empty-cars rect {
+    stroke: #22c55e !important;
+    fill: rgba(34, 197, 94, 0.3) !important;
+}
+.badge-empty-cars text {
+    fill: #22c55e !important;
+}
+
 /* Track Hover Tooltip */
 .track-hover-tooltip {
     position: absolute;
@@ -1857,6 +2152,101 @@ body.handoff-mode:not(.weather-alert-active) .equipment-category {
     margin-bottom: 20px !important;
 }
 
+/* Shift Handoff Exceptions Banner & Density Engine */
+#equipment-handoff-exceptions {
+    width: 100%;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.handoff-exceptions-banner {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.16) 0%, rgba(245, 158, 11, 0.1) 100%);
+    border: 2px solid rgba(239, 68, 68, 0.65);
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-sizing: border-box;
+}
+
+.handoff-exceptions-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #f87171;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.handoff-exceptions-title i {
+    animation: pulse 1.8s infinite;
+}
+
+.handoff-exceptions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+}
+
+.handoff-all-clear-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #4ade80;
+    box-sizing: border-box;
+    margin-bottom: 20px;
+}
+
+.exception-cat-tag {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #cbd5e1;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Solar / High-Glare Mode Overrides for Shift Handoff Exceptions */
+body.solar-mode .handoff-exceptions-banner,
+body.high-glare-mode .handoff-exceptions-banner {
+    background: linear-gradient(135deg, #fee2e2 0%, #fef3c7 100%) !important;
+    border: 2px solid #dc2626 !important;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2) !important;
+}
+
+body.solar-mode .handoff-exceptions-title,
+body.high-glare-mode .handoff-exceptions-title {
+    color: #991b1b !important;
+}
+
+body.solar-mode .handoff-all-clear-banner,
+body.high-glare-mode .handoff-all-clear-banner {
+    background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%) !important;
+    border: 1px solid #16a34a !important;
+    box-shadow: 0 2px 10px rgba(22, 163, 74, 0.15) !important;
+    color: #15803d !important;
+}
+
+body.solar-mode .exception-cat-tag,
+body.high-glare-mode .exception-cat-tag {
+    color: #1e293b !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: #94a3b8 !important;
+}
+
 /* Kiosk Mode - Slide 2 (Safety, Reminders & Milestones) */
 body:not(.desktop-mode) #view-safety .side-stats {
     display: flex !important;
@@ -1972,6 +2362,1106 @@ body.handoff-mode .reminder-widget-card .reminder-body {
 .reminder-widget-card .reminder-body p:last-child {
     margin-bottom: 0 !important;
 }
+
+/* ==========================================================================
+   Task 4.1: Industrial High-Glare / Solar Mode Native Fallback Styles
+   ========================================================================== */
+body.solar-mode,
+body.high-glare-mode {
+    --bg-gradient: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%) !important;
+    --card-bg: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+    --card-border: #94a3b8 !important;
+    --text-primary: #0f172a !important;
+    --text-secondary: #334155 !important;
+    --text-muted: #64748b !important;
+    --brand-green: #15803d !important;
+    --brand-blue: #0284c7 !important;
+    --neon-cyan: #0284c7 !important;
+    --neon-purple: #7c3aed !important;
+    --neon-green: #15803d !important;
+    --neon-amber: #d97706 !important;
+    --neon-red: #dc2626 !important;
+    background: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%) !important;
+    color: #0f172a !important;
+}
+
+body.solar-mode::after,
+body.high-glare-mode::after {
+    display: block !important;
+    background: 
+        radial-gradient(circle at 10% 10%, rgba(2, 132, 199, 0.10) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(21, 128, 61, 0.08) 0%, transparent 45%) !important;
+    opacity: 0.75 !important;
+}
+
+body.solar-mode::before,
+body.high-glare-mode::before {
+    opacity: 0.16 !important;
+    background-image: radial-gradient(rgba(15, 23, 42, 0.14) 1.5px, transparent 1.5px) !important;
+    background-size: 24px 24px !important;
+    filter: none !important;
+}
+
+body.solar-mode #dark-overlay,
+body.solar-mode #vignette-overlay,
+body.high-glare-mode #dark-overlay,
+body.high-glare-mode #vignette-overlay {
+    opacity: 0 !important;
+    display: none !important;
+}
+
+body.solar-mode .widget,
+body.high-glare-mode .widget {
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 2px solid #64748b !important;
+    border-radius: 24px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 
+        0 12px 28px -6px rgba(15, 23, 42, 0.12),
+        0 4px 8px -2px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.solar-mode .widget:hover,
+body.high-glare-mode .widget:hover {
+    box-shadow: 
+        0 16px 32px -6px rgba(15, 23, 42, 0.16),
+        0 6px 12px -2px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.solar-mode h2,
+body.solar-mode h3,
+body.solar-mode h4,
+body.high-glare-mode h2,
+body.high-glare-mode h3,
+body.high-glare-mode h4 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+    letter-spacing: 0.04em !important;
+}
+
+body.solar-mode .header-widget,
+body.high-glare-mode .header-widget {
+    border-left: 6px solid #0284c7 !important;
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.14) 0%, #eef2f6 30%, #e2e8f0 100%) !important;
+}
+
+body.solar-mode .header-widget h2,
+body.high-glare-mode .header-widget h2 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+}
+
+body.solar-mode #clock,
+body.high-glare-mode #clock {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    text-shadow: none !important;
+}
+
+body.solar-mode #weather-display,
+body.high-glare-mode #weather-display {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+
+body.solar-mode #header-osha > div,
+body.solar-mode #header-blend > div,
+body.high-glare-mode #header-osha > div,
+body.high-glare-mode #header-blend > div {
+    background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+body.solar-mode #header-osha > div > div:first-child > div:last-child,
+body.solar-mode #header-blend > div > div:first-child > div:last-child,
+body.solar-mode #header-blend-label,
+body.high-glare-mode #header-osha > div > div:first-child > div:last-child,
+body.high-glare-mode #header-blend > div > div:first-child > div:last-child,
+body.high-glare-mode #header-blend-label {
+    color: #334155 !important;
+}
+
+body.solar-mode #header-osha-counter,
+body.high-glare-mode #header-osha-counter,
+body.solar-mode .osha-number,
+body.high-glare-mode .osha-number {
+    color: #15803d !important;
+    -webkit-text-fill-color: #15803d !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 10px rgba(21, 128, 61, 0.25) !important;
+}
+
+body.solar-mode #header-blend-display,
+body.high-glare-mode #header-blend-display,
+body.solar-mode #blend-recipe-display,
+body.high-glare-mode #blend-recipe-display {
+    color: #0284c7 !important;
+    -webkit-text-fill-color: #0284c7 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 8px rgba(2, 132, 199, 0.2) !important;
+}
+
+body.solar-mode #equipment-dashboard-container > div:first-of-type,
+body.high-glare-mode #equipment-dashboard-container > div:first-of-type {
+    border-bottom: 2px solid rgba(15, 23, 42, 0.1) !important;
+}
+
+body.solar-mode .equipment-category,
+body.high-glare-mode .equipment-category {
+    background: rgba(203, 213, 225, 0.45) !important;
+    border: 1px solid #94a3b8 !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+body.solar-mode .equipment-category-title,
+body.high-glare-mode .equipment-category-title {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+body.solar-mode .equipment-pill,
+body.high-glare-mode .equipment-pill {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+    border-left: 5px solid transparent !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    color: #0f172a !important;
+}
+
+body.solar-mode .equipment-name,
+body.high-glare-mode .equipment-name {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+body.solar-mode .equipment-pill.status-ok,
+body.high-glare-mode .equipment-pill.status-ok {
+    border-left-color: #16a34a !important;
+}
+body.solar-mode .equipment-pill.status-ok .equipment-status-badge,
+body.high-glare-mode .equipment-pill.status-ok .equipment-status-badge {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3) !important;
+}
+
+body.solar-mode .equipment-pill.status-os,
+body.high-glare-mode .equipment-pill.status-os {
+    background: linear-gradient(145deg, #fee2e2 0%, #fecdd3 100%) !important;
+    border-color: #fca5a5 !important;
+    border-left-color: #dc2626 !important;
+}
+body.solar-mode .equipment-pill.status-os .equipment-status-badge,
+body.high-glare-mode .equipment-pill.status-os .equipment-status-badge {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3) !important;
+}
+
+body.solar-mode .equipment-pill.status-pm,
+body.high-glare-mode .equipment-pill.status-pm {
+    background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%) !important;
+    border-color: #fcd34d !important;
+    border-left-color: #d97706 !important;
+}
+body.solar-mode .equipment-pill.status-pm .equipment-status-badge,
+body.high-glare-mode .equipment-pill.status-pm .equipment-status-badge {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3) !important;
+}
+
+body.solar-mode .equipment-pill.status-unknown,
+body.high-glare-mode .equipment-pill.status-unknown {
+    background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+    border-color: #cbd5e1 !important;
+    border-left-color: #64748b !important;
+}
+body.solar-mode .equipment-pill.status-unknown .equipment-status-badge,
+body.high-glare-mode .equipment-pill.status-unknown .equipment-status-badge {
+    background: #64748b !important;
+    color: #ffffff !important;
+}
+
+/* Crane Scale & Audit Badges */
+body.solar-mode .badge-scale-ok,
+body.high-glare-mode .badge-scale-ok {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #7dd3fc !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .badge-scale-os,
+body.high-glare-mode .badge-scale-os {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fca5a5 !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .badge-audit,
+body.high-glare-mode .badge-audit {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .badge-audit-yes,
+body.high-glare-mode .badge-audit-yes {
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    color: #15803d !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .badge-audit-no,
+body.high-glare-mode .badge-audit-no {
+    background: #fef3c7 !important;
+    border-color: #fcd34d !important;
+    color: #b45309 !important;
+    font-weight: 700 !important;
+}
+
+/* Slide Dwell Countdown Ring */
+body.solar-mode #slide-dwell-container,
+body.high-glare-mode #slide-dwell-container {
+    background: linear-gradient(145deg, #eef2f6 0%, #dee5ee 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+}
+body.solar-mode #slide-dwell-container svg circle:first-child,
+body.high-glare-mode #slide-dwell-container svg circle:first-child,
+body.solar-mode .dwell-ring-bg,
+body.high-glare-mode .dwell-ring-bg {
+    stroke: rgba(148, 163, 184, 0.4) !important;
+}
+body.solar-mode #slide-dwell-container svg #slide-dwell-circle,
+body.high-glare-mode #slide-dwell-container svg #slide-dwell-circle,
+body.solar-mode .dwell-ring-progress,
+body.high-glare-mode .dwell-ring-progress {
+    stroke: #0284c7 !important;
+}
+body.solar-mode #dwell-seconds-text,
+body.high-glare-mode #dwell-seconds-text,
+body.solar-mode .dwell-seconds-text,
+body.high-glare-mode .dwell-seconds-text {
+    color: #0f172a !important;
+    fill: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Slide Dwell Warning Pulse (Under 5s in Solar Mode) */
+body.solar-mode #slide-dwell-container.dwell-warning,
+body.high-glare-mode #slide-dwell-container.dwell-warning,
+body.solar-mode .slide-dwell-container.dwell-warning,
+body.high-glare-mode .slide-dwell-container.dwell-warning {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.45) !important;
+}
+body.solar-mode #slide-dwell-container.dwell-warning svg #slide-dwell-circle,
+body.high-glare-mode #slide-dwell-container.dwell-warning svg #slide-dwell-circle,
+body.solar-mode #slide-dwell-container.dwell-warning .dwell-ring-progress,
+body.high-glare-mode #slide-dwell-container.dwell-warning .dwell-ring-progress,
+body.solar-mode .slide-dwell-container.dwell-warning .dwell-ring-progress,
+body.high-glare-mode .slide-dwell-container.dwell-warning .dwell-ring-progress {
+    stroke: #dc2626 !important;
+}
+body.solar-mode #slide-dwell-container.dwell-warning #dwell-seconds-text,
+body.high-glare-mode #slide-dwell-container.dwell-warning #dwell-seconds-text,
+body.solar-mode #slide-dwell-container.dwell-warning .dwell-seconds-text,
+body.high-glare-mode #slide-dwell-container.dwell-warning .dwell-seconds-text,
+body.solar-mode .slide-dwell-container.dwell-warning .dwell-seconds-text,
+body.high-glare-mode .slide-dwell-container.dwell-warning .dwell-seconds-text {
+    color: #dc2626 !important;
+    fill: #dc2626 !important;
+    text-shadow: none !important;
+    font-weight: 800 !important;
+}
+
+/* Daylight Widget & Shift Tracker */
+body.solar-mode #daylight-container svg path,
+body.high-glare-mode #daylight-container svg path {
+    stroke: #94a3b8 !important;
+}
+body.solar-mode #daylight-text,
+body.high-glare-mode #daylight-text {
+    color: #334155 !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+}
+body.solar-mode #shift-widget #shift-text,
+body.high-glare-mode #shift-widget #shift-text {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+body.solar-mode #shift-widget > div:nth-child(2),
+body.high-glare-mode #shift-widget > div:nth-child(2) {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Permanent Mobile QR Code Dock */
+body.solar-mode #mobile-qr-container,
+body.high-glare-mode #mobile-qr-container {
+    background: linear-gradient(145deg, #eef2f6 0%, #dee5ee 100%) !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15) !important;
+}
+body.solar-mode #mobile-qr-container > div:first-child,
+body.solar-mode #mobile-qr-wrapper,
+body.high-glare-mode #mobile-qr-container > div:first-child,
+body.high-glare-mode #mobile-qr-wrapper {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.solar-mode #mobile-qr-container > div:last-child,
+body.solar-mode #mobile-qr-label,
+body.high-glare-mode #mobile-qr-container > div:last-child,
+body.high-glare-mode #mobile-qr-label {
+    color: #1e293b !important;
+    font-weight: 700 !important;
+}
+
+body.solar-mode #toolbox-widget-container > div:last-child,
+body.high-glare-mode #toolbox-widget-container > div:last-child {
+    background: rgba(15, 23, 42, 0.05) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Safety Curriculum & Action Required Video Roster (Fix White-on-White) */
+body.solar-mode #safety-list li,
+body.solar-mode #novara-training-list li,
+body.solar-mode .safety-panel li,
+body.high-glare-mode #safety-list li,
+body.high-glare-mode #novara-training-list li,
+body.high-glare-mode .safety-panel li {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.1) !important;
+}
+body.solar-mode #safety-list strong,
+body.solar-mode #novara-training-list strong,
+body.solar-mode .safety-panel strong,
+body.solar-mode .safety-emp-name,
+body.high-glare-mode #safety-list strong,
+body.high-glare-mode #novara-training-list strong,
+body.high-glare-mode .safety-panel strong,
+body.high-glare-mode .safety-emp-name {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+body.solar-mode #safety-list span,
+body.solar-mode #novara-training-list span,
+body.solar-mode .safety-panel span,
+body.high-glare-mode #safety-list span,
+body.high-glare-mode #novara-training-list span,
+body.high-glare-mode .safety-panel span {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+body.solar-mode #safety-title,
+body.high-glare-mode #safety-title {
+    color: #b91c1c !important;
+    border-bottom-color: rgba(185, 28, 28, 0.3) !important;
+}
+body.solar-mode #safety-title span,
+body.high-glare-mode #safety-title span {
+    color: #dc2626 !important;
+}
+
+/* Anniversaries List (Fix White-on-White) */
+body.solar-mode .anniversary-panel,
+body.high-glare-mode .anniversary-panel {
+    border-left: 6px solid #16a34a !important;
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+}
+body.solar-mode #anniversary-title,
+body.high-glare-mode #anniversary-title {
+    color: #0f172a !important;
+}
+body.solar-mode #anniversaries-list li,
+body.high-glare-mode #anniversaries-list li {
+    background: rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    color: #334155 !important;
+}
+body.solar-mode #anniversaries-list li strong,
+body.high-glare-mode #anniversaries-list li strong {
+    color: #0f172a !important;
+    text-shadow: none !important;
+}
+body.solar-mode #anniversaries-list li span.years-badge,
+body.high-glare-mode #anniversaries-list li span.years-badge {
+    background: rgba(22, 163, 74, 0.15) !important;
+    color: #15803d !important;
+    border: 1px solid #86efac !important;
+    font-weight: 700 !important;
+}
+body.solar-mode #anniversaries-list li span.years-badge.is-today,
+body.high-glare-mode #anniversaries-list li span.years-badge.is-today {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #f59e0b !important;
+    font-weight: 800 !important;
+}
+body.solar-mode .anniversary-date-badge,
+body.high-glare-mode .anniversary-date-badge {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+}
+body.solar-mode .anniversary-date-badge.is-today,
+body.high-glare-mode .anniversary-date-badge.is-today {
+    background: #fef3c7 !important;
+    border: 1px solid #f59e0b !important;
+    color: #92400e !important;
+    font-weight: 800 !important;
+}
+body.solar-mode .anniversary-days-badge,
+body.high-glare-mode .anniversary-days-badge {
+    color: #64748b !important;
+    font-weight: 500 !important;
+}
+body.solar-mode .anniversary-days-badge.is-today,
+body.high-glare-mode .anniversary-days-badge.is-today {
+    color: #b45309 !important;
+    font-weight: 800 !important;
+}
+
+/* Reminders & Markdown Content (Fix White-on-White) */
+body.solar-mode #reminders-widget-container,
+body.solar-mode #safety-reminders-container,
+body.high-glare-mode #reminders-widget-container,
+body.high-glare-mode #safety-reminders-container {
+    border-left: 6px solid #8b5cf6 !important;
+    background: linear-gradient(145deg, #eef2f6 0%, #e2e8f0 100%) !important;
+}
+body.solar-mode #reminders-title,
+body.solar-mode #safety-reminders-title,
+body.high-glare-mode #reminders-title,
+body.high-glare-mode #safety-reminders-title {
+    color: #0f172a !important;
+}
+body.solar-mode #reminders-content,
+body.solar-mode #safety-reminders-content,
+body.solar-mode .reminder-body,
+body.solar-mode .desktop-reminder-body,
+body.high-glare-mode #reminders-content,
+body.high-glare-mode #safety-reminders-content,
+body.high-glare-mode .reminder-body,
+body.high-glare-mode .desktop-reminder-body {
+    color: #0f172a !important;
+}
+body.solar-mode #reminders-content p,
+body.solar-mode #safety-reminders-content p,
+body.solar-mode .reminder-body p,
+body.solar-mode .desktop-reminder-body p,
+body.solar-mode #reminders-content li,
+body.solar-mode #safety-reminders-content li,
+body.solar-mode .reminder-body li,
+body.solar-mode .desktop-reminder-body li,
+body.solar-mode #reminders-content span,
+body.solar-mode #safety-reminders-content span,
+body.solar-mode .reminder-body span,
+body.solar-mode .desktop-reminder-body span,
+body.high-glare-mode #reminders-content p,
+body.high-glare-mode #safety-reminders-content p,
+body.high-glare-mode .reminder-body p,
+body.high-glare-mode .desktop-reminder-body p,
+body.high-glare-mode #reminders-content li,
+body.high-glare-mode #safety-reminders-content li,
+body.high-glare-mode .reminder-body li,
+body.high-glare-mode .desktop-reminder-body li,
+body.high-glare-mode #reminders-content span,
+body.high-glare-mode #safety-reminders-content span,
+body.high-glare-mode .reminder-body span,
+body.high-glare-mode .desktop-reminder-body span {
+    color: #1e293b !important;
+}
+body.solar-mode #reminders-content strong,
+body.solar-mode #safety-reminders-content strong,
+body.solar-mode .reminder-body strong,
+body.solar-mode .desktop-reminder-body strong,
+body.solar-mode #reminders-content b,
+body.solar-mode #safety-reminders-content b,
+body.solar-mode .reminder-body b,
+body.solar-mode .desktop-reminder-body b,
+body.high-glare-mode #reminders-content strong,
+body.high-glare-mode #safety-reminders-content strong,
+body.high-glare-mode .reminder-body strong,
+body.high-glare-mode .desktop-reminder-body strong,
+body.high-glare-mode #reminders-content b,
+body.high-glare-mode #safety-reminders-content b,
+body.high-glare-mode .reminder-body b,
+body.high-glare-mode .desktop-reminder-body b {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+}
+body.solar-mode #reminders-content h1, body.solar-mode #reminders-content h2, body.solar-mode #reminders-content h3, body.solar-mode #reminders-content h4, body.solar-mode #reminders-content h5, body.solar-mode #reminders-content h6,
+body.solar-mode #safety-reminders-content h1, body.solar-mode #safety-reminders-content h2, body.solar-mode #safety-reminders-content h3, body.solar-mode #safety-reminders-content h4, body.solar-mode #safety-reminders-content h5, body.solar-mode #safety-reminders-content h6,
+body.solar-mode .reminder-body h1, body.solar-mode .reminder-body h2, body.solar-mode .reminder-body h3, body.solar-mode .reminder-body h4, body.solar-mode .reminder-body h5, body.solar-mode .reminder-body h6,
+body.solar-mode .desktop-reminder-body h1, body.solar-mode .desktop-reminder-body h2, body.solar-mode .desktop-reminder-body h3, body.solar-mode .desktop-reminder-body h4, body.solar-mode .desktop-reminder-body h5, body.solar-mode .desktop-reminder-body h6,
+body.high-glare-mode #reminders-content h1, body.high-glare-mode #reminders-content h2, body.high-glare-mode #reminders-content h3, body.high-glare-mode #reminders-content h4, body.high-glare-mode #reminders-content h5, body.high-glare-mode #reminders-content h6,
+body.high-glare-mode #safety-reminders-content h1, body.high-glare-mode #safety-reminders-content h2, body.high-glare-mode #safety-reminders-content h3, body.high-glare-mode #safety-reminders-content h4, body.high-glare-mode #safety-reminders-content h5, body.high-glare-mode #safety-reminders-content h6,
+body.high-glare-mode .reminder-body h1, body.high-glare-mode .reminder-body h2, body.high-glare-mode .reminder-body h3, body.high-glare-mode .reminder-body h4, body.high-glare-mode .reminder-body h5, body.high-glare-mode .reminder-body h6,
+body.high-glare-mode .desktop-reminder-body h1, body.high-glare-mode .desktop-reminder-body h2, body.high-glare-mode .desktop-reminder-body h3, body.high-glare-mode .desktop-reminder-body h4, body.high-glare-mode .desktop-reminder-body h5, body.high-glare-mode .desktop-reminder-body h6 {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    text-shadow: none !important;
+}
+body.solar-mode #reminders-content ul li::before,
+body.solar-mode #safety-reminders-content ul li::before,
+body.solar-mode .reminder-body ul li::before,
+body.solar-mode .desktop-reminder-body ul li::before,
+body.high-glare-mode #reminders-content ul li::before,
+body.high-glare-mode #safety-reminders-content ul li::before,
+body.high-glare-mode .reminder-body ul li::before,
+body.high-glare-mode .desktop-reminder-body ul li::before {
+    background-color: #8b5cf6 !important;
+    box-shadow: 0 0 6px rgba(139, 92, 246, 0.4) !important;
+}
+body.solar-mode #reminders-content blockquote,
+body.solar-mode #safety-reminders-content blockquote,
+body.solar-mode .reminder-body blockquote,
+body.solar-mode .desktop-reminder-body blockquote,
+body.high-glare-mode #reminders-content blockquote,
+body.high-glare-mode #safety-reminders-content blockquote,
+body.high-glare-mode .reminder-body blockquote,
+body.high-glare-mode .desktop-reminder-body blockquote {
+    background: rgba(15, 23, 42, 0.04) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    border-left: 4px solid var(--quote-border-color, #0284c7) !important;
+    color: #334155 !important;
+}
+body.solar-mode #reminders-content hr,
+body.solar-mode #safety-reminders-content hr,
+body.solar-mode .reminder-body hr,
+body.solar-mode .desktop-reminder-body hr,
+body.high-glare-mode #reminders-content hr,
+body.high-glare-mode #safety-reminders-content hr,
+body.high-glare-mode .reminder-body hr,
+body.high-glare-mode .desktop-reminder-body hr {
+    border-top: 1px solid rgba(15, 23, 42, 0.12) !important;
+}
+body.solar-mode #reminders-content table,
+body.solar-mode #safety-reminders-content table,
+body.solar-mode .reminder-body table,
+body.solar-mode .desktop-reminder-body table,
+body.high-glare-mode #reminders-content table,
+body.high-glare-mode #safety-reminders-content table,
+body.high-glare-mode .reminder-body table,
+body.high-glare-mode .desktop-reminder-body table {
+    color: #0f172a !important;
+}
+body.solar-mode #reminders-content th,
+body.solar-mode #safety-reminders-content th,
+body.solar-mode .reminder-body th,
+body.solar-mode .desktop-reminder-body th,
+body.high-glare-mode #reminders-content th,
+body.high-glare-mode #safety-reminders-content th,
+body.high-glare-mode .reminder-body th,
+body.high-glare-mode .desktop-reminder-body th {
+    background: rgba(15, 23, 42, 0.06) !important;
+    color: #0f172a !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+body.solar-mode #reminders-content td,
+body.solar-mode #safety-reminders-content td,
+body.solar-mode .reminder-body td,
+body.solar-mode .desktop-reminder-body td,
+body.high-glare-mode #reminders-content td,
+body.high-glare-mode #safety-reminders-content td,
+body.high-glare-mode .reminder-body td,
+body.high-glare-mode .desktop-reminder-body td {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+    color: #1e293b !important;
+}
+
+/* Track Map & SVG Elements */
+body.solar-mode #trackmap-viewport,
+body.high-glare-mode #trackmap-viewport {
+    background: #e2e8f0 !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+body.solar-mode #trackmap-viewport svg,
+body.high-glare-mode #trackmap-viewport svg {
+    background: #e2e8f0 !important;
+}
+body.solar-mode .track-label,
+body.high-glare-mode .track-label {
+    fill: #0f172a !important;
+}
+body.solar-mode .yard-title,
+body.high-glare-mode .yard-title {
+    fill: #0f172a !important;
+}
+body.solar-mode .yard-subtitle,
+body.high-glare-mode .yard-subtitle {
+    fill: #475569 !important;
+}
+body.solar-mode .building,
+body.high-glare-mode .building {
+    fill: #cbd5e1 !important;
+    stroke: #64748b !important;
+    mix-blend-mode: normal !important;
+}
+body.solar-mode .building-label,
+body.high-glare-mode .building-label {
+    fill: #1e293b !important;
+}
+body.solar-mode .grid-line,
+body.high-glare-mode .grid-line {
+    stroke: rgba(15, 23, 42, 0.06) !important;
+}
+body.solar-mode .track-line,
+body.high-glare-mode .track-line,
+body.solar-mode .yard-track-line,
+body.high-glare-mode .yard-track-line,
+body.solar-mode .track,
+body.high-glare-mode .track {
+    stroke-width: 3px !important;
+}
+body.solar-mode .track-bed,
+body.high-glare-mode .track-bed {
+    stroke: #94a3b8 !important;
+    opacity: 0.5 !important;
+}
+body.solar-mode .lead-line,
+body.high-glare-mode .lead-line {
+    stroke: #64748b !important;
+    stroke-width: 2.5px !important;
+}
+body.solar-mode .switch-point,
+body.high-glare-mode .switch-point {
+    fill: #f1f5f9 !important;
+    stroke: #475569 !important;
+}
+body.solar-mode #trackmap-asof,
+body.high-glare-mode #trackmap-asof {
+    color: #475569 !important;
+}
+
+/* Solar Highlights & Train Car Overlays */
+body.solar-mode .track-highlight-inbound,
+body.high-glare-mode .track-highlight-inbound,
+body.solar-mode .overlay-inbound,
+body.high-glare-mode .overlay-inbound {
+    stroke: #0284c7 !important;
+    filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.5)) !important;
+}
+body.solar-mode .track-highlight-empty-cars,
+body.high-glare-mode .track-highlight-empty-cars,
+body.solar-mode .overlay-empty-cars,
+body.high-glare-mode .overlay-empty-cars {
+    stroke: #16a34a !important;
+    filter: drop-shadow(0 0 6px rgba(22, 163, 74, 0.5)) !important;
+}
+
+/* Solar Track Badges (Solid High-Contrast Pearl Background + Sharp Border) */
+body.solar-mode .badge-clear rect, body.solar-mode .badge-clear .badge-rect,
+body.high-glare-mode .badge-clear rect, body.high-glare-mode .badge-clear .badge-rect,
+body.solar-mode .badge-bad-order rect, body.solar-mode .badge-bad-order .badge-rect,
+body.high-glare-mode .badge-bad-order rect, body.high-glare-mode .badge-bad-order .badge-rect,
+body.solar-mode .badge-blend rect, body.solar-mode .badge-blend .badge-rect,
+body.high-glare-mode .badge-blend rect, body.high-glare-mode .badge-blend .badge-rect,
+body.solar-mode .badge-dwell rect, body.solar-mode .badge-dwell .badge-rect,
+body.high-glare-mode .badge-dwell rect, body.high-glare-mode .badge-dwell .badge-rect,
+body.solar-mode .badge-occ rect, body.solar-mode .badge-occ .badge-rect,
+body.high-glare-mode .badge-occ rect, body.high-glare-mode .badge-occ .badge-rect,
+body.solar-mode .badge-inbound rect, body.solar-mode .badge-inbound .badge-rect,
+body.high-glare-mode .badge-inbound rect, body.high-glare-mode .badge-inbound .badge-rect,
+body.solar-mode .badge-empty-cars rect, body.solar-mode .badge-empty-cars .badge-rect,
+body.high-glare-mode .badge-empty-cars rect, body.high-glare-mode .badge-empty-cars .badge-rect,
+body.solar-mode [id^='label-'] rect, body.high-glare-mode [id^='label-'] rect,
+body.solar-mode [id^='label_'] rect, body.high-glare-mode [id^='label_'] rect,
+body.solar-mode g[data-track] rect, body.high-glare-mode g[data-track] rect,
+body.solar-mode .badge-rect, body.high-glare-mode .badge-rect {
+    fill: #f8fafc !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.18)) !important;
+}
+
+body.solar-mode .badge-clear rect, body.solar-mode .badge-clear .badge-rect,
+body.high-glare-mode .badge-clear rect, body.high-glare-mode .badge-clear .badge-rect {
+    stroke: #16a34a !important;
+}
+body.solar-mode .badge-bad-order rect, body.solar-mode .badge-bad-order .badge-rect,
+body.high-glare-mode .badge-bad-order rect, body.high-glare-mode .badge-bad-order .badge-rect {
+    stroke: #dc2626 !important;
+}
+body.solar-mode .badge-blend rect, body.solar-mode .badge-blend .badge-rect,
+body.high-glare-mode .badge-blend rect, body.high-glare-mode .badge-blend .badge-rect {
+    stroke: #0284c7 !important;
+}
+body.solar-mode .badge-dwell rect, body.solar-mode .badge-dwell .badge-rect,
+body.high-glare-mode .badge-dwell rect, body.high-glare-mode .badge-dwell .badge-rect {
+    stroke: #d97706 !important;
+}
+body.solar-mode .badge-occ rect, body.solar-mode .badge-occ .badge-rect,
+body.high-glare-mode .badge-occ rect, body.high-glare-mode .badge-occ .badge-rect {
+    stroke: #475569 !important;
+}
+body.solar-mode .badge-inbound rect, body.solar-mode .badge-inbound .badge-rect,
+body.high-glare-mode .badge-inbound rect, body.high-glare-mode .badge-inbound .badge-rect {
+    stroke: #0284c7 !important;
+}
+body.solar-mode .badge-empty-cars rect, body.solar-mode .badge-empty-cars .badge-rect,
+body.high-glare-mode .badge-empty-cars rect, body.high-glare-mode .badge-empty-cars .badge-rect {
+    stroke: #16a34a !important;
+}
+
+body.solar-mode .badge-clear text, body.solar-mode .badge-clear .badge-text,
+body.high-glare-mode .badge-clear text, body.high-glare-mode .badge-clear .badge-text,
+body.solar-mode .badge-bad-order text, body.solar-mode .badge-bad-order .badge-text,
+body.high-glare-mode .badge-bad-order text, body.high-glare-mode .badge-bad-order .badge-text,
+body.solar-mode .badge-blend text, body.solar-mode .badge-blend .badge-text,
+body.high-glare-mode .badge-blend text, body.high-glare-mode .badge-blend .badge-text,
+body.solar-mode .badge-dwell text, body.solar-mode .badge-dwell .badge-text,
+body.high-glare-mode .badge-dwell text, body.high-glare-mode .badge-dwell .badge-text,
+body.solar-mode .badge-occ text, body.solar-mode .badge-occ .badge-text,
+body.high-glare-mode .badge-occ text, body.high-glare-mode .badge-occ .badge-text,
+body.solar-mode .badge-inbound text, body.solar-mode .badge-inbound .badge-text,
+body.high-glare-mode .badge-inbound text, body.high-glare-mode .badge-inbound .badge-text,
+body.solar-mode .badge-empty-cars text, body.solar-mode .badge-empty-cars .badge-text,
+body.high-glare-mode .badge-empty-cars text, body.high-glare-mode .badge-empty-cars .badge-text,
+body.solar-mode [id^='label-'] text, body.high-glare-mode [id^='label-'] text,
+body.solar-mode [id^='label_'] text, body.high-glare-mode [id^='label_'] text,
+body.solar-mode g[data-track] text, body.high-glare-mode g[data-track] text,
+body.solar-mode .badge-text, body.high-glare-mode .badge-text,
+body.solar-mode .track-label, body.high-glare-mode .track-label {
+    fill: #0f172a !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+}
+
+/* Solar Header Stat Pills */
+body.solar-mode .track-stat-pill.pill-total,
+body.high-glare-mode .track-stat-pill.pill-total {
+    background: #dbeafe !important;
+    color: #0369a1 !important;
+    border: 1px solid #93c5fd !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .track-stat-pill.pill-clear,
+body.high-glare-mode .track-stat-pill.pill-clear {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #86efac !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .track-stat-pill.pill-bo,
+body.high-glare-mode .track-stat-pill.pill-bo {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fca5a5 !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .track-stat-pill.pill-dwell,
+body.high-glare-mode .track-stat-pill.pill-dwell {
+    background: #fef3c7 !important;
+    color: #b45309 !important;
+    border: 1px solid #fcd34d !important;
+    font-weight: 700 !important;
+}
+body.solar-mode .trackmap-expand-btn,
+body.high-glare-mode .trackmap-expand-btn {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+}
+
+/* Track Card Grid Fallback */
+body.solar-mode .track-card,
+body.high-glare-mode .track-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.solar-mode .track-card-id,
+body.high-glare-mode .track-card-id {
+    color: #0f172a !important;
+}
+body.solar-mode .track-card-commodity,
+body.high-glare-mode .track-card-commodity {
+    color: #334155 !important;
+}
+
+/* Commodity Tally Pills */
+body.solar-mode .commodity-tally-pill,
+body.high-glare-mode .commodity-tally-pill {
+    background: linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%) !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+}
+body.solar-mode .commodity-tally-pill strong,
+body.high-glare-mode .commodity-tally-pill strong {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+body.solar-mode .commodity-tally-pill.active,
+body.high-glare-mode .commodity-tally-pill.active {
+    background: #dbeafe !important;
+    border-color: var(--pill-color, #0284c7) !important;
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* Track Modal Popup & Details */
+body.solar-mode .track-modal-card,
+body.high-glare-mode .track-modal-card {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2f6 100%) !important;
+    color: #0f172a !important;
+    border: 2px solid #94a3b8 !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25) !important;
+}
+body.solar-mode .track-modal-header,
+body.high-glare-mode .track-modal-header {
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+body.solar-mode .track-modal-header h3,
+body.high-glare-mode .track-modal-header h3 {
+    color: #0284c7 !important;
+}
+body.solar-mode .track-modal-close,
+body.high-glare-mode .track-modal-close {
+    color: #64748b !important;
+}
+body.solar-mode .track-modal-close:hover,
+body.high-glare-mode .track-modal-close:hover {
+    color: #dc2626 !important;
+}
+body.solar-mode .modal-detail-label,
+body.high-glare-mode .modal-detail-label {
+    color: #475569 !important;
+}
+body.solar-mode .modal-detail-val,
+body.high-glare-mode .modal-detail-val {
+    color: #0f172a !important;
+}
+
+/* Special Announcement View */
+body.solar-mode #view-special,
+body.high-glare-mode #view-special {
+    background: linear-gradient(135deg, #cbd5e1 0%, #d8e2ec 50%, #b8c6d4 100%) !important;
+}
+body.solar-mode #special-title,
+body.high-glare-mode #special-title {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+body.solar-mode #special-desc,
+body.high-glare-mode #special-desc {
+    color: #334155 !important;
+}
+
+/* Lightning & Weather Alert Widgets */
+body.solar-mode #lightning-alert-widget,
+body.high-glare-mode #lightning-alert-widget {
+    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%) !important;
+    border: 1px solid #eab308 !important;
+    border-left: 6px solid #ca8a04 !important;
+    box-shadow: 0 4px 15px rgba(202, 138, 4, 0.25) !important;
+}
+body.solar-mode #lightning-alert-widget h3,
+body.high-glare-mode #lightning-alert-widget h3 {
+    color: #854d0e !important;
+    text-shadow: none !important;
+}
+body.solar-mode #lightning-alert-widget span,
+body.high-glare-mode #lightning-alert-widget span {
+    color: #713f12 !important;
+    text-shadow: none !important;
+}
+body.solar-mode .weather-alert-interactive,
+body.high-glare-mode .weather-alert-interactive {
+    background: linear-gradient(145deg, #f8fafc 0%, #eef2f6 100%) !important;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15) !important;
+}
+body.solar-mode .weather-alert-interactive h3,
+body.high-glare-mode .weather-alert-interactive h3 {
+    color: #0f172a !important;
+}
+
+/* Desktop Portal */
+body.solar-mode .desktop-nav-bar,
+body.high-glare-mode .desktop-nav-bar {
+    background: rgba(238, 242, 246, 0.95) !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+body.solar-mode .desktop-title,
+body.high-glare-mode .desktop-title {
+    color: #0f172a !important;
+}
+body.solar-mode .desktop-nav-btn,
+body.high-glare-mode .desktop-nav-btn {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+body.solar-mode .desktop-nav-btn:hover,
+body.high-glare-mode .desktop-nav-btn:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+body.solar-mode .modal-card,
+body.high-glare-mode .modal-card {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+body.solar-mode .modal-card h3,
+body.solar-mode .modal-card h4,
+body.high-glare-mode .modal-card h3,
+body.high-glare-mode .modal-card h4 {
+    color: #0f172a !important;
+}
+body.solar-mode .modal-card p,
+body.solar-mode .modal-card ol,
+body.solar-mode .modal-card li,
+body.high-glare-mode .modal-card p,
+body.high-glare-mode .modal-card ol,
+body.high-glare-mode .modal-card li {
+    color: #334155 !important;
+}
+
+/* ==========================================================================
+   🚨 EMERGENCY SCREEN TAKEOVER & LIVE SSE ALERT STYLING
+   ========================================================================== */
+#emergency-takeover-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, rgba(127, 29, 29, 0.98) 0%, rgba(69, 10, 10, 1) 100%);
+    color: #ffffff;
+    box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.8);
+    animation: emergency-strobe 1.2s infinite alternate ease-in-out;
+    padding: 40px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+@keyframes emergency-strobe {
+    0% {
+        box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.6);
+        border: 8px solid #ef4444;
+    }
+    100% {
+        box-shadow: inset 0 0 160px rgba(239, 68, 68, 1), 0 0 80px rgba(239, 68, 68, 0.8);
+        border: 8px solid #fee2e2;
+    }
+}
+
+.emergency-card {
+    background: rgba(15, 23, 42, 0.92);
+    border: 3px solid #ef4444;
+    border-radius: 24px;
+    padding: 48px 56px;
+    max-width: 1200px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.emergency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: #dc2626;
+    color: #ffffff;
+    padding: 8px 24px;
+    border-radius: 9999px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: emergency-pulse 1s infinite alternate;
+}
+
+@keyframes emergency-pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.06); }
+}
+
+.emergency-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0;
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+
+.emergency-message {
+    font-size: 1.8rem;
+    color: #e2e8f0;
+    margin: 0;
+    line-height: 1.4;
+    max-width: 950px;
+    white-space: pre-wrap;
+}
+
+.emergency-footer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.emergency-silence-btn {
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid #ef4444;
+    color: #fecaca;
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.emergency-silence-btn:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.emergency-timer {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+
 
 
 
